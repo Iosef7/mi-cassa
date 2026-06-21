@@ -57,7 +57,9 @@ export async function POST(req: Request) {
     console.log("Uploading to Gemini...");
     const uploadResult = await ai.files.upload({
       file: tempFilePath,
-      mimeType: 'audio/mp3',
+      config: {
+        mimeType: 'audio/mp3',
+      }
     });
 
     console.log("Uploaded file URI:", uploadResult.uri);
@@ -86,7 +88,7 @@ Asegúrate de devolver ÚNICAMENTE el objeto JSON sin markdown adicional.
       contents: [
         {
           fileData: {
-            mimeType: uploadResult.mimeType,
+            mimeType: 'audio/mp3',
             fileUri: uploadResult.uri
           }
         },
@@ -97,7 +99,7 @@ Asegúrate de devolver ÚNICAMENTE el objeto JSON sin markdown adicional.
       }
     });
 
-    const responseText = response.text;
+    const responseText = response.text || "{}";
     console.log("Gemini Response:", responseText);
 
     // Parse the JSON
@@ -112,7 +114,9 @@ Asegúrate de devolver ÚNICAMENTE el objeto JSON sin markdown adicional.
     // 5. Cleanup the temporary file and Gemini remote file
     fs.unlinkSync(tempFilePath);
     try {
-      await ai.files.delete({ name: uploadResult.name });
+      if (uploadResult?.name) {
+        await ai.files.delete({ name: uploadResult.name });
+      }
     } catch (e) {
       console.error("Failed to delete remote file", e);
     }
@@ -145,7 +149,7 @@ Asegúrate de devolver ÚNICAMENTE el objeto JSON sin markdown adicional.
       data: {
         leadId: lead.id,
         duration: 0, // We could parse duration from twilio
-        audioUrl: recordingUrl,
+        audioUrl: recordingUrl || "",
         transcription: analysis.transcription,
         summary: analysis.summary,
         mainTopic: analysis.mainTopic,

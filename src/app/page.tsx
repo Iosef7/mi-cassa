@@ -128,7 +128,7 @@ export default function Dashboard() {
 function NavItem({ icon, label, active = false }: { icon: React.ReactNode, label: string, active?: boolean }) {
   return (
     <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${active ? 'bg-primary text-primary-foreground' : 'text-foreground/70 hover:bg-background hover:text-foreground'}`}>
-      {React.cloneElement(icon as React.ReactElement, { className: "w-5 h-5" })}
+      {React.cloneElement(icon as React.ReactElement<any>, { className: "w-5 h-5" })}
       {label}
     </button>
   );

@@ -40,7 +40,7 @@ function NavItem({ href, icon, label, active = false }: { href: string, icon: Re
   return (
     <Link href={href}>
       <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${active ? 'bg-primary text-primary-foreground' : 'text-foreground/70 hover:bg-background hover:text-foreground'}`}>
-        {React.cloneElement(icon as React.ReactElement, { className: "w-5 h-5" })}
+        {React.cloneElement(icon as React.ReactElement<any>, { className: "w-5 h-5" })}
         {label}
       </button>
     </Link>
