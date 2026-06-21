@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      String   @default("AGENT") // ADMIN, AGENT, MARKETING
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leads     Lead[]
+  tasks     Task[]
+}
+
+model Property {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  price       Decimal
+  type        String   // CASA, DEPARTAMENTO, TERRENO, LOCAL
+  status      String   @default("DISPONIBLE") // DISPONIBLE, RESERVADA, VENDIDA, PAUSADA
+  location    String
+  bedrooms    Int?
+  bathrooms   Int?
+  area        Float?
+  images      String   // JSON stringified array of URLs
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  leads       Lead[]
+}
+
+model Lead {
+  id          String   @id @default(cuid())
+  name        String
+  email       String?
+  phone       String
+  status      String   @default("NUEVO") // NUEVO, CONTACTADO, VISITA_AGENDADA, NEGOCIACION, FIRMA, CERRADO_GANADO
+  budget      Decimal?
+  notes       String?
+  source      String?  // e.g. "Meta Ads", "Organic"
+  
+  agentId     String?
+  agent       User?    @relation(fields: [agentId], references: [id])
+  
+  propertyId  String?
+  property    Property? @relation(fields: [propertyId], references: [id])
+
+  calls       Call[]
+  tasks       Task[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Call {
+  id            String   @id @default(cuid())
+  leadId        String
+  lead          Lead     @relation(fields: [leadId], references: [id])
+  duration      Int      // in seconds
+  audioUrl      String?
+  transcription String?
+  summary       String?
+  mainTopic     String?
+  keyPoints     String?  // JSON stringified array
+  commitments   String?  // JSON stringified array
+  sentiment     String?  // Positivo, Neutro, Negativo
+  createdAt     DateTime @default(now())
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  isCompleted Boolean  @default(false)
+  dueDate     DateTime?
+  
+  assignedTo  String
+  agent       User     @relation(fields: [assignedTo], references: [id])
+  
+  leadId      String?
+  lead        Lead?    @relation(fields: [leadId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
