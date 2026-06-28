@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Edit, Save, Trash2, MapPin, Building, Image as ImageIcon, FileText, Plus, X, BedDouble, Bath, Maximize, Car, Calendar, Users, Phone, Mail, Briefcase, FolderLock, MessageCircle, ChevronDown, ChevronUp, ListTodo, Activity, CheckCircle2, Clock, Banknote, MessageSquare, BarChart3, Globe, Shield, Dumbbell, Waves, Trees, Link as LinkIcon, Copy, TrendingUp, BadgePercent, BadgeCheck , Info, Upload, GripVertical} from 'lucide-react';
+import { ArrowLeft, Edit, Save, Trash2, MapPin, Building, Image as ImageIcon, FileText, Plus, X, BedDouble, Bath, Maximize, Car, Calendar, Users, Phone, Mail, Briefcase, FolderLock, MessageCircle, ChevronDown, ChevronUp, ListTodo, Activity, CheckCircle2, Clock, Banknote, MessageSquare, BarChart3, Globe, Shield, Dumbbell, Waves, Trees, Link as LinkIcon, Copy, TrendingUp, BadgePercent, BadgeCheck , Info, Upload, GripVertical, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { GoogleDrivePicker } from '@/components/GoogleDrivePicker';
 
@@ -313,9 +313,7 @@ export default function PropertyDetailsPage() {
       await fetch(`/api/properties/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
       });
-      setIsEditing(false);
       fetchProperty();
     } catch (e) {
       console.error(e);
@@ -557,8 +555,8 @@ export default function PropertyDetailsPage() {
                                 Array.from(files).forEach((file) => {
                                   const reader = new FileReader();
                                   reader.onload = (event) => {
-                                    if (event.target?.result) {
-                                      setImagesList(prev => [...prev, event.target.result as string]);
+                                    if (event.target && event.target.result) {
+                                      setImagesList(prev => [...prev, event.target!.result as string]);
                                     }
                                   };
                                   reader.readAsDataURL(file);
@@ -1878,7 +1876,7 @@ export default function PropertyDetailsPage() {
                           <p className="text-sm text-muted-foreground mb-4">No se han registrado los datos del propietario.</p>
                           <button
                             onClick={() => {
-                              setIsEditing(true);
+                              setEditingSection('owner');
                               setTimeout(() => {
                                 const el = document.getElementById("ownerNameInput");
                                 el?.scrollIntoView({ behavior: 'smooth' });

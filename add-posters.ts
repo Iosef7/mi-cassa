@@ -16,7 +16,7 @@ async function main() {
     return;
   }
 
-  let presentations = {
+  let presentations: Record<string, string[]> = {
     docs: [],
     plans: [],
     videos: [],
