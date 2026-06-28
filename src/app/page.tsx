@@ -1,205 +1,178 @@
-import React from 'react';
-import { Home, Building, Users, Calendar, Phone, TrendingUp, Search, Plus, Bell, MoreHorizontal, MapPin } from 'lucide-react';
+import React from "react";
+import Link from "next/link";
+import Image from "next/image";
 
-export default function Dashboard() {
+export default function PublicHomepage() {
   return (
-    <>
-      {/* Top Navbar */}
-      <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-between px-8 z-10 sticky top-0 shrink-0">
-        <div className="relative w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/50" />
-          <input 
-            type="text" 
-            placeholder="Buscar clientes, propiedades, teléfonos..." 
-            className="w-full pl-10 pr-4 py-2 rounded-full bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-          />
+    <div className="min-h-screen bg-white text-gray-900 font-sans">
+      {/* Header */}
+      <header className="absolute top-0 left-0 right-0 z-50 p-6 flex justify-between items-center bg-black/30 backdrop-blur-sm text-white">
+        <div className="text-2xl font-light tracking-[0.2em] uppercase" style={{ fontFamily: '"Copperplate Gothic Light Regular", serif' }}>
+          MiCassa
         </div>
-        <div className="flex items-center gap-4">
-          <button className="p-2 rounded-full hover:bg-border transition-colors relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
-          </button>
-          <button className="bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2 hover-lift">
-            <Plus className="w-4 h-4" /> Nueva Propiedad
-          </button>
-        </div>
+        <nav className="hidden md:flex space-x-6 text-sm uppercase tracking-widest">
+          <Link href="#proyectos" className="hover:text-blue-400 transition">Proyectos</Link>
+          <Link href="#alquileres" className="hover:text-blue-400 transition">Alquileres</Link>
+          <Link href="/propiedades" className="hover:text-blue-400 transition font-bold">Catálogo</Link>
+          <Link href="#nosotros" className="hover:text-blue-400 transition">Nosotros</Link>
+          <Link href="#contacto" className="hover:text-blue-400 transition">Contacto</Link>
+          <Link href="/admin" className="ml-4 opacity-50 hover:opacity-100 transition">Admin</Link>
+        </nav>
       </header>
 
-      {/* Dashboard Content */}
-      <div className="flex-1 overflow-auto p-8">
-        
-        <div className="flex items-end justify-between mb-8">
+      {/* Hero */}
+      <section className="relative h-screen flex flex-col justify-center items-center text-center px-4 bg-gray-900">
+        <div className="absolute inset-0 z-0">
+          <Image 
+            src="https://images.unsplash.com/photo-1544984243-ec57b16fac25?auto=format&fit=crop&q=80&w=2000" 
+            alt="Jerusalem" 
+            fill 
+            className="object-cover opacity-50" 
+            priority
+          />
+        </div>
+        <div className="relative z-10 max-w-4xl mx-auto text-white">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 drop-shadow-lg">Tu hogar en Israel</h1>
+          <p className="text-lg md:text-2xl mb-10 font-light drop-shadow-md">
+            Hacemos de tu inversión un éxito con el mejor asesoramiento para comprar y alquilar tu casa en Israel.
+          </p>
+          <Link href="/propiedades" className="inline-block px-8 py-4 bg-white text-black font-semibold uppercase tracking-widest text-sm hover:bg-gray-200 transition">
+            Ver Catálogo
+          </Link>
+        </div>
+      </section>
+
+      {/* Por qué elegirnos */}
+      <section id="nosotros" className="py-24 px-6 max-w-6xl mx-auto text-center">
+        <h2 className="text-3xl font-bold mb-16 uppercase tracking-wider">Por qué elegirnos</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           <div>
-            <h2 className="text-3xl font-bold">Hola, Equipo 👋</h2>
-            <p className="text-foreground/60 mt-1">Aquí está el resumen de la inmobilaria para hoy.</p>
+            <h4 className="font-bold uppercase tracking-wider mb-4">Atención Personalizada</h4>
+            <p className="text-gray-600 leading-relaxed">Somos un equipo interdisciplinario en contacto con las principales empresas constructoras locales e internacionales para asesorarte en tu inversión</p>
           </div>
-          <div className="text-sm px-3 py-1 rounded-full bg-card border border-border">
-            21 de Junio, 2026
+          <div>
+            <h4 className="font-bold uppercase tracking-wider mb-4">Asesoramiento Legal y Financiero</h4>
+            <p className="text-gray-600 leading-relaxed">Gestionamos ante las entidades bancarias el otorgamiento de créditos hipotecarios (Mashkanta). También disponemos de un equipo de letrados para asesorarte en la escritura y alquiler de tu propiedad</p>
+          </div>
+          <div>
+            <h4 className="font-bold uppercase tracking-wider mb-4">Rentabilidad</h4>
+            <p className="text-gray-600 leading-relaxed">Contamos con una gran cartera de proyectos que te aseguran una renta anual</p>
+          </div>
+          <div>
+            <h4 className="font-bold uppercase tracking-wider mb-4">Alquiler</h4>
+            <p className="text-gray-600 leading-relaxed">Contamos con asesoramiento legal y jurídico para que puedas alquilar tu propiedad por períodos temporarios o más extensos</p>
           </div>
         </div>
+      </section>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatCard title="Propiedades Activas" value="124" trend="+3 esta semana" />
-          <StatCard title="Nuevos Leads (Meta)" value="45" trend="+12% vs mes pasado" />
-          <StatCard title="Citas Programadas" value="12" trend="Para hoy y mañana" />
-          <StatCard title="Ventas Cerradas" value="$4.2M" trend="Este trimestre" highlight />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Proyectos Únicos */}
+      <section id="proyectos" className="py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-6">
+          <h2 className="text-3xl font-bold mb-16 text-center uppercase tracking-wider">Proyectos únicos</h2>
           
-          {/* Pipeline CRM Preview */}
-          <div className="col-span-2 bg-card border border-border rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold">Pipeline Activo (CRM)</h3>
-              <button className="text-primary text-sm font-medium hover:underline">Ver todo</button>
-            </div>
-            <div className="space-y-4">
-              <PipelineItem name="Carlos Martínez" status="Negociación" property="Penthouse Polanco" amount="$1,200,000" progress={75} />
-              <PipelineItem name="Laura Gómez" status="Firma de Contrato" property="Casa Lomas" amount="$850,000" progress={90} />
-              <PipelineItem name="Roberto Sánchez" status="Visita Agendada" property="Depto Condesa" amount="$450,000" progress={30} />
-            </div>
-          </div>
-
-          {/* AI Calls Transcription preview */}
-          <div className="col-span-1 bg-card border border-border rounded-2xl p-6 flex flex-col">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                Llamadas Recientes
-              </h3>
-            </div>
-            
-            <div className="flex-1 space-y-4">
-              <CallItem 
-                caller="+52 55 1234 5678" 
-                time="Hace 10 min" 
-                summary="Cliente interesado en la casa de zona sur. Generar tarea para enviarle fotos."
-                aiAction="Tarea Creada"
-              />
-              <CallItem 
-                caller="María Fernanda" 
-                time="Hace 1 hora" 
-                summary="Pregunta por comisiones de venta. Se le enviará el PDF con las políticas."
-                aiAction="Resumen Guardado"
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="bg-white rounded shadow hover:shadow-lg transition">
+              <div className="h-64 relative bg-gray-200">
+                 <Image src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=800" alt="Legacy" fill className="object-cover" />
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-bold mb-2">Legacy – Jerusalem</h3>
+                <p className="text-gray-600 text-sm">El prestigioso proyecto Legacy se encuentra en una ubicación única en Jerusalém: con vistas a las murallas de la Ciudad Vieja, Shaar Yafo, la Torre de David y en frente del Shopping Mamila.</p>
+              </div>
             </div>
 
-            <button className="w-full mt-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-background transition-colors">
-              Ver todas las transcripciones
-            </button>
+            <div className="bg-white rounded shadow hover:shadow-lg transition">
+              <div className="h-64 relative bg-gray-200">
+                 <Image src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800" alt="Savyon View" fill className="object-cover" />
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-bold mb-2">Savyon View – Jerusalem</h3>
+                <p className="text-gray-600 text-sm">El proyecto Savyon View es otra perla inmobiliaria de nuestra colección ubicado en el corazón de Jerusalém. La torre de lujo se encuentra en el histórico complejo Mapai House en la esquina de las calles King George y Yafo.</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded shadow hover:shadow-lg transition">
+              <div className="h-64 relative bg-gray-200">
+                 <Image src="https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&q=80&w=800" alt="Jerusalem Spirit" fill className="object-cover" />
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-bold mb-2">Jerusalem Spirit – Jerusalem</h3>
+                <p className="text-gray-600 text-sm">Una experiencia de vida en el corazón de Jerusalem. Jerusalem Spirit, ubicado en el encantador barrio Rabi Akiva, se encuentra a poca distancia de los parques de la Ciudad y de los hermosos monumentos culturales de Jerusalem.</p>
+              </div>
+            </div>
           </div>
           
-        </div>
-        
-        {/* Properties Showcase */}
-        <div className="mt-8">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold">Propiedades Destacadas</h3>
+          <div className="mt-16 text-center">
+             <Link href="/propiedades" className="inline-block px-8 py-3 border-2 border-gray-900 text-gray-900 font-bold uppercase tracking-widest hover:bg-gray-900 hover:text-white transition">
+               Ver todos los proyectos
+             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* Alquileres Temporarios */}
+      <section id="alquileres" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-16">
+             <div className="md:w-1/2 mb-8 md:mb-0">
+               <h2 className="text-3xl font-bold uppercase tracking-wider mb-4">Alquileres temporarios</h2>
+               <p className="text-gray-600 text-lg">Tenemos a disposición cientos de propiedades para hacer de tu estadía en Israel unas vacaciones de lujo. Disfrutá la experiencia única de visitar la santidad de Israel en los departamentos mejor ubicados y equipados.</p>
+             </div>
+             <div>
+                <Link href="/propiedades" className="inline-block px-8 py-3 border-2 border-gray-900 text-gray-900 font-bold uppercase tracking-widest hover:bg-gray-900 hover:text-white transition">
+                  Ver todos los alquileres
+                </Link>
+             </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <PropertyCard 
-              title="Villa Contemporánea" 
-              location="Jardines del Pedregal" 
-              price="$1,500,000"
-              image="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=600"
-            />
-            <PropertyCard 
-              title="Departamento Luxury" 
-              location="Polanco, CDMX" 
-              price="$850,000"
-              image="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=600"
-            />
-            <PropertyCard 
-              title="Casa Estilo Colonial" 
-              location="Coyoacán" 
-              price="$1,100,000"
-              image="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600"
-            />
+            <div className="group cursor-pointer">
+              <div className="h-48 bg-gray-200 relative overflow-hidden">
+                <Image src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800" alt="Ro'e Tson" fill className="object-cover group-hover:scale-105 transition duration-500" />
+              </div>
+              <h4 className="font-bold mt-4">Ro’e Tson 2 – Jerusalem</h4>
+              <p className="text-sm text-gray-500">Dúplex de 4 dormitorios, 3 baños y jardín con vistas a las murallas de Jerusalém</p>
+            </div>
+            <div className="group cursor-pointer">
+              <div className="h-48 bg-gray-200 relative overflow-hidden">
+                <Image src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=800" alt="Rav Kook" fill className="object-cover group-hover:scale-105 transition duration-500" />
+              </div>
+              <h4 className="font-bold mt-4">Rav Kook 7 – Jerusalem</h4>
+              <p className="text-sm text-gray-500">Excelente propiedad de lujo de alquiler diario. 3 Dormitorios. Ubicado en pleno centro a 10 cuadras del Shopping Mamila</p>
+            </div>
+            <div className="group cursor-pointer">
+              <div className="h-48 bg-gray-200 relative overflow-hidden">
+                <Image src="https://images.unsplash.com/photo-1502672260266-1c1c24226133?auto=format&fit=crop&q=80&w=800" alt="HaNeviim" fill className="object-cover group-hover:scale-105 transition duration-500" />
+              </div>
+              <h4 className="font-bold mt-4">HaNeviim 45 – Jerusalem</h4>
+              <p className="text-sm text-gray-500">Extraordinario Penthouse (Dúplex) de 5 dormitorios ubicado en el centro de la ciudad a 12 minutos caminando del Shopping Mamila</p>
+            </div>
           </div>
         </div>
+      </section>
 
-      </div>
-    </>
-  );
-}
-
-// Helper Components
-function NavItem({ icon, label, active = false }: { icon: React.ReactNode, label: string, active?: boolean }) {
-  return (
-    <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${active ? 'bg-primary text-primary-foreground' : 'text-foreground/70 hover:bg-background hover:text-foreground'}`}>
-      {React.cloneElement(icon as React.ReactElement<any>, { className: "w-5 h-5" })}
-      {label}
-    </button>
-  );
-}
-
-function StatCard({ title, value, trend, highlight = false }: { title: string, value: string, trend: string, highlight?: boolean }) {
-  return (
-    <div className={`p-6 rounded-2xl border ${highlight ? 'border-primary bg-primary/5' : 'border-border bg-card'} hover-lift`}>
-      <p className="text-sm text-foreground/60 font-medium mb-1">{title}</p>
-      <h4 className={`text-3xl font-bold ${highlight ? 'text-primary' : ''}`}>{value}</h4>
-      <p className="text-xs text-foreground/50 mt-2">{trend}</p>
-    </div>
-  );
-}
-
-function PipelineItem({ name, status, property, amount, progress }: { name: string, status: string, property: string, amount: string, progress: number }) {
-  return (
-    <div className="p-4 rounded-xl border border-border/50 bg-background/50 hover:bg-background transition-colors flex items-center justify-between">
-      <div className="flex flex-col gap-1 w-1/3">
-        <span className="font-semibold">{name}</span>
-        <span className="text-xs text-foreground/60">{property}</span>
-      </div>
-      <div className="w-1/3 px-4">
-        <div className="flex justify-between text-xs mb-1">
-          <span>{status}</span>
-          <span>{progress}%</span>
+      {/* Footer / Contacto */}
+      <footer id="contacto" className="bg-gray-900 text-white py-16">
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div>
+            <h2 className="text-2xl font-bold uppercase tracking-wider mb-6">Contactanos</h2>
+            <div className="space-y-4 text-gray-300">
+               <p className="flex items-center gap-2"><span>📍</span> Ovadia Tache</p>
+               <p className="flex items-center gap-2"><span>📱</span> +972 587464528</p>
+               <p className="flex items-center gap-2"><span>✉️</span> info@micassail.com</p>
+            </div>
+          </div>
+          <div>
+            <form className="space-y-4">
+              <input type="text" placeholder="Nombre" className="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white placeholder-gray-500 focus:outline-none focus:border-white" />
+              <input type="email" placeholder="Email" className="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white placeholder-gray-500 focus:outline-none focus:border-white" />
+              <input type="text" placeholder="Celular" className="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white placeholder-gray-500 focus:outline-none focus:border-white" />
+              <textarea placeholder="Mensaje" rows={4} className="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white placeholder-gray-500 focus:outline-none focus:border-white"></textarea>
+              <button className="px-8 py-3 bg-white text-black font-bold uppercase tracking-widest hover:bg-gray-200 transition">Enviar</button>
+            </form>
+          </div>
         </div>
-        <div className="w-full bg-border rounded-full h-1.5">
-          <div className="bg-primary h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
-        </div>
-      </div>
-      <div className="w-1/4 text-right">
-        <span className="font-bold">{amount}</span>
-      </div>
-      <button className="p-2 hover:bg-border rounded-full transition-colors text-foreground/50">
-        <MoreHorizontal className="w-4 h-4" />
-      </button>
-    </div>
-  );
-}
-
-function CallItem({ caller, time, summary, aiAction }: { caller: string, time: string, summary: string, aiAction: string }) {
-  return (
-    <div className="p-4 rounded-xl bg-background border border-border/50 text-sm relative">
-      <div className="flex justify-between items-start mb-2">
-        <span className="font-bold">{caller}</span>
-        <span className="text-xs text-foreground/50">{time}</span>
-      </div>
-      <p className="text-foreground/70 text-xs mb-3 leading-relaxed">{summary}</p>
-      <div className="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2 py-1 rounded text-xs font-medium">
-        ✨ IA: {aiAction}
-      </div>
-    </div>
-  );
-}
-
-function PropertyCard({ title, location, price, image }: { title: string, location: string, price: string, image: string }) {
-  return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden hover-lift group cursor-pointer">
-      <div className="h-48 overflow-hidden relative">
-        <img src={image} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-        <div className="absolute top-3 left-3 bg-card/80 backdrop-blur-md px-2 py-1 rounded text-xs font-bold">
-          {price}
-        </div>
-      </div>
-      <div className="p-4">
-        <h4 className="font-bold text-lg mb-1">{title}</h4>
-        <p className="text-foreground/60 text-sm flex items-center gap-1">
-          <MapPin className="w-3 h-3" /> {location}
-        </p>
-      </div>
+      </footer>
     </div>
   );
 }

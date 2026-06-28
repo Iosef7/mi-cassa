@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { title, description, price, type, location, bedrooms, bathrooms, area, images } = body;
+    const { title, description, price, type, location, bedrooms, bathrooms, area, images, presentations, plans, videos, ownerName, ownerPhone, ownerEmail, ownerNotes, nearbyPlaces, dynamicFeatures } = body;
 
     const property = await prisma.property.create({
       data: {
@@ -25,10 +25,21 @@ export async function POST(request: Request) {
         price,
         type,
         location,
+        ownerName,
+        ownerPhone,
+        ownerEmail,
+        ownerNotes,
         bedrooms: bedrooms ? parseInt(bedrooms) : null,
         bathrooms: bathrooms ? parseInt(bathrooms) : null,
         area: area ? parseFloat(area) : null,
         images: JSON.stringify(images || []),
+        nearbyPlaces: nearbyPlaces ? JSON.stringify(nearbyPlaces) : null,
+        dynamicFeatures: dynamicFeatures ? JSON.stringify(dynamicFeatures) : null,
+        presentations: JSON.stringify({
+          docs: presentations || [],
+          plans: plans || [],
+          videos: videos || []
+        }),
         status: "DISPONIBLE"
       }
     });

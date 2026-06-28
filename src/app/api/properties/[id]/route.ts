@@ -5,7 +5,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const property = await prisma.property.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        leads: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            appointments: { orderBy: { date: 'asc' } },
+            calls: { orderBy: { createdAt: 'desc' } },
+            messages: { orderBy: { createdAt: 'desc' } },
+            tasks: { orderBy: { dueDate: 'asc' } }
+          }
+        }
+      }
     });
     
     if (!property) {
@@ -36,6 +47,22 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (body.bathrooms !== undefined) updateData.bathrooms = body.bathrooms ? parseInt(body.bathrooms) : null;
     if (body.area !== undefined) updateData.area = body.area ? parseFloat(body.area) : null;
     if (body.images !== undefined) updateData.images = JSON.stringify(body.images);
+    if (body.ownerName !== undefined) updateData.ownerName = body.ownerName;
+    if (body.ownerPhone !== undefined) updateData.ownerPhone = body.ownerPhone;
+    if (body.ownerEmail !== undefined) updateData.ownerEmail = body.ownerEmail;
+    if (body.ownerNotes !== undefined) updateData.ownerNotes = body.ownerNotes;
+    if (body.nearbyPlaces !== undefined) updateData.nearbyPlaces = body.nearbyPlaces ? JSON.stringify(body.nearbyPlaces) : null;
+    if (body.dynamicFeatures !== undefined) updateData.dynamicFeatures = body.dynamicFeatures ? JSON.stringify(body.dynamicFeatures) : null;
+    if (body.independentUnit !== undefined) updateData.independentUnit = body.independentUnit;
+    if (body.presentations !== undefined || body.plans !== undefined || body.videos !== undefined || body.legalDocs !== undefined || body.posters !== undefined) {
+      updateData.presentations = JSON.stringify({
+        docs: body.presentations || [],
+        plans: body.plans || [],
+        videos: body.videos || [],
+        legalDocs: body.legalDocs || [],
+        posters: body.posters || []
+      });
+    }
 
     const property = await prisma.property.update({
       where: { id },
