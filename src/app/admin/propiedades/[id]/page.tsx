@@ -227,16 +227,25 @@ export default function PropertyDetailsPage() {
   const [postersList, setPostersList] = useState<string[]>([]);
   const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
 
+  const [isUploading, setIsUploading] = useState(false);
+
   useEffect(() => {
     fetchProperty();
   }, [id]);
 
   const fetchProperty = async () => {
+    if (!id) return;
     setIsLoading(true);
     try {
       const res = await fetch(`/api/properties/${id}`);
-      if (!res.ok) throw new Error("Property not found");
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        throw new Error("Failed to parse response");
+      }
+      if (!res.ok) throw new Error(data?.error || data?.details || "Property not found");
+      
       setProperty(data);
       
       // Initialize form
@@ -291,11 +300,88 @@ export default function PropertyDetailsPage() {
 
     } catch (e) {
       console.error(e);
-      router.push('/admin/propiedades');
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleFileUpload = async (files: FileList | null, listSetter: React.Dispatch<React.SetStateAction<string[]>>) => {
+    if (!files || files.length === 0) return;
+    
+    if (!property?.driveFolderId) {
+      alert("Esta propiedad no tiene una carpeta de Drive vinculada. No se pueden subir archivos directamente. Crea una nueva propiedad para que se vincule automáticamente, o usa 'Vincular Carpeta' si se implementa.");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const uploadedUrls: string[] = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('parentId', property.driveFolderId);
+        
+        const res = await fetch('/api/drive/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          uploadedUrls.push(data.webViewLink);
+        } else {
+          console.error("Error al subir archivo");
+        }
+      }
+      
+      listSetter(prev => [...prev, ...uploadedUrls]);
+    } catch (err) {
+      console.error(err);
+      alert("Error al subir archivos a Drive.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const syncFromDrive = async () => {
+    if (!property?.driveFolderId) {
+      alert("Esta propiedad no tiene una carpeta de Drive vinculada.");
+      return;
+    }
+    
+    setIsUploading(true);
+    try {
+      const res = await fetch(`/api/drive/files?folderId=${property.driveFolderId}`);
+      if (res.ok) {
+        const files = await res.json();
+        
+        const newImages: string[] = [];
+        const newVideos: string[] = [];
+        const newDocs: string[] = [];
+        
+        files.forEach((f: any) => {
+          if (f.mimeType.startsWith('image/')) newImages.push(f.webViewLink);
+          else if (f.mimeType.startsWith('video/')) newVideos.push(f.webViewLink);
+          else newDocs.push(f.webViewLink);
+        });
+        
+        // Solo sobreescribimos o agregamos, por ahora agregaremos
+        if (newImages.length > 0) setImagesList(Array.from(new Set([...imagesList, ...newImages])));
+        if (newVideos.length > 0) setVideosList(Array.from(new Set([...videosList, ...newVideos])));
+        if (newDocs.length > 0) setPresentationsList(Array.from(new Set([...presentationsList, ...newDocs])));
+        
+        alert(`Sincronización completa. Se encontraron ${files.length} archivos en Drive.`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error al sincronizar con Drive.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -549,20 +635,7 @@ export default function PropertyDetailsPage() {
                             accept="image/*" 
                             multiple
                             className="hidden" 
-                            onChange={(e) => {
-                              const files = e.target.files;
-                              if (files && files.length > 0) {
-                                Array.from(files).forEach((file) => {
-                                  const reader = new FileReader();
-                                  reader.onload = (event) => {
-                                    if (event.target && event.target.result) {
-                                      setImagesList(prev => [...prev, event.target!.result as string]);
-                                    }
-                                  };
-                                  reader.readAsDataURL(file);
-                                });
-                              }
-                            }} 
+                            onChange={(e) => handleFileUpload(e.target.files, setImagesList)} 
                           />
                         </label>
                       </div>
@@ -1030,7 +1103,7 @@ export default function PropertyDetailsPage() {
                             scrolling="no" 
                             marginHeight={0} 
                             marginWidth={0} 
-                            src={`https://maps.google.com/maps?q=${encodeURIComponent(property.location)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                            src={`https://maps.google.com/maps?width=100%25&height=100%25&hl=es&q=${encodeURIComponent(property.location)}&t=&z=15&ie=UTF8&iwloc=B&output=embed`}
                             className="pointer-events-none group-hover:scale-105 transition-transform duration-500 w-full h-full"
                           ></iframe>
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
@@ -1047,8 +1120,21 @@ export default function PropertyDetailsPage() {
             )}
 
             {activeTab === 'multimedia' && (
-              <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-8">
+              <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                {property?.driveFolderId && (
+                  <div className="mb-6 flex justify-end">
+                    <button 
+                      onClick={syncFromDrive}
+                      disabled={isUploading}
+                      className="bg-primary/10 text-primary hover:bg-primary/20 px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-colors"
+                    >
+                      {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Globe className="w-5 h-5" />}
+                      {isUploading ? "Sincronizando..." : "Sincronizar todo desde Drive"}
+                    </button>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-8">
                   {/* Videos / Recorridos Virtuales */}
                   <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
                     <div className="flex justify-between items-center mb-4 group">
@@ -1097,20 +1183,10 @@ export default function PropertyDetailsPage() {
                           <Upload className="w-4 h-4"/> Subir Archivo
                           <input 
                             type="file" 
-                            accept="video/*,image/*,application/pdf" 
+                            accept="video/*,image/*,application/pdf"
+                            multiple 
                             className="hidden" 
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (event) => {
-                                  if (event.target?.result) {
-                                    setVideosList([...videosList, event.target.result as string]);
-                                  }
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }} 
+                            onChange={(e) => handleFileUpload(e.target.files, setVideosList)} 
                           />
                         </label>
                       </div>
@@ -1220,19 +1296,9 @@ export default function PropertyDetailsPage() {
                           <input 
                             type="file" 
                             accept="image/*,application/pdf" 
+                            multiple
                             className="hidden" 
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (event) => {
-                                  if (event.target?.result) {
-                                    setPresentationsList([...presentationsList, event.target.result as string]);
-                                  }
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }} 
+                            onChange={(e) => handleFileUpload(e.target.files, setPresentationsList)} 
                           />
                         </label>
                       </div>
@@ -1335,19 +1401,9 @@ export default function PropertyDetailsPage() {
                           <input 
                             type="file" 
                             accept="image/*,application/pdf" 
+                            multiple
                             className="hidden" 
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (event) => {
-                                  if (event.target?.result) {
-                                    setPostersList([...postersList, event.target.result as string]);
-                                  }
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }} 
+                            onChange={(e) => handleFileUpload(e.target.files, setPostersList)} 
                           />
                         </label>
                       </div>
@@ -1407,19 +1463,9 @@ export default function PropertyDetailsPage() {
                           <input 
                             type="file" 
                             accept="image/*,application/pdf" 
+                            multiple
                             className="hidden" 
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (event) => {
-                                  if (event.target?.result) {
-                                    setPlansList([...plansList, event.target.result as string]);
-                                  }
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }} 
+                            onChange={(e) => handleFileUpload(e.target.files, setPlansList)} 
                           />
                         </label>
                       </div>
@@ -1483,6 +1529,7 @@ export default function PropertyDetailsPage() {
                   </div>
                 </div>
               </div>
+             </div>
             )}
 
             {activeTab === 'comercial' && (
@@ -1933,19 +1980,9 @@ export default function PropertyDetailsPage() {
                           <input 
                             type="file" 
                             accept="image/*,application/pdf" 
+                            multiple
                             className="hidden" 
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (event) => {
-                                  if (event.target?.result) {
-                                    setLegalDocsList([...legalDocsList, event.target.result as string]);
-                                  }
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }} 
+                            onChange={(e) => handleFileUpload(e.target.files, setLegalDocsList)} 
                           />
                         </label>
                       </div>

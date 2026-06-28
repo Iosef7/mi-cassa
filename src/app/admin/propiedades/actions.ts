@@ -25,6 +25,19 @@ export async function createProject(formData: FormData) {
     const bathroomsStr = formData.get("bathrooms") as string;
     const areaStr = formData.get("area") as string;
 
+    const parentDriveFolderId = formData.get("parentDriveFolderId") as string;
+    let driveFolderId = null;
+
+    if (parentDriveFolderId) {
+      try {
+        const { createFolder } = await import('@/lib/google-drive');
+        const folder = await createFolder(title, parentDriveFolderId);
+        driveFolderId = folder.id;
+      } catch (err) {
+        console.error("Error creating Google Drive folder in server action:", err);
+      }
+    }
+
     const newProject = await prisma.property.create({
       data: {
         title,
@@ -47,6 +60,7 @@ export async function createProject(formData: FormData) {
         ownerPhone: ownerPhone || null,
         ownerEmail: ownerEmail || null,
         ownerNotes: ownerNotes || null,
+        driveFolderId: driveFolderId
       },
     });
 

@@ -44,11 +44,18 @@ export default function PropiedadesPage() {
     setIsLoading(true);
     try {
       const res = await fetch('/api/properties');
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        console.error("Failed to parse response");
+        setProperties([]);
+        return;
+      }
       if (res.ok && Array.isArray(data)) {
         setProperties(data);
       } else {
-        console.error("Failed to load properties:", data);
+        console.error("Failed to load properties:", data?.error || data?.details || data);
         setProperties([]);
       }
     } catch (e) {

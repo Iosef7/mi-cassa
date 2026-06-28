@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createProject } from "../actions";
 
@@ -11,6 +11,25 @@ export default function NewProjectPage() {
   const [type, setType] = useState('PROYECTO');
   const [dynamicFeatures, setDynamicFeatures] = useState<any>({});
   const [nearbyPlacesList, setNearbyPlacesList] = useState<{name: string, category: string, distance: string}[]>([]);
+  const [driveFolders, setDriveFolders] = useState<{id: string, name: string}[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<string>('');
+  const [loadingFolders, setLoadingFolders] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/drive/folders')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setDriveFolders(data);
+          if (data.length > 0) setSelectedFolder(data[0].id);
+        }
+        setLoadingFolders(false);
+      })
+      .catch(err => {
+        console.error("Error fetching folders:", err);
+        setLoadingFolders(false);
+      });
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -42,6 +61,26 @@ export default function NewProjectPage() {
       <div className="bg-card p-6 rounded-xl border shadow-sm">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2 col-span-1 md:col-span-2">
+              <label htmlFor="parentDriveFolderId" className="text-sm font-medium flex items-center gap-2">
+                Carpeta en Google Drive <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full font-bold">Autocreado</span>
+              </label>
+              <p className="text-xs text-muted-foreground mb-2">Selecciona la carpeta principal donde se creará automáticamente la subcarpeta de este proyecto.</p>
+              {loadingFolders ? (
+                <div className="p-2 border rounded-md bg-muted text-sm text-muted-foreground">Cargando carpetas de Drive...</div>
+              ) : (
+                <select id="parentDriveFolderId" name="parentDriveFolderId" value={selectedFolder} onChange={e => setSelectedFolder(e.target.value)} className="w-full p-2 rounded-md border bg-background">
+                  {driveFolders.length === 0 ? (
+                    <option value="">No se encontraron carpetas compartidas con el bot</option>
+                  ) : (
+                    driveFolders.map(f => (
+                      <option key={f.id} value={f.id}>{f.name}</option>
+                    ))
+                  )}
+                </select>
+              )}
+            </div>
+
             <div className="space-y-2">
               <label htmlFor="title" className="text-sm font-medium">Nombre del Proyecto</label>
               <input required type="text" id="title" name="title" className="w-full p-2 rounded-md border bg-background" placeholder="Ej: Torre Lumiere" />
