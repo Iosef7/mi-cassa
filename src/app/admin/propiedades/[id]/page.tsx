@@ -702,6 +702,14 @@ export default function PropertyDetailsPage() {
                               <label className="text-xs font-semibold text-muted-foreground mb-1 block">{formData.type === 'TERRENO' ? 'Área Total (m²)' : 'Construcción (m²)'}</label>
                               <input type="number" value={formData.area} onChange={e=>setFormData({...formData, area: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
                             </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Estacionamiento</label>
+                              <input type="text" placeholder="Ej: 3 lugares" value={dynamicFeatures.parking || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, parking: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Antigüedad</label>
+                              <input type="text" placeholder="Ej: A estrenar" value={dynamicFeatures.antiquity || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, antiquity: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
                             <div className="md:col-span-2">
                               <label className="text-xs font-semibold text-muted-foreground mb-1 block">Unidad Independiente (Anexo)</label>
                               <input type="text" placeholder="Ej: Incluye una unidad de 2 ambientes..." value={formData.independentUnit || ''} onChange={e=>setFormData({...formData, independentUnit: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
@@ -740,7 +748,10 @@ export default function PropertyDetailsPage() {
                             <button onClick={() => handleSaveSection(['type', 'bedrooms', 'bathrooms', 'area', 'dynamicFeatures', 'independentUnit'])} disabled={isSaving} className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-xl">Guardar</button>
                           </div>
                         </div>
-                      ) : (
+                      ) : (() => {
+                        let parsedDf: any = {};
+                        try { parsedDf = property.dynamicFeatures ? JSON.parse(property.dynamicFeatures) : {}; } catch(e) {}
+                        return (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
                         <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-blue-200/60 bg-blue-50/50">
                           <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
@@ -787,8 +798,8 @@ export default function PropertyDetailsPage() {
                             <Car className="w-5 h-5 md:w-6 md:h-6 text-indigo-600" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs md:text-sm text-indigo-900/60 font-medium truncate" title="Estacionamientos">Estacionamiento</p>
-                            <p className="font-bold text-indigo-950 text-base md:text-lg truncate" title="3 lugares">3 lugares</p>
+                            <p className="text-xs md:text-sm text-indigo-900/60 font-medium truncate" title="Estacionamiento">Estacionamiento</p>
+                            <p className="font-bold text-indigo-950 text-base md:text-lg truncate" title={parsedDf.parking || '-'}>{parsedDf.parking || '-'}</p>
                           </div>
                         </div>
 
@@ -798,7 +809,7 @@ export default function PropertyDetailsPage() {
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="text-xs md:text-sm text-rose-900/60 font-medium truncate" title="Antigüedad">Antigüedad</p>
-                            <p className="font-bold text-rose-950 text-base md:text-lg truncate" title="A estrenar">A estrenar</p>
+                            <p className="font-bold text-rose-950 text-base md:text-lg truncate" title={parsedDf.antiquity || '-'}>{parsedDf.antiquity || '-'}</p>
                           </div>
                         </div>
                         
@@ -814,7 +825,8 @@ export default function PropertyDetailsPage() {
                           </div>
                         )}
                       </div>
-                      )}
+                        );
+                      })()}
                     </div>
 
                     {/* Amenidades */}
