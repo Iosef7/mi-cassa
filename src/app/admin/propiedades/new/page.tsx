@@ -10,7 +10,11 @@ import { createProject, generatePropertyDescription } from '../actions';
 
 const getDisplayUrl = (url: string) => {
   if (url && typeof url === 'string' && url.includes('drive.google.com') && url.includes('/preview')) {
-    return url.replace(/\/file\/d\/(.+?)\/preview/, '/thumbnail?id=$1&sz=w1000');
+    const fileId = url.match(/\/file\/d\/(.+?)\/preview/)?.[1];
+    if (fileId) {
+      // Use the 'uc' endpoint which is more reliable for direct embedding
+      return `https://drive.google.com/uc?export=view&id=${fileId}`;
+    }
   }
   return url;
 };
@@ -619,14 +623,7 @@ export default function NewProjectPage() {
                             onClick={() => setAiLightboxUrl(url)}
                           >
                             {isLikelyImage ? (
-                              <img src={getDisplayUrl(url)} alt="Google Drive Preview" className="absolute inset-0 w-full h-full object-cover" onError={(e) => {
-                                // Fallback to icon if the image fails to load
-                                (e.target as HTMLImageElement).style.display = 'none';
-                                (e.target as HTMLImageElement).parentElement?.classList.add('flex', 'items-center', 'justify-center');
-                                const icon = document.createElement('div');
-                                icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-300"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
-                                (e.target as HTMLImageElement).parentElement?.appendChild(icon.firstChild!);
-                              }}/>
+                              <img src={getDisplayUrl(url)} alt="Google Drive Preview" className="absolute inset-0 w-full h-full object-cover" />
                             ) : isPreview ? (
                               <div className="absolute inset-0 w-full h-full overflow-hidden flex items-center justify-center bg-black/5">
                                 <iframe src={url} className="w-[150%] h-[150%] border-0 pointer-events-none scale-75 origin-center" title="Google Drive Preview" />
@@ -704,7 +701,7 @@ export default function NewProjectPage() {
                           </div>
                           {img && (
                             <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
-                              <img src={getDisplayUrl(img)} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/100x100?text=Preview'; }} />
+                              <img src={getDisplayUrl(img)} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
                             </div>
                           )}
                           {img.startsWith('data:') ? (
