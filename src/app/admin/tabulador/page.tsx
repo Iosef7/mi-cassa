@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function TabuladorPage() {
   return (
-    <div className="space-y-6">
+    <div className="flex-1 overflow-auto p-4 sm:p-8 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-3">
           <Calculator className="h-8 w-8 text-red-600" />
