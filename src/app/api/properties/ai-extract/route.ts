@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
         tempFilePaths.push(tempPath);
 
         try {
-          const uploadResult = await ai.files.upload({
+          const uploadResult = await (ai.files.upload as any)({
             file: tempPath,
             mimeType: file.type || "application/octet-stream",
           });
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
               await writeFile(tempPath, buffer);
               tempFilePaths.push(tempPath);
               
-              const uploadResult = await ai.files.upload({
+              const uploadResult = await (ai.files.upload as any)({
                 file: tempPath,
                 mimeType: meta.mimeType || "application/octet-stream",
               });
@@ -170,7 +170,7 @@ Responde SOLO con el JSON válido.
        // Convertir los temporales de vuelta a base64 para mandar a la UI y que se visualicen. 
        // Omitimos los archivos de Drive que NO sean imágenes (como videos pesados) para no reenviarlos.
        // Las imágenes sí las convertimos a base64 para evitar errores de CORS o expiración de URL en la UI.
-       if (!f.originalName.startsWith('http') || f.mimeType.startsWith('image/')) {
+       if (!f.originalName.startsWith('http') || (f.mimeType && f.mimeType.startsWith('image/'))) {
          const fs = require('fs');
          const base64 = fs.readFileSync(f.localTempPath, { encoding: 'base64' });
          categorizedDataURIs[f.originalName] = `data:${f.mimeType};base64,${base64}`;
@@ -189,7 +189,7 @@ Responde SOLO con el JSON válido.
     // Parsear
     let aiResultText = response.text;
     
-    const aiData = JSON.parse(aiResultText.trim());
+    const aiData = JSON.parse((aiResultText || "").trim());
     
     // Inyectar los Data URIs en la respuesta mapeando originalName -> data URI
     return NextResponse.json({ success: true, data: aiData, filesData: categorizedDataURIs });

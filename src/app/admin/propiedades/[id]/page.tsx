@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { getProperty, updateProperty, createProject, generatePropertyDescription } from '../actions';
+import { createProject, generatePropertyDescription } from '../actions';
 
 const AVAILABLE_AMENITIES = [
   { name: 'Piscina', icon: Waves, color: 'text-blue-500' },

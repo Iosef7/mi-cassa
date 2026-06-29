@@ -30,8 +30,9 @@ export async function GET() {
     const optimizedProperties = properties.map(p => {
       let firstImage = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=600';
       try {
-        if (p.images) {
-          const parsed = JSON.parse(p.images);
+        const pImages = (p as any).images;
+        if (pImages) {
+          const parsed = JSON.parse(pImages);
           if (parsed && parsed.length > 0) {
             firstImage = parsed[0];
           }
