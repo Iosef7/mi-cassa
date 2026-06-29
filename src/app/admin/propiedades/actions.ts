@@ -65,7 +65,8 @@ export async function createProject(formData: FormData) {
     });
 
     revalidatePath("/propiedades");
-    return { success: true, project: newProject };
+    // Parse/stringify to convert Prisma Decimal/Date objects to plain JS types for the Client Component
+    return { success: true, project: JSON.parse(JSON.stringify(newProject)) };
   } catch (error) {
     console.error("Error creating project:", error);
     return { success: false, error: "Failed to create project" };
