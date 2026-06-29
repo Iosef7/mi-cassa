@@ -71,3 +71,32 @@ export async function createProject(formData: FormData) {
     return { success: false, error: "Failed to create project" };
   }
 }
+
+import { GoogleGenAI } from '@google/genai';
+
+export async function generatePropertyDescription(data: any) {
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const prompt = `Eres un experto redactor inmobiliario (copywriter). Escribe una descripción atractiva y profesional para una propiedad con los siguientes datos:
+    
+- Título: ${data.title || 'Sin especificar'}
+- Ubicación: ${data.location || 'Sin especificar'}
+- Tipo: ${data.type || 'Sin especificar'}
+- Precio: ${data.price || 'Sin especificar'}
+- Habitaciones: ${data.bedrooms || 'Sin especificar'}
+- Baños: ${data.bathrooms || 'Sin especificar'}
+- Área: ${data.area || 'Sin especificar'}
+- Características adicionales: ${data.dynamicFeatures ? JSON.stringify(data.dynamicFeatures) : 'Ninguna'}
+
+Escribe la descripción en español, resaltando los beneficios y creando un tono persuasivo, elegante y directo. Separa los párrafos para que sea fácil de leer. No uses saludos, ni inventes características irreales (pero puedes inferir beneficios obvios). Devuelve directamente el texto de la descripción sin introducciones.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+    });
+    return { success: true, description: response.text };
+  } catch (error) {
+    console.error('Error generating AI description:', error);
+    return { success: false, error: 'Failed to generate description' };
+  }
+}

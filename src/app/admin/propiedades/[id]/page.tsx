@@ -1,10 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { getProperty, updateProperty, createProject, generatePropertyDescription } from '../actions';
+
+const AVAILABLE_AMENITIES = [
+  { name: 'Piscina', icon: Waves, color: 'text-blue-500' },
+  { name: 'Seguridad 24/7', icon: Shield, color: 'text-emerald-500' },
+  { name: 'Gimnasio Equipado', icon: Dumbbell, color: 'text-amber-500' },
+  { name: 'Áreas Verdes', icon: Trees, color: 'text-green-500' },
+  { name: 'Estacionamiento', icon: Car, color: 'text-slate-500' },
+  { name: 'Salón de Eventos', icon: Users, color: 'text-purple-500' },
+  { name: 'Juegos Infantiles', icon: Activity, color: 'text-pink-500' },
+];
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Edit, Save, Trash2, MapPin, Building, Image as ImageIcon, FileText, Plus, X, BedDouble, Bath, Maximize, Car, Calendar, Users, Phone, Mail, Briefcase, FolderLock, MessageCircle, ChevronDown, ChevronUp, ListTodo, Activity, CheckCircle2, Clock, Banknote, MessageSquare, BarChart3, Globe, Shield, Dumbbell, Waves, Trees, Link as LinkIcon, Copy, TrendingUp, BadgePercent, BadgeCheck , Info, Upload, GripVertical, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { GoogleDrivePicker } from '@/components/GoogleDrivePicker';
+
 
 interface Property {
   id: string;
@@ -30,6 +42,7 @@ interface Property {
   ownerPhone?: string | null;
   ownerEmail?: string | null;
   ownerNotes?: string | null;
+  driveFolderId?: string | null;
   leads?: {
     id: string;
     name: string;
@@ -215,6 +228,7 @@ export default function PropertyDetailsPage() {
   const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
   const [editLeadData, setEditLeadData] = useState<any>({});
   const [legalDocsList, setLegalDocsList] = useState<string[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState<any>({});
@@ -508,6 +522,21 @@ export default function PropertyDetailsPage() {
     setDraggedImageIndex(null);
   };
 
+  const handleDragScroll = (e: React.DragEvent) => {
+    const container = document.getElementById('main-scroll-container');
+    if (container && e.clientY > 0) {
+      const { clientY } = e;
+      const { top, bottom } = container.getBoundingClientRect();
+      const scrollThreshold = 100; // pixels from edge to trigger scroll
+      
+      if (clientY < top + scrollThreshold) {
+        container.scrollTop -= 20; // Scroll up
+      } else if (clientY > bottom - scrollThreshold) {
+        container.scrollTop += 20; // Scroll down
+      }
+    }
+  };
+
   const formatPrice = (price: string) => {
     return new Intl.NumberFormat('en-IL', { style: 'currency', currency: 'ILS' }).format(Number(price));
   };
@@ -602,6 +631,7 @@ export default function PropertyDetailsPage() {
                           draggable
                           onDragStart={(e) => handleImageDragStart(e, i)}
                           onDragOver={(e) => handleImageDragOver(e, i)}
+                          onDrag={handleDragScroll}
                           onDrop={(e) => handleImageDrop(e, i)}
                           onDragEnd={() => setDraggedImageIndex(null)}
                         >
@@ -627,7 +657,7 @@ export default function PropertyDetailsPage() {
                       ))}
                       <div className="flex gap-4">
                         <button onClick={() => setImagesList([...imagesList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir Imagen</button>
-                        <GoogleDrivePicker onFileSelect={(url) => setImagesList([...imagesList, url])} mimeTypes="image/png,image/jpeg,image/jpg" />
+                        <GoogleDrivePicker onFileSelect={(url) => setImagesList(prev => [...prev, url])} mimeTypes="image/png,image/jpeg,image/jpg" />
                         <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
                           <Upload className="w-4 h-4"/> Subir Archivo
                           <input 
@@ -711,12 +741,31 @@ export default function PropertyDetailsPage() {
                             onChange={e => setFormData({...formData, description: e.target.value})}
                             className="w-full p-3 rounded-xl bg-background border border-border focus:ring-2 focus:ring-primary outline-none resize-none"
                             autoFocus
+                            placeholder="Detalla las amenidades, acabados y demás características..."
                           />
-                          <div className="flex justify-end gap-2">
-                            <button onClick={() => setEditingSection(null)} className="px-4 py-2 text-sm font-semibold hover:bg-muted rounded-xl transition-colors">Cancelar</button>
-                            <button onClick={() => handleSaveSection(['description'])} disabled={isSaving} className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-xl flex items-center gap-2">
-                              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Guardar
+                          <div className="flex justify-between items-center">
+                            <button 
+                              onClick={async () => {
+                                setIsGenerating(true);
+                                const res = await generatePropertyDescription({ ...property, ...formData, dynamicFeatures });
+                                if (res.success && res.description) {
+                                  setFormData({ ...formData, description: res.description });
+                                } else {
+                                  alert('Error al generar la descripción');
+                                }
+                                setIsGenerating(false);
+                              }}
+                              disabled={isGenerating}
+                              className={`text-sm font-semibold flex items-center gap-2 px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : "✨ Generar con IA"}
                             </button>
+                            <div className="flex justify-end gap-2">
+                              <button onClick={() => setEditingSection(null)} className="px-4 py-2 text-sm font-semibold hover:bg-muted rounded-xl transition-colors">Cancelar</button>
+                              <button onClick={() => handleSaveSection(['description'])} disabled={isSaving} className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-xl flex items-center gap-2">
+                                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Guardar
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ) : (
@@ -898,39 +947,81 @@ export default function PropertyDetailsPage() {
                           </div>
                         )}
                       </div>
-                        );
-                      })()}
-                    </div>
+                    )
+                  })()}
+                </div>
 
-                    {/* Amenidades */}
-                    <div className="bg-card border border-border rounded-3xl p-8 shadow-sm">
-                      <h3 className="text-2xl font-bold mb-6 text-foreground flex items-center gap-2">
-                        <Waves className="text-primary w-6 h-6" /> Amenidades y Características
-                      </h3>
+                {/* Amenidades */}
+                <div className="bg-card border border-border rounded-3xl p-8 shadow-sm">
+                  <div className="flex justify-between items-center mb-6 group">
+                    <h3 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                      <Waves className="text-primary w-6 h-6" /> Amenidades y Características
+                    </h3>
+                    {editingSection !== 'amenities' && (
+                      <button onClick={() => setEditingSection('amenities')} className="opacity-0 group-hover:opacity-100 p-2 hover:bg-muted rounded-full transition-opacity"><Edit className="w-4 h-4 text-muted-foreground"/></button>
+                    )}
+                  </div>
+                  
+                  {editingSection === 'amenities' ? (
+                    <div className="space-y-4">
                       <div className="flex flex-wrap gap-3">
-                        <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-xl border border-border">
-                          <Waves className="w-4 h-4 text-blue-500" /> <span className="text-sm font-medium">Piscina</span>
-                        </div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-xl border border-border">
-                          <Shield className="w-4 h-4 text-emerald-500" /> <span className="text-sm font-medium">Seguridad 24/7</span>
-                        </div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-xl border border-border">
-                          <Dumbbell className="w-4 h-4 text-amber-500" /> <span className="text-sm font-medium">Gimnasio Equipado</span>
-                        </div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-xl border border-border">
-                          <Trees className="w-4 h-4 text-green-500" /> <span className="text-sm font-medium">Áreas Verdes</span>
-                        </div>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-xl border border-transparent hover:bg-primary/20 transition-colors">
-                          <Plus className="w-4 h-4" /> <span className="text-sm font-bold">Añadir</span>
+                        {AVAILABLE_AMENITIES.map((amenity, idx) => {
+                          const isSelected = (dynamicFeatures.amenities || []).includes(amenity.name);
+                          const Icon = amenity.icon;
+                          return (
+                            <div 
+                              key={idx}
+                              onClick={() => {
+                                const current = dynamicFeatures.amenities || [];
+                                const newAmenities = isSelected 
+                                  ? current.filter((a: string) => a !== amenity.name)
+                                  : [...current, amenity.name];
+                                setDynamicFeatures({ ...dynamicFeatures, amenities: newAmenities });
+                              }}
+                              className={`flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition-all ${
+                                isSelected 
+                                  ? 'bg-primary/10 border-primary text-primary' 
+                                  : 'bg-muted border-border hover:bg-muted/80 text-muted-foreground'
+                              }`}
+                            >
+                              <Icon className={`w-4 h-4 ${isSelected ? 'text-primary' : amenity.color}`} />
+                              <span className="text-sm font-medium">{amenity.name}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex justify-end gap-2 mt-4">
+                        <button onClick={() => setEditingSection(null)} className="px-4 py-2 text-sm font-semibold hover:bg-muted rounded-xl transition-colors">Cancelar</button>
+                        <button onClick={() => handleSaveSection(['amenities'])} disabled={isSaving} className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-xl flex items-center gap-2">
+                          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Guardar
                         </button>
                       </div>
                     </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-3">
+                      {(dynamicFeatures.amenities || []).length > 0 ? (
+                        (dynamicFeatures.amenities || []).map((amenityName: string, idx: number) => {
+                          const amenity = AVAILABLE_AMENITIES.find(a => a.name === amenityName);
+                          const Icon = amenity ? amenity.icon : CheckCircle2;
+                          return (
+                            <div key={idx} className="flex items-center gap-2 px-4 py-2 bg-muted rounded-xl border border-border">
+                              <Icon className={`w-4 h-4 ${amenity ? amenity.color : 'text-primary'}`} /> 
+                              <span className="text-sm font-medium">{amenityName}</span>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <p className="text-muted-foreground text-sm italic">Sin amenidades seleccionadas. Haz clic en el ícono de editar para añadir.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
 
-                    {/* Lugares Cercanos */}
-                    <div className="bg-card border border-border rounded-3xl p-8 shadow-sm">
-                      <div className="flex justify-between items-center mb-6 group">
-                        <h3 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                          <MapPin className="text-primary w-6 h-6" /> Lugares Cercanos
+                {/* Lugares Cercanos */}
+                <div className="bg-card border border-border rounded-3xl p-8 shadow-sm">
+                  <div className="flex justify-between items-center mb-6 group">
+                    <h3 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                      <MapPin className="text-primary w-6 h-6" /> Lugares Cercanos
                         </h3>
                         {editingSection !== 'nearbyPlaces' && (
                           <button onClick={() => setEditingSection('nearbyPlaces')} className="opacity-0 group-hover:opacity-100 p-2 hover:bg-muted rounded-full transition-opacity"><Edit className="w-4 h-4 text-muted-foreground"/></button>
@@ -1178,7 +1269,7 @@ export default function PropertyDetailsPage() {
                       )})}
                       <div className="flex gap-4">
                         <button onClick={() => setVideosList([...videosList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url) => setVideosList([...videosList, url])} />
+                        <GoogleDrivePicker onFileSelect={(url) => setVideosList(prev => [...prev, url])} />
                         <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
                           <Upload className="w-4 h-4"/> Subir Archivo
                           <input 
@@ -1290,7 +1381,7 @@ export default function PropertyDetailsPage() {
                       ))}
                       <div className="flex gap-4">
                         <button onClick={() => setPresentationsList([...presentationsList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url) => setPresentationsList([...presentationsList, url])} />
+                        <GoogleDrivePicker onFileSelect={(url) => setPresentationsList(prev => [...prev, url])} />
                         <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
                           <Upload className="w-4 h-4"/> Subir Archivo
                           <input 
@@ -1395,7 +1486,7 @@ export default function PropertyDetailsPage() {
                       ))}
                       <div className="flex gap-4">
                         <button onClick={() => setPostersList([...postersList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url) => setPostersList([...postersList, url])} />
+                        <GoogleDrivePicker onFileSelect={(url) => setPostersList(prev => [...prev, url])} />
                         <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
                           <Upload className="w-4 h-4"/> Subir Archivo
                           <input 
@@ -1457,7 +1548,7 @@ export default function PropertyDetailsPage() {
                       ))}
                       <div className="flex gap-4">
                         <button onClick={() => setPlansList([...plansList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url) => setPlansList([...plansList, url])} />
+                        <GoogleDrivePicker onFileSelect={(url) => setPlansList(prev => [...prev, url])} />
                         <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
                           <Upload className="w-4 h-4"/> Subir Archivo
                           <input 
@@ -1974,7 +2065,7 @@ export default function PropertyDetailsPage() {
                       ))}
                       <div className="flex gap-4">
                         <button onClick={() => setLegalDocsList([...legalDocsList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url) => setLegalDocsList([...legalDocsList, url])} />
+                        <GoogleDrivePicker onFileSelect={(url) => setLegalDocsList(prev => [...prev, url])} />
                         <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
                           <Upload className="w-4 h-4"/> Subir Archivo
                           <input 

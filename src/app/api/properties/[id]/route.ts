@@ -24,6 +24,31 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     if (!property) {
       return NextResponse.json({ error: "Property not found" }, { status: 404 });
     }
+
+    const filterBase64 = (jsonStr: string | null) => {
+      if (!jsonStr) return jsonStr;
+      try {
+        const parsed = JSON.parse(jsonStr);
+        if (Array.isArray(parsed)) {
+          return JSON.stringify(parsed.map(url => url.startsWith('data:') ? '' : url).filter(Boolean));
+        }
+        if (typeof parsed === 'object') {
+          const newObj: any = {};
+          for (const key in parsed) {
+            if (Array.isArray(parsed[key])) {
+              newObj[key] = parsed[key].map((url: string) => url.startsWith('data:') ? '' : url).filter(Boolean);
+            } else {
+              newObj[key] = parsed[key];
+            }
+          }
+          return JSON.stringify(newObj);
+        }
+      } catch (e) {}
+      return jsonStr;
+    };
+
+    property.images = filterBase64(property.images);
+    property.presentations = filterBase64(property.presentations);
     
     return NextResponse.json(property);
   } catch (error) {
@@ -68,7 +93,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     const property = await prisma.property.update({
       where: { id },
-      data: updateData
+      data: updateData,
+      select: { id: true }
     });
 
     return NextResponse.json(property);
@@ -82,7 +108,8 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const { id } = await params;
     await prisma.property.delete({
-      where: { id }
+      where: { id },
+      select: { id: true }
     });
     return NextResponse.json({ success: true });
   } catch (error) {

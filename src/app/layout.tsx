@@ -45,8 +45,6 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col m-0 p-0 bg-background text-foreground">
-        <Script src="https://apis.google.com/js/api.js" strategy="beforeInteractive" />
-        <Script src="https://accounts.google.com/gsi/client" strategy="beforeInteractive" />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
