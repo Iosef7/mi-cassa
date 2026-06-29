@@ -8,6 +8,13 @@ import { GoogleDrivePicker } from '@/components/GoogleDrivePicker';
 import { DriveFolderManager } from '@/components/DriveFolderManager';
 import { createProject, generatePropertyDescription } from '../actions';
 
+const getDisplayUrl = (url: string) => {
+  if (url && typeof url === 'string' && url.includes('drive.google.com') && url.includes('/preview')) {
+    return url.replace(/\/file\/d\/(.+?)\/preview/, '/thumbnail?id=$1&sz=w1000');
+  }
+  return url;
+};
+
 const AVAILABLE_AMENITIES = [
   { name: 'Piscina', icon: Waves, color: 'text-blue-500' },
   { name: 'Seguridad 24/7', icon: Shield, color: 'text-emerald-500' },
@@ -612,7 +619,7 @@ export default function NewProjectPage() {
                             onClick={() => setAiLightboxUrl(url)}
                           >
                             {isLikelyImage ? (
-                              <img src={url} alt="Google Drive Preview" className="absolute inset-0 w-full h-full object-cover" onError={(e) => {
+                              <img src={getDisplayUrl(url)} alt="Google Drive Preview" className="absolute inset-0 w-full h-full object-cover" onError={(e) => {
                                 // Fallback to icon if the image fails to load
                                 (e.target as HTMLImageElement).style.display = 'none';
                                 (e.target as HTMLImageElement).parentElement?.classList.add('flex', 'items-center', 'justify-center');
@@ -697,7 +704,7 @@ export default function NewProjectPage() {
                           </div>
                           {img && (
                             <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
-                              <img src={img} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
+                              <img src={getDisplayUrl(img)} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/100x100?text=Preview'; }} />
                             </div>
                           )}
                           {img.startsWith('data:') ? (
@@ -739,7 +746,7 @@ export default function NewProjectPage() {
                           className="col-span-1 md:col-span-2 h-96 rounded-3xl overflow-hidden border border-border shadow-sm cursor-pointer group relative"
                           onClick={() => { setCurrentImageIndex(0); setIsLightboxOpen(true); }}
                         >
-                          <img src={imagesList[0]} alt="Principal" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                          <img src={getDisplayUrl(imagesList[0])} alt="Principal" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
                         </div>
                         <div className="grid grid-rows-2 gap-4 h-96">
@@ -753,7 +760,7 @@ export default function NewProjectPage() {
                                 className="h-full w-full rounded-3xl overflow-hidden border border-border shadow-sm cursor-pointer group relative"
                                 onClick={() => { setCurrentImageIndex(idx + 1); setIsLightboxOpen(true); }}
                               >
-                                <img src={img} alt={`Img ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                <img src={getDisplayUrl(img)} alt={`Img ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
                                 
                                 {isLastVisible && hasMore && (
@@ -1219,7 +1226,7 @@ export default function NewProjectPage() {
 
         {activeTab === 'multimedia' && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid--grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-8">
               {/* Videos / Recorridos Virtuales */}
               <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
@@ -1244,7 +1251,7 @@ export default function NewProjectPage() {
                           {isVideoData ? (
                             <video src={url} className="w-full h-full object-cover" />
                           ) : isImageData || url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                            <img src={url} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                            <img src={getDisplayUrl(url)} alt={`Preview ${i}`} className="w-full h-full object-cover" />
                           ) : (
                             <Building className="w-5 h-5 text-muted-foreground" />
                           )}
@@ -1510,7 +1517,7 @@ export default function NewProjectPage() {
                   <div className="grid grid-cols-2 gap-4">
                     {postersList.map((url, i) => (
                       <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="relative group rounded-xl overflow-hidden border border-border aspect-[3/4] block shadow-sm">
-                        <img src={url} alt={`Afiche ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <img src={getDisplayUrl(url)} alt={`Afiche ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                           <Maximize className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
