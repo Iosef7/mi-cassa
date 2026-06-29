@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { Home, Building, Users, Calendar, Phone, TrendingUp, Sparkles, Moon, Sun, CheckSquare, Shield, X } from 'lucide-react';
+import { Home, Building, Users, Calendar, Phone, TrendingUp, Sparkles, Moon, Sun, CheckSquare, Shield, X, Calculator } from 'lucide-react';
 
 interface SidebarProps {
   className?: string;
@@ -39,6 +39,7 @@ export default function Sidebar({ className = "", isMobile = false, onClose }: S
         <NavItem href="/admin/tareas" icon={<CheckSquare />} label="Gestión de Tareas" active={pathname?.startsWith("/admin/tareas")} />
         <NavItem href="/admin/ia" icon={<Sparkles />} label="Control IA" active={pathname?.startsWith("/admin/ia")} />
         <NavItem href="/admin/ai-match" icon={<Sparkles />} label="IA Matchmaker" active={pathname === "/admin/ai-match"} />
+        <NavItem href="/admin/tabulador" icon={<Calculator />} label="Tabulador / Simulador" active={pathname?.startsWith("/admin/tabulador")} />
         <NavItem href="#" icon={<Calendar />} label="Agenda y Citas" active={pathname === "/admin/agenda"} />
         <NavItem href="#" icon={<Phone />} label="Registro de Llamadas" active={pathname === "/admin/llamadas"} />
         <NavItem href="#" icon={<TrendingUp />} label="Marketing y Meta" active={pathname === "/admin/marketing"} />
