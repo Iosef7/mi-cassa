@@ -42,9 +42,9 @@ export function MortgageCalculator() {
 
   // Format currency
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-MX', {
+    return new Intl.NumberFormat('he-IL', {
       style: 'currency',
-      currency: 'MXN',
+      currency: 'ILS',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
@@ -63,7 +63,7 @@ export function MortgageCalculator() {
           <div className="flex justify-between items-center">
             <label className="text-gray-700 font-semibold text-lg">Precio de la propiedad</label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">₪</span>
               <input 
                 type="number" 
                 value={propertyPrice}
@@ -109,7 +109,7 @@ export function MortgageCalculator() {
               }}
             />
             <div className="flex justify-between text-xs text-gray-400 mt-2">
-              <span>$0</span>
+              <span>₪0</span>
               <span>{formatCurrency(propertyPrice)}</span>
             </div>
           </div>
