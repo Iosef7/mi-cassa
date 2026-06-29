@@ -20,6 +20,13 @@ export function GoogleDrivePicker({ onFileSelect, className = "", mimeTypes, onT
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check if we have a valid token saved
+    const storedToken = localStorage.getItem('google_drive_token');
+    const tokenExpiry = localStorage.getItem('google_drive_token_expiry');
+    if (storedToken && tokenExpiry && new Date().getTime() < parseInt(tokenExpiry)) {
+      setAccessToken(storedToken);
+    }
+
     const loadScript = (src: string, onLoad: () => void) => {
       const existingScript = document.querySelector(`script[src="${src}"]`);
       if (existingScript) {
@@ -57,6 +64,10 @@ export function GoogleDrivePicker({ onFileSelect, className = "", mimeTypes, onT
               throw (response);
             }
             setAccessToken(response.access_token);
+            const expiresIn = response.expires_in || 3500;
+            localStorage.setItem('google_drive_token', response.access_token);
+            localStorage.setItem('google_drive_token_expiry', (new Date().getTime() + expiresIn * 1000).toString());
+            
             if (onToken) onToken(response.access_token);
             createPicker(response.access_token);
           },
@@ -111,11 +122,11 @@ export function GoogleDrivePicker({ onFileSelect, className = "", mimeTypes, onT
     }
   };
 
-  const handleOpenPicker = () => {
-    if (accessToken) {
+  const handleOpenPicker = (forceSelect = false) => {
+    if (accessToken && !forceSelect) {
       createPicker(accessToken);
     } else if (tokenClient) {
-      tokenClient.requestAccessToken({ prompt: 'consent' });
+      tokenClient.requestAccessToken(forceSelect ? { prompt: 'select_account' } : undefined);
     } else {
       // Intentar inicializar aquí por si el script cargó después del renderizado inicial
       const google = (window as any).google;
@@ -129,12 +140,16 @@ export function GoogleDrivePicker({ onFileSelect, className = "", mimeTypes, onT
               throw (response);
             }
             setAccessToken(response.access_token);
+            const expiresIn = response.expires_in || 3500;
+            localStorage.setItem('google_drive_token', response.access_token);
+            localStorage.setItem('google_drive_token_expiry', (new Date().getTime() + expiresIn * 1000).toString());
+            
             if (onToken) onToken(response.access_token);
             createPicker(response.access_token);
           },
         });
         setTokenClient(client);
-        client.requestAccessToken({ prompt: 'consent' });
+        client.requestAccessToken(forceSelect ? { prompt: 'select_account' } : undefined);
       } else {
         console.error('Token client not initialized and google object not found');
         
@@ -153,11 +168,22 @@ export function GoogleDrivePicker({ onFileSelect, className = "", mimeTypes, onT
   };
 
   return (
-    <button 
-      onClick={(e) => { e.preventDefault(); handleOpenPicker(); }}
-      className={`text-sm font-semibold text-primary flex items-center gap-1 hover:underline ${className}`}
-    >
-      <Cloud className="w-4 h-4" /> Desde Drive
-    </button>
+    <div className="flex items-center gap-4">
+      <button 
+        onClick={(e) => { e.preventDefault(); handleOpenPicker(false); }}
+        className={`text-sm font-semibold text-primary flex items-center gap-1 hover:underline ${className}`}
+      >
+        <Cloud className="w-4 h-4" /> Desde Drive
+      </button>
+      {accessToken && (
+        <button
+          onClick={(e) => { e.preventDefault(); handleOpenPicker(true); }}
+          className="text-xs text-gray-400 hover:text-gray-600 transition-colors bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded"
+          title="Cambiar la cuenta de Google vinculada"
+        >
+          Cambiar cuenta
+        </button>
+      )}
+    </div>
   );
 }
