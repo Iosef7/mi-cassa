@@ -13,11 +13,26 @@ const getDisplayUrl = (url: string, driveThumbnails?: Record<string, string>) =>
   if (url && typeof url === 'string' && url.includes('drive.google.com') && url.includes('/preview')) {
     const fileId = url.match(/\/file\/d\/(.+?)\/preview/)?.[1];
     if (fileId) {
-      // Use the 'thumbnail' endpoint which redirects to lh3 for public images
-      return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+      // Use the direct lh3 endpoint which is the most reliable for public images
+      return `https://lh3.googleusercontent.com/d/${fileId}=w1000`;
     }
   }
   return url;
+};
+
+const DriveImagePreview = ({ url, thumbnails, alt, className }: { url: string, thumbnails?: Record<string, string>, alt: string, className?: string }) => {
+  const displayUrl = getDisplayUrl(url, thumbnails);
+  const [imgError, setImgError] = useState(false);
+
+  if (imgError && url.includes('drive.google.com') && url.includes('/preview')) {
+    return (
+      <div className={`relative overflow-hidden ${className}`}>
+         <iframe src={url} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] h-[200%] scale-50 border-0 pointer-events-none" title={alt} />
+      </div>
+    );
+  }
+
+  return <img src={displayUrl} alt={alt} className={className} onError={() => setImgError(true)} />;
 };
 
 const AVAILABLE_AMENITIES = [
@@ -628,7 +643,7 @@ export default function NewProjectPage() {
                             onClick={() => setAiLightboxUrl(url)}
                           >
                             {isLikelyImage ? (
-                              <img src={getDisplayUrl(url, driveThumbnails)} alt="Google Drive Preview" className="absolute inset-0 w-full h-full object-cover" />
+                              <DriveImagePreview url={url} thumbnails={driveThumbnails} alt="Google Drive Preview" className="absolute inset-0 w-full h-full object-cover" />
                             ) : isPreview ? (
                               <div className="absolute inset-0 w-full h-full overflow-hidden flex items-center justify-center bg-black/5">
                                 <iframe src={url} className="w-[150%] h-[150%] border-0 pointer-events-none scale-75 origin-center" title="Google Drive Preview" />
@@ -706,7 +721,7 @@ export default function NewProjectPage() {
                           </div>
                           {img && (
                             <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
-                              <img src={getDisplayUrl(img, driveThumbnails)} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
+                              <DriveImagePreview url={img} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
                             </div>
                           )}
                           {img.startsWith('data:') ? (
@@ -751,7 +766,7 @@ export default function NewProjectPage() {
                           className="col-span-1 md:col-span-2 h-96 rounded-3xl overflow-hidden border border-border shadow-sm cursor-pointer group relative"
                           onClick={() => { setCurrentImageIndex(0); setIsLightboxOpen(true); }}
                         >
-                          <img src={getDisplayUrl(imagesList[0], driveThumbnails)} alt="Principal" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                          <DriveImagePreview url={imagesList[0]} thumbnails={driveThumbnails} alt="Principal" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
                         </div>
                         <div className="grid grid-rows-2 gap-4 h-96">
@@ -765,7 +780,7 @@ export default function NewProjectPage() {
                                 className="h-full w-full rounded-3xl overflow-hidden border border-border shadow-sm cursor-pointer group relative"
                                 onClick={() => { setCurrentImageIndex(idx + 1); setIsLightboxOpen(true); }}
                               >
-                                <img src={getDisplayUrl(img, driveThumbnails)} alt={`Img ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                <DriveImagePreview url={img} thumbnails={driveThumbnails} alt={`Img ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
                                 
                                 {isLastVisible && hasMore && (
@@ -1256,7 +1271,7 @@ export default function NewProjectPage() {
                           {isVideoData ? (
                             <video src={url} className="w-full h-full object-cover" />
                           ) : isImageData || url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                            <img src={getDisplayUrl(url, driveThumbnails)} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                            <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover" />
                           ) : (
                             <Building className="w-5 h-5 text-muted-foreground" />
                           )}
@@ -1531,7 +1546,7 @@ export default function NewProjectPage() {
                   <div className="grid grid-cols-2 gap-4">
                     {postersList.map((url, i) => (
                       <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="relative group rounded-xl overflow-hidden border border-border aspect-[3/4] block shadow-sm">
-                        <img src={getDisplayUrl(url, driveThumbnails)} alt={`Afiche ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Afiche ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                           <Maximize className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
