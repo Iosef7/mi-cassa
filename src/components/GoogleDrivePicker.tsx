@@ -9,7 +9,7 @@ const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 const APP_ID = '933782187633'; // App ID is the first part of Client ID
 
 interface Props {
-  onFileSelect: (url: string) => void;
+  onFileSelect: (url: string, thumbnail?: string) => void;
   className?: string;
   mimeTypes?: string;
   onToken?: (token: string) => void;
@@ -111,9 +111,10 @@ export function GoogleDrivePicker({ onFileSelect, className = "", mimeTypes, onT
             for (const doc of data.docs) {
               const fileId = doc.id;
               const mimeType = doc.mimeType || '';
+              const thumbnailUrl = doc.thumbnails && doc.thumbnails.length > 0 ? doc.thumbnails[0].url : undefined;
               
               let url = `https://drive.google.com/file/d/${fileId}/preview`;
-              onFileSelect(url);
+              onFileSelect(url, thumbnailUrl);
             }
           }
         })

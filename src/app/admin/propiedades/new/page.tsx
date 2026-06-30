@@ -8,7 +8,8 @@ import { GoogleDrivePicker } from '@/components/GoogleDrivePicker';
 import { DriveFolderManager } from '@/components/DriveFolderManager';
 import { createProject, generatePropertyDescription } from '../actions';
 
-const getDisplayUrl = (url: string) => {
+const getDisplayUrl = (url: string, driveThumbnails?: Record<string, string>) => {
+  if (driveThumbnails && driveThumbnails[url]) return driveThumbnails[url];
   if (url && typeof url === 'string' && url.includes('drive.google.com') && url.includes('/preview')) {
     const fileId = url.match(/\/file\/d\/(.+?)\/preview/)?.[1];
     if (fileId) {
@@ -157,6 +158,7 @@ export default function NewProjectPage() {
   // Form states (Draft state while editing)
   const [formData, setFormData] = useState<Property>(property);
   const [imagesList, setImagesList] = useState<string[]>([]);
+  const [driveThumbnails, setDriveThumbnails] = useState<Record<string, string>>({});
   const [nearbyPlacesList, setNearbyPlacesList] = useState<{name: string, category: string, distance: string}[]>([]);
   const [dynamicFeatures, setDynamicFeatures] = useState<any>({ amenities: [] });
   const [presentationsList, setPresentationsList] = useState<string[]>([]);
@@ -581,7 +583,10 @@ export default function NewProjectPage() {
                 </div>
                 
                 <div className="mt-4 flex justify-center">
-                  <GoogleDrivePicker onFileSelect={(url) => setAiDriveUrls(prev => [...prev, url])} onToken={(token) => setAiDriveToken(token)} />
+                  <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                    setAiDriveUrls(prev => [...prev, url]);
+                    if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
+                  }} onToken={(token) => setAiDriveToken(token)} />
                 </div>
 
                 {(aiFiles.length > 0 || aiDriveUrls.length > 0) && (
@@ -623,7 +628,7 @@ export default function NewProjectPage() {
                             onClick={() => setAiLightboxUrl(url)}
                           >
                             {isLikelyImage ? (
-                              <img src={getDisplayUrl(url)} alt="Google Drive Preview" className="absolute inset-0 w-full h-full object-cover" />
+                              <img src={getDisplayUrl(url, driveThumbnails)} alt="Google Drive Preview" className="absolute inset-0 w-full h-full object-cover" />
                             ) : isPreview ? (
                               <div className="absolute inset-0 w-full h-full overflow-hidden flex items-center justify-center bg-black/5">
                                 <iframe src={url} className="w-[150%] h-[150%] border-0 pointer-events-none scale-75 origin-center" title="Google Drive Preview" />
@@ -701,7 +706,7 @@ export default function NewProjectPage() {
                           </div>
                           {img && (
                             <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
-                              <img src={getDisplayUrl(img)} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
+                              <img src={getDisplayUrl(img, driveThumbnails)} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
                             </div>
                           )}
                           {img.startsWith('data:') ? (
@@ -718,7 +723,10 @@ export default function NewProjectPage() {
                       ))}
                       <div className="flex gap-4">
                         <button onClick={() => setImagesList([...imagesList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL de Imagen</button>
-                        <GoogleDrivePicker onFileSelect={(url) => setImagesList(prev => [...prev, url])} mimeTypes="image/png,image/jpeg,image/jpg" />
+                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                          setImagesList(prev => [...prev, url]);
+                          if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
+                        }} mimeTypes="image/png,image/jpeg,image/jpg" />
                         <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
                           <Upload className="w-4 h-4"/> Subir Archivo
                           <input 
@@ -743,7 +751,7 @@ export default function NewProjectPage() {
                           className="col-span-1 md:col-span-2 h-96 rounded-3xl overflow-hidden border border-border shadow-sm cursor-pointer group relative"
                           onClick={() => { setCurrentImageIndex(0); setIsLightboxOpen(true); }}
                         >
-                          <img src={getDisplayUrl(imagesList[0])} alt="Principal" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                          <img src={getDisplayUrl(imagesList[0], driveThumbnails)} alt="Principal" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
                         </div>
                         <div className="grid grid-rows-2 gap-4 h-96">
@@ -757,7 +765,7 @@ export default function NewProjectPage() {
                                 className="h-full w-full rounded-3xl overflow-hidden border border-border shadow-sm cursor-pointer group relative"
                                 onClick={() => { setCurrentImageIndex(idx + 1); setIsLightboxOpen(true); }}
                               >
-                                <img src={getDisplayUrl(img)} alt={`Img ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                <img src={getDisplayUrl(img, driveThumbnails)} alt={`Img ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
                                 
                                 {isLastVisible && hasMore && (
@@ -1248,7 +1256,7 @@ export default function NewProjectPage() {
                           {isVideoData ? (
                             <video src={url} className="w-full h-full object-cover" />
                           ) : isImageData || url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                            <img src={getDisplayUrl(url)} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                            <img src={getDisplayUrl(url, driveThumbnails)} alt={`Preview ${i}`} className="w-full h-full object-cover" />
                           ) : (
                             <Building className="w-5 h-5 text-muted-foreground" />
                           )}
@@ -1268,7 +1276,10 @@ export default function NewProjectPage() {
                   )})}
                   <div className="flex gap-4">
                     <button onClick={() => setVideosList([...videosList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                    <GoogleDrivePicker onFileSelect={(url) => setVideosList(prev => [...prev, url])} />
+                    <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                      setVideosList(prev => [...prev, url]);
+                      if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
+                    }} />
                     <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
                       <Upload className="w-4 h-4"/> Subir Archivo
                       <input 
@@ -1382,7 +1393,10 @@ export default function NewProjectPage() {
                   ))}
                   <div className="flex gap-4">
                     <button onClick={() => setPresentationsList([...presentationsList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                    <GoogleDrivePicker onFileSelect={(url) => setPresentationsList(prev => [...prev, url])} />
+                    <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                      setPresentationsList(prev => [...prev, url]);
+                      if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
+                    }} />
                     <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
                       <Upload className="w-4 h-4"/> Subir Archivo
                       <input 
@@ -1491,7 +1505,10 @@ export default function NewProjectPage() {
                   ))}
                   <div className="flex gap-4">
                     <button onClick={() => setPostersList([...postersList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                    <GoogleDrivePicker onFileSelect={(url) => setPostersList(prev => [...prev, url])} />
+                    <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                      setPostersList(prev => [...prev, url]);
+                      if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
+                    }} />
                     <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
                       <Upload className="w-4 h-4"/> Subir Archivo
                       <input 
@@ -1514,7 +1531,7 @@ export default function NewProjectPage() {
                   <div className="grid grid-cols-2 gap-4">
                     {postersList.map((url, i) => (
                       <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="relative group rounded-xl overflow-hidden border border-border aspect-[3/4] block shadow-sm">
-                        <img src={getDisplayUrl(url)} alt={`Afiche ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <img src={getDisplayUrl(url, driveThumbnails)} alt={`Afiche ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                           <Maximize className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
@@ -1654,7 +1671,10 @@ export default function NewProjectPage() {
                   ))}
                   <div className="flex gap-4">
                     <button onClick={() => setLegalDocsList([...legalDocsList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                    <GoogleDrivePicker onFileSelect={(url) => setLegalDocsList(prev => [...prev, url])} />
+                    <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                      setLegalDocsList(prev => [...prev, url]);
+                      if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
+                    }} />
                     <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
                       <Upload className="w-4 h-4"/> Subir Archivo
                       <input 
