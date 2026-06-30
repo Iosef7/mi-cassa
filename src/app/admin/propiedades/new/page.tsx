@@ -13,8 +13,8 @@ const getDisplayUrl = (url: string, driveThumbnails?: Record<string, string>) =>
   if (url && typeof url === 'string' && url.includes('drive.google.com') && url.includes('/preview')) {
     const fileId = url.match(/\/file\/d\/(.+?)\/preview/)?.[1];
     if (fileId) {
-      // Use the 'uc' endpoint which is more reliable for direct embedding
-      return `https://drive.google.com/uc?export=view&id=${fileId}`;
+      // Use the 'thumbnail' endpoint which redirects to lh3 for public images
+      return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
     }
   }
   return url;
