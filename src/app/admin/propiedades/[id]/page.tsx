@@ -13,9 +13,13 @@ const AVAILABLE_AMENITIES = [
   { name: 'Juegos Infantiles', icon: Activity, color: 'text-pink-500' },
 ];
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Edit, Save, Trash2, MapPin, Building, Image as ImageIcon, FileText, Plus, X, BedDouble, Bath, Maximize, Car, Calendar, Users, Phone, Mail, Briefcase, FolderLock, MessageCircle, ChevronDown, ChevronUp, ListTodo, Activity, CheckCircle2, Clock, Banknote, MessageSquare, BarChart3, Globe, Shield, Dumbbell, Waves, Trees, Link as LinkIcon, Copy, TrendingUp, BadgePercent, BadgeCheck , Info, Upload, GripVertical, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit, Save, Trash2, MapPin, Building, Image as ImageIcon, FileText, Plus, X, BedDouble, Bath, Maximize, Car, Calendar, Users, Phone, Mail, Briefcase, FolderLock, MessageCircle, ChevronDown, ChevronUp, ListTodo, Activity, CheckCircle2, Clock, Banknote, MessageSquare, BarChart3, Globe, Shield, Dumbbell, Waves, Trees, Link as LinkIcon, Copy, TrendingUp, BadgePercent, BadgeCheck , Info, Upload, Paperclip, GripVertical, Loader2, Cloud, Sparkles, Send } from 'lucide-react';
 import Link from 'next/link';
 import { GoogleDrivePicker } from '@/components/GoogleDrivePicker';
+import { PresentationRenderer } from '@/components/presentations/PresentationRenderer';
+import { PropertyCommissions } from './PropertyCommissions';
+import Image from 'next/image';
+import { toast } from 'sonner';
 
 
 interface Property {
@@ -78,7 +82,7 @@ interface Property {
   }[];
 }
 
-const MortgageCalculator = ({ price }: { price: number }) => {
+const MortgageCalculator = React.memo(({ price }: { price: number }) => {
   const [downPayment, setDownPayment] = useState(price * 0.2);
   const [years, setYears] = useState(20);
   const interestRate = 5.06;
@@ -94,17 +98,17 @@ const MortgageCalculator = ({ price }: { price: number }) => {
   const formatPrice = (p: number) => new Intl.NumberFormat('en-IL', { style: 'currency', currency: 'ILS' }).format(p);
 
   return (
-    <div className="bg-card border border-border rounded-3xl p-8 shadow-sm mt-8">
-      <div className="flex items-center gap-3 mb-8">
+    <div className="bg-card border border-border rounded-3xl p-6 shadow-sm mt-6">
+      <div className="flex items-center gap-3 mb-6">
         <div className="w-4 h-4 bg-red-600 rotate-45 rounded-sm"></div>
         <h3 className="text-2xl font-bold text-foreground">Primer paso hacia tu nuevo hogar</h3>
       </div>
       
-      <div className="space-y-8">
+      <div className="space-y-6">
         <div>
-          <div className="flex justify-between mb-4">
+          <div className="flex justify-between mb-2">
             <span className="font-bold text-lg">{formatPrice(downPayment)}</span>
-            <span className="text-muted-foreground font-medium">¿Cuál es tu capital inicial?</span>
+            <span className="text-muted-foreground font-medium text-sm">¿Cuál es tu capital inicial?</span>
           </div>
           <input 
             type="range" 
@@ -116,9 +120,9 @@ const MortgageCalculator = ({ price }: { price: number }) => {
         </div>
 
         <div>
-          <div className="flex justify-between mb-4">
+          <div className="flex justify-between mb-2">
             <span className="font-bold text-lg">{years} Años</span>
-            <span className="text-muted-foreground font-medium">¿A cuántos años quieres pagarlo?</span>
+            <span className="text-muted-foreground font-medium text-sm">¿A cuántos años quieres pagarlo?</span>
           </div>
           <input 
             type="range" 
@@ -129,7 +133,22 @@ const MortgageCalculator = ({ price }: { price: number }) => {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-muted/30 p-6 rounded-2xl border border-border mt-8">
+        <div className="flex gap-3 justify-start items-center mb-4">
+          <button 
+            onClick={(e) => { e.preventDefault(); setDownPayment(price * 0.25); }}
+            className="px-4 py-1.5 bg-muted hover:bg-muted/80 text-foreground font-medium rounded-full text-xs transition-colors border border-border"
+          >
+            25% Enganche ({formatPrice(price * 0.25)})
+          </button>
+          <button 
+            onClick={(e) => { e.preventDefault(); setDownPayment(price * 0.50); }}
+            className="px-4 py-1.5 bg-muted hover:bg-muted/80 text-foreground font-medium rounded-full text-xs transition-colors border border-border"
+          >
+            50% Enganche ({formatPrice(price * 0.50)})
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-muted/30 p-4 rounded-2xl border border-border">
           <div className="text-center border-b md:border-b-0 md:border-r border-border pb-4 md:pb-0">
             <p className="text-muted-foreground text-sm font-medium mb-1">Pago mensual estimado</p>
             <p className="text-3xl font-black text-red-600">{formatPrice(monthlyPayment)}</p>
@@ -144,8 +163,8 @@ const MortgageCalculator = ({ price }: { price: number }) => {
           </div>
         </div>
 
-        <div className="flex justify-center mt-8">
-          <button className="bg-red-600 hover:bg-red-700 text-white px-10 py-4 rounded-full text-lg font-bold transition-colors shadow-lg shadow-red-600/20">
+        <div className="flex justify-center mt-6">
+          <button onClick={(e) => e.preventDefault()} className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full text-base font-bold transition-colors shadow-lg shadow-red-600/20">
             Obtener Propuesta
           </button>
         </div>
@@ -156,7 +175,7 @@ const MortgageCalculator = ({ price }: { price: number }) => {
       </div>
     </div>
   );
-};
+});
 
 // --- Lead Scoring Helper ---
 const calculateLeadScore = (lead: any, propertyPrice: number) => {
@@ -209,6 +228,8 @@ const calculateLeadScore = (lead: any, propertyPrice: number) => {
   return { total: score, breakdown, summary };
 };
 
+import { DriveImagePreview } from '@/components/DriveImagePreview';
+
 export default function PropertyDetailsPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
@@ -222,13 +243,49 @@ export default function PropertyDetailsPage() {
   const [expandedDocs, setExpandedDocs] = useState<number[]>([]);
   const [expandedVideos, setExpandedVideos] = useState<number[]>([]);
   const [expandedLegalDocs, setExpandedLegalDocs] = useState<number[]>([]);
-  const [activeTab, setActiveTab] = useState<'resumen' | 'multimedia' | 'comercial'>('resumen');
+  const [activeTab, setActiveTab] = useState<'resumen' | 'multimedia' | 'comercial' | 'presentacion' | 'comisiones'>('resumen');
+  
+  // Presentation Chat State
+  const [chatMessages, setChatMessages] = useState<{ role: string, parts: any[] }[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatAttachments, setChatAttachments] = useState<{name: string, data: string, mimeType: string}[]>([]);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('Gemini 3.5 Flash');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [presentationDataPreview, setPresentationDataPreview] = useState<any>(null);
   const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null);
   const [showScoreForLead, setShowScoreForLead] = useState<string | null>(null);
   const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
   const [editLeadData, setEditLeadData] = useState<any>({});
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [newLeadData, setNewLeadData] = useState({ name: '', phone: '', email: '', budget: '', notes: '' });
+  const [allLeads, setAllLeads] = useState<any[]>([]);
+  const [selectedExistingLeadId, setSelectedExistingLeadId] = useState('');
+  const [addLeadMode, setAddLeadMode] = useState<'new' | 'existing'>('new');
+  const [leadSearch, setLeadSearch] = useState('');
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [newTaskData, setNewTaskData] = useState({ title: '', leadId: '', dueDate: '' });
   const [legalDocsList, setLegalDocsList] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Preview scaling state
+  const [previewScale, setPreviewScale] = useState(1);
+  const previewObserverRef = React.useRef<ResizeObserver | null>(null);
+  const previewContainerRef = React.useCallback((node: HTMLDivElement | null) => {
+    if (previewObserverRef.current) {
+      previewObserverRef.current.disconnect();
+      previewObserverRef.current = null;
+    }
+    if (node !== null) {
+      const observer = new ResizeObserver((entries) => {
+        const { width } = entries[0].contentRect;
+        setPreviewScale(width / 1920);
+      });
+      observer.observe(node);
+      previewObserverRef.current = observer;
+    }
+  }, []);
 
   // Form states
   const [formData, setFormData] = useState<any>({});
@@ -240,11 +297,16 @@ export default function PropertyDetailsPage() {
   const [videosList, setVideosList] = useState<string[]>([]);
   const [postersList, setPostersList] = useState<string[]>([]);
   const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
+  const [driveThumbnails, setDriveThumbnails] = useState<Record<string, string>>({});
 
   const [isUploading, setIsUploading] = useState(false);
+  const [agentsList, setAgentsList] = useState<any[]>([]);
 
   useEffect(() => {
     fetchProperty();
+    fetch('/api/users').then(res => res.json()).then(data => {
+      if (Array.isArray(data)) setAgentsList(data.filter((u: any) => u.role !== 'ADMIN'));
+    }).catch(console.error);
   }, [id]);
 
   const fetchProperty = async () => {
@@ -258,7 +320,10 @@ export default function PropertyDetailsPage() {
       } catch (e) {
         throw new Error("Failed to parse response");
       }
-      if (!res.ok) throw new Error(data?.error || data?.details || "Property not found");
+      if (!res.ok) {
+        console.error("API Error Details:", data?.details);
+        throw new Error(data?.details || data?.error || "Property not found");
+      }
       
       setProperty(data);
       
@@ -296,6 +361,14 @@ export default function PropertyDetailsPage() {
       setNearbyPlacesList(Array.isArray(parsedNearby) ? parsedNearby : []);
       setDynamicFeatures(parsedDynamic && typeof parsedDynamic === 'object' ? parsedDynamic : {});
 
+      let parsedChatHistory = [];
+      try { parsedChatHistory = data.dynamicFeatures && data.dynamicFeatures.presentationChatHistory ? data.dynamicFeatures.presentationChatHistory : []; } catch (e) {}
+      
+      setChatMessages(Array.isArray(parsedChatHistory) ? parsedChatHistory : []);
+      if (parsedDynamic && (parsedDynamic as any).aiPresentation) {
+        setPresentationDataPreview((parsedDynamic as any).aiPresentation);
+      }
+
       setFormData({
         title: data.title || '',
         description: data.description || '',
@@ -309,7 +382,8 @@ export default function PropertyDetailsPage() {
         ownerPhone: data.ownerPhone || '',
         ownerEmail: data.ownerEmail || '',
         ownerNotes: data.ownerNotes || '',
-        independentUnit: data.independentUnit || ''
+        independentUnit: data.independentUnit || '',
+        driveFolderId: data.driveFolderId || ''
       });
 
     } catch (e) {
@@ -323,14 +397,20 @@ export default function PropertyDetailsPage() {
     if (!files || files.length === 0) return;
     
     if (!property?.driveFolderId) {
-      alert("Esta propiedad no tiene una carpeta de Drive vinculada. No se pueden subir archivos directamente. Crea una nueva propiedad para que se vincule automáticamente, o usa 'Vincular Carpeta' si se implementa.");
+      toast.error("Esta propiedad no tiene una carpeta de Drive vinculada. No se pueden subir archivos directamente. Crea una nueva propiedad para que se vincule automáticamente, o usa 'Vincular Carpeta' si se implementa.");
       return;
     }
 
     setIsUploading(true);
     try {
       const uploadedUrls: string[] = [];
-      
+      const token = localStorage.getItem('google_drive_token');
+      if (!token) {
+        toast.error("Debes iniciar sesión con Google Drive primero para poder subir archivos. Haz clic en el botón 'Desde Drive' en cualquier sección para conectar tu cuenta.");
+        setIsUploading(false);
+        return;
+      }
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const formData = new FormData();
@@ -339,21 +419,35 @@ export default function PropertyDetailsPage() {
         
         const res = await fetch('/api/drive/upload', {
           method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token
+          },
           body: formData
         });
         
         if (res.ok) {
           const data = await res.json();
-          uploadedUrls.push(data.webViewLink);
+          // Como la API de Node.js no devuelve el ID directo sino un objeto con webViewLink y id, construimos el preview
+          uploadedUrls.push(`https://drive.google.com/file/d/${data.id}/preview`);
         } else {
-          console.error("Error al subir archivo");
+          const errText = await res.text();
+          console.error("Error al subir archivo", errText);
+          if (res.status === 401 || res.status === 403 || errText.includes('insufficient authentication scopes') || errText.includes('Insufficient Permission')) {
+            localStorage.removeItem('google_drive_token');
+            localStorage.removeItem('google_drive_token_expiry');
+            toast.error("Los permisos de tu sesión de Google han caducado o son insuficientes. Por favor, haz clic nuevamente en 'Desde Drive' y asegúrate de aceptar TODOS los permisos solicitados.");
+            setIsUploading(false);
+            return;
+          } else {
+            toast.error(`Error del servidor al subir: ${errText}`);
+          }
         }
       }
       
       listSetter(prev => [...prev, ...uploadedUrls]);
     } catch (err) {
       console.error(err);
-      alert("Error al subir archivos a Drive.");
+      toast.error("Error al subir archivos a Drive.");
     } finally {
       setIsUploading(false);
     }
@@ -361,7 +455,7 @@ export default function PropertyDetailsPage() {
 
   const syncFromDrive = async () => {
     if (!property?.driveFolderId) {
-      alert("Esta propiedad no tiene una carpeta de Drive vinculada.");
+      toast.error("Esta propiedad no tiene una carpeta de Drive vinculada.");
       return;
     }
     
@@ -386,11 +480,11 @@ export default function PropertyDetailsPage() {
         if (newVideos.length > 0) setVideosList(Array.from(new Set([...videosList, ...newVideos])));
         if (newDocs.length > 0) setPresentationsList(Array.from(new Set([...presentationsList, ...newDocs])));
         
-        alert(`Sincronización completa. Se encontraron ${files.length} archivos en Drive.`);
+        toast.success(`Sincronización completa. Se encontraron ${files.length} archivos en Drive.`);
       }
     } catch (err) {
       console.error(err);
-      alert("Error al sincronizar con Drive.");
+      toast.error("Error al sincronizar con Drive.");
     } finally {
       setIsUploading(false);
     }
@@ -420,6 +514,79 @@ export default function PropertyDetailsPage() {
     }
   };
 
+  const handleToggleAddLead = async () => {
+    const nextState = !showAddLead;
+    setShowAddLead(nextState);
+    if (nextState) {
+      setAddLeadMode('new');
+      setSelectedExistingLeadId('');
+      if (allLeads.length === 0) {
+        try {
+          const res = await fetch('/api/leads');
+          if (res.ok) {
+            const data = await res.json();
+            setAllLeads(data);
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    }
+  };
+
+  const handleCreateLead = async () => {
+    setIsSaving(true);
+    try {
+      if (selectedExistingLeadId) {
+        const res = await fetch(`/api/leads/${selectedExistingLeadId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ propertyId: property?.id })
+        });
+        if (res.ok) {
+          setShowAddLead(false);
+          setSelectedExistingLeadId('');
+          fetchProperty();
+        }
+      } else {
+        const res = await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...newLeadData, budget: newLeadData.budget ? Number(newLeadData.budget) : null, propertyId: property?.id })
+        });
+        if (res.ok) {
+          setShowAddLead(false);
+          setNewLeadData({ name: '', phone: '', email: '', budget: '', notes: '' });
+          fetchProperty();
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCreateTask = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newTaskData, propertyId: property?.id })
+      });
+      if (res.ok) {
+        setShowAddTask(false);
+        setNewTaskData({ title: '', leadId: '', dueDate: '' });
+        fetchProperty();
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSaveLead = async (leadId: string) => {
     try {
       const res = await fetch(`/api/leads/${leadId}`, {
@@ -443,7 +610,7 @@ export default function PropertyDetailsPage() {
       sectionFields.forEach(f => {
         payload[f] = formData[f];
       });
-      if (sectionFields.includes('imagesList')) payload.images = imagesList.filter(url => url.trim() !== '');
+      if (sectionFields.includes('imagesList')) payload.images = imagesList;
       if (sectionFields.includes('presentationsList')) payload.presentations = presentationsList.filter(url => url.trim() !== '');
       if (sectionFields.includes('plansList')) payload.plans = plansList.filter(url => url.trim() !== '');
       if (sectionFields.includes('videosList')) payload.videos = videosList.filter(url => url.trim() !== '');
@@ -463,6 +630,44 @@ export default function PropertyDetailsPage() {
       console.error(e);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const [isMovingFolder, setIsMovingFolder] = useState(false);
+
+  const handleMoveFolder = async (newParentId: string) => {
+    if (!property?.driveFolderId) return;
+    const token = localStorage.getItem('google_drive_token');
+    if (!token) {
+      toast.error("Debes tener la sesión iniciada en Google Drive para mover carpetas. Asegúrate de tener la cuenta vinculada.");
+      return;
+    }
+    
+    setIsMovingFolder(true);
+    try {
+      const res = await fetch('/api/drive/move', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          folderId: property.driveFolderId,
+          newParentId
+        })
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Error al mover la carpeta');
+      }
+      
+      toast.success("¡Carpeta movida exitosamente en Google Drive!");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(`Error al mover la carpeta: ${e.message}`);
+    } finally {
+      setIsMovingFolder(false);
     }
   };
 
@@ -522,6 +727,8 @@ export default function PropertyDetailsPage() {
     setDraggedImageIndex(null);
   };
 
+  const scrollRaf = React.useRef<number | null>(null);
+
   const handleDragScroll = (e: React.DragEvent) => {
     const container = document.getElementById('main-scroll-container');
     if (container && e.clientY > 0) {
@@ -529,11 +736,15 @@ export default function PropertyDetailsPage() {
       const { top, bottom } = container.getBoundingClientRect();
       const scrollThreshold = 100; // pixels from edge to trigger scroll
       
-      if (clientY < top + scrollThreshold) {
-        container.scrollTop -= 20; // Scroll up
-      } else if (clientY > bottom - scrollThreshold) {
-        container.scrollTop += 20; // Scroll down
-      }
+      if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current);
+      
+      scrollRaf.current = requestAnimationFrame(() => {
+        if (clientY < top + scrollThreshold) {
+          container.scrollTop -= 20; // Scroll up
+        } else if (clientY > bottom - scrollThreshold) {
+          container.scrollTop += 20; // Scroll down
+        }
+      });
     }
   };
 
@@ -553,13 +764,20 @@ export default function PropertyDetailsPage() {
     <div id="main-scroll-container" className="flex-1 flex flex-col h-full bg-background overflow-auto">
       
       {/* Header */}
-      <div className="bg-card/80 backdrop-blur-md border-b border-border px-8 py-6 sticky top-0 z-20 shadow-sm animate-in">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link href="/admin/propiedades" className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors">
+      <div className="bg-card/80 backdrop-blur-md border-b border-border pt-4 pb-0 sticky top-0 z-20 shadow-sm animate-in flex flex-col gap-4 relative">
+        <div className="absolute top-2 right-6 z-30">
+          <button onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)} className="p-2 rounded-full bg-background border border-border hover:bg-muted text-muted-foreground transition-all shadow-sm" title={isHeaderCollapsed ? "Expandir" : "Contraer"}>
+            {isHeaderCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+          </button>
+        </div>
+        {!isHeaderCollapsed && (
+        <>
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 px-8 mt-2">
+          <div className="flex items-start gap-4">
+            <Link href="/admin/propiedades" className="mt-1 p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors shrink-0">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <div>
+            <div className="flex flex-col gap-1">
               <h1 className="text-3xl font-black tracking-tight text-foreground flex items-center gap-2">
                 {editingSection === 'header' ? (
                   <div className="flex gap-2 items-center">
@@ -579,6 +797,7 @@ export default function PropertyDetailsPage() {
                   </div>
                 )}
               </h1>
+              
               {editingSection === 'header' ? (
                 <div className="mt-2 flex gap-2">
                   <input 
@@ -592,8 +811,8 @@ export default function PropertyDetailsPage() {
                   <button onClick={() => handleSaveSection(['title', 'price'])} disabled={isSaving} className="text-xs px-4 py-1 bg-primary text-primary-foreground rounded-lg font-bold shadow-sm hover:opacity-90 transition-opacity">Guardar Cambios</button>
                 </div>
               ) : (
-                <div className="mt-1">
-                  <p className="text-primary font-bold text-lg">{formatPrice(property.price)}</p>
+                <div className="flex items-baseline gap-3">
+                  <p className="text-primary font-bold text-xl">{formatPrice(property.price)}</p>
                   {property.area && property.area > 0 && !isNaN(Number(property.price)) && (
                     <p className="text-muted-foreground text-sm font-medium">
                       {formatPrice((Number(property.price) / property.area).toString())} / m²
@@ -601,14 +820,84 @@ export default function PropertyDetailsPage() {
                   )}
                 </div>
               )}
+
+              {/* Drive Folder */}
+              <div className="mt-1">
+                {editingSection === 'driveFolder' ? (
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="ID o Link de la carpeta" 
+                      className="bg-background border border-border rounded-lg px-2 py-1 text-xs w-48 font-medium"
+                      value={formData.driveFolderId}
+                      onChange={(e) => {
+                        let val = e.target.value;
+                        const match = val.match(/folders\/([a-zA-Z0-9_-]+)/);
+                        if (match) val = match[1];
+                        setFormData({...formData, driveFolderId: val});
+                      }}
+                    />
+                    <button onClick={() => setEditingSection(null)} className="p-1 hover:bg-muted rounded-full" title="Cancelar"><X className="w-4 h-4 text-muted-foreground"/></button>
+                    <button onClick={() => handleSaveSection(['driveFolderId'])} disabled={isSaving} className="p-1 hover:bg-primary/20 bg-primary/10 rounded-full" title="Guardar"><Save className="w-4 h-4 text-primary"/></button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 group/drive">
+                    {property.driveFolderId ? (
+                      <a href={`https://drive.google.com/drive/folders/${property.driveFolderId}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs font-semibold bg-blue-50 text-blue-600 px-2 py-1 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors">
+                        <Cloud className="w-3 h-3" /> Ver Carpeta Drive
+                      </a>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic flex items-center gap-1 bg-muted px-2 py-1 rounded-md border border-border">
+                        <Cloud className="w-3 h-3" /> Sin carpeta
+                      </span>
+                    )}
+                    <button onClick={() => setEditingSection('driveFolder')} className="opacity-0 group-hover/drive:opacity-100 p-1 hover:bg-muted rounded-full transition-opacity text-muted-foreground" title="Cambiar Link de Carpeta">
+                      <Edit className="w-3 h-3" />
+                    </button>
+                    {property.driveFolderId && (
+                      <GoogleDrivePicker 
+                        mimeTypes="application/vnd.google-apps.folder"
+                        onFileSelect={(_, __, fileId) => {
+                          if (fileId) {
+                            toast('¿Mover carpeta?', {
+                              description: '¿Seguro que deseas mover la carpeta actual a la nueva ubicación?',
+                              action: {
+                                label: 'Sí, mover',
+                                onClick: () => handleMoveFolder(fileId)
+                              },
+                              cancel: {
+                                label: 'Cancelar',
+                                onClick: () => {}
+                              }
+                            });
+                          }
+                        }}
+                        className={`opacity-0 group-hover/drive:opacity-100 px-2 py-1 bg-muted border border-border hover:bg-muted/80 rounded-md transition-opacity text-muted-foreground ${isMovingFolder ? 'animate-pulse pointer-events-none' : ''}`}
+                      >
+                        <span className="text-[10px] uppercase font-bold tracking-wider" title="Mover esta carpeta a otro lugar en Drive">
+                          {isMovingFolder ? 'Moviendo...' : 'Mover'}
+                        </span>
+                      </GoogleDrivePicker>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          <div className="flex gap-2 bg-muted p-1 rounded-2xl shrink-0 overflow-x-auto">
+        </div>
+
+        {/* Tabs Row */}
+        <div className="px-8 mt-2 flex gap-2 border-t border-border/50 pt-3 pb-3 overflow-x-auto">
+          <div className="flex gap-2 bg-muted p-1 rounded-2xl w-max">
             <button onClick={() => setActiveTab('resumen')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'resumen' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Resumen</button>
             <button onClick={() => setActiveTab('multimedia')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'multimedia' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Multimedia y Planos</button>
             <button onClick={() => setActiveTab('comercial')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'comercial' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Comercial (CRM)</button>
+            <button onClick={() => setActiveTab('presentacion')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'presentacion' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>✨ Presentación IA</button>
+            <button onClick={() => setActiveTab('comisiones')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'comisiones' ? 'bg-background shadow-sm text-amber-600' : 'text-muted-foreground hover:text-foreground'}`}>💰 Comisiones</button>
           </div>
         </div>
+        </>
+        )}
       </div>
 
       {/* Content Area */}
@@ -624,7 +913,21 @@ export default function PropertyDetailsPage() {
                   </div>
                   {editingSection === 'images' ? (
                     <div className="space-y-4 bg-card border border-border rounded-3xl p-6 shadow-sm">
-                      {imagesList.map((img, i) => (
+                      {imagesList.map((img, i) => {
+                        let slideLabel = "";
+                        switch(i) {
+                          case 0: slideLabel = "Diapo 2 (Interior)"; break;
+                          case 1: slideLabel = "Diapo 3 (Distribución)"; break;
+                          case 2: slideLabel = "Diapo 4 (Medida 1)"; break;
+                          case 3: slideLabel = "Diapo 4 (Medida 2)"; break;
+                          case 4: slideLabel = "Diapo 4 (Medida 3)"; break;
+                          case 5: slideLabel = "Diapo 1 (Exterior Portada)"; break;
+                          case 6: slideLabel = "Diapo 5 (Terrazas)"; break;
+                          case 7: slideLabel = "Diapo 6 (Estilo Vida 1)"; break;
+                          case 8: slideLabel = "Diapo 6 (Estilo Vida 2)"; break;
+                          default: slideLabel = `Extra ${i + 1}`; break;
+                        }
+                        return (
                         <div 
                           key={i} 
                           className={`flex gap-2 items-center ${draggedImageIndex === i ? 'opacity-50' : 'opacity-100'}`}
@@ -638,9 +941,14 @@ export default function PropertyDetailsPage() {
                           <div className="cursor-grab hover:text-primary transition-colors text-muted-foreground p-1" title="Arrastrar para reordenar">
                             <GripVertical className="w-5 h-5 pointer-events-none" />
                           </div>
+                          
+                          <span className="w-40 shrink-0 text-xs bg-primary/10 text-primary px-2 py-1 rounded-md font-bold text-center border border-primary/20">
+                            {slideLabel}
+                          </span>
+
                           {img && (
                             <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
-                              <img src={img} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
+                              <DriveImagePreview url={img} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
                             </div>
                           )}
                           {img.startsWith('data:') ? (
@@ -654,18 +962,22 @@ export default function PropertyDetailsPage() {
                           )}
                           <button onClick={() => setImagesList(imagesList.filter((_, idx) => idx !== i))} className="p-3 bg-destructive/10 text-destructive rounded-xl"><Trash2 className="w-5 h-5"/></button>
                         </div>
-                      ))}
+                      )})}
                       <div className="flex gap-4">
                         <button onClick={() => setImagesList([...imagesList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir Imagen</button>
-                        <GoogleDrivePicker onFileSelect={(url) => setImagesList(prev => [...prev, url])} mimeTypes="image/png,image/jpeg,image/jpg" />
-                        <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
-                          <Upload className="w-4 h-4"/> Subir Archivo
+                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                          setImagesList(prev => [...prev, url]);
+                          if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
+                        }} mimeTypes="image/png,image/jpeg,image/jpg" />
+                        <label className={`text-sm font-semibold flex items-center gap-1 cursor-pointer ${isUploading ? 'text-gray-400' : 'text-primary hover:underline'}`}>
+                          {isUploading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Upload className="w-4 h-4"/>} 
+                          {isUploading ? 'Subiendo...' : 'Subir Archivo'}
                           <input 
                             type="file" 
                             accept="image/*" 
                             multiple
                             className="hidden" 
-                            onChange={(e) => handleFileUpload(e.target.files, setImagesList)} 
+                            onChange={(e) => { handleFileUpload(e.target.files, setImagesList); e.target.value = ''; }} 
                           />
                         </label>
                       </div>
@@ -682,7 +994,7 @@ export default function PropertyDetailsPage() {
                       className="col-span-1 md:col-span-2 h-96 rounded-3xl overflow-hidden border border-border shadow-sm cursor-pointer group relative"
                       onClick={() => { setCurrentImageIndex(0); setIsLightboxOpen(true); }}
                     >
-                      <img src={imagesList[0]} alt="Principal" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      <DriveImagePreview url={imagesList[0]} thumbnails={driveThumbnails} alt="Principal" priority={true} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
                     </div>
                     <div className="grid grid-rows-2 gap-4 h-96">
@@ -696,7 +1008,7 @@ export default function PropertyDetailsPage() {
                             className="h-full w-full rounded-3xl overflow-hidden border border-border shadow-sm cursor-pointer group relative"
                             onClick={() => { setCurrentImageIndex(idx + 1); setIsLightboxOpen(true); }}
                           >
-                            <img src={img} alt={`Img ${idx + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            <DriveImagePreview url={img} thumbnails={driveThumbnails} alt={`Img ${idx + 1}`} priority={true} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
                             
                             {isLastVisible && hasMore && (
@@ -751,7 +1063,7 @@ export default function PropertyDetailsPage() {
                                 if (res.success && res.description) {
                                   setFormData({ ...formData, description: res.description });
                                 } else {
-                                  alert('Error al generar la descripción');
+                                  toast.error('Error al generar la descripción');
                                 }
                                 setIsGenerating(false);
                               }}
@@ -1070,10 +1382,10 @@ export default function PropertyDetailsPage() {
                                 if (data.results && data.results.length > 0) {
                                   setNearbyPlacesList([...nearbyPlacesList, ...data.results]);
                                 } else {
-                                  alert('No se encontraron lugares o falta configurar la API Key de Google.');
+                                  toast.error('No se encontraron lugares o falta configurar la API Key de Google.');
                                 }
                               } catch (err) {
-                                alert('Error al buscar lugares.');
+                                toast.error('Error al buscar lugares.');
                               }
                             }} className="text-sm font-semibold text-blue-600 flex items-center gap-1 hover:underline ml-4"><Globe className="w-4 h-4"/> Autocompletar con Google</button>
                           </div>
@@ -1108,45 +1420,117 @@ export default function PropertyDetailsPage() {
 
                   <div className="space-y-8">
                     {/* Detalles Financieros Card */}
-                    <div className="bg-card border border-border rounded-3xl p-6 shadow-sm flex flex-col gap-4">
-                      <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-2">
-                        <BadgePercent className="w-6 h-6 text-primary" />
+                    <div className="bg-card border border-border rounded-3xl p-6 shadow-sm flex flex-col gap-4 group">
+                      <div className="flex justify-between items-start">
+                        <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-2">
+                          <BadgePercent className="w-6 h-6 text-primary" />
+                        </div>
+                        {editingSection !== 'financial' && (
+                          <button onClick={() => setEditingSection('financial')} className="opacity-0 group-hover:opacity-100 p-2 hover:bg-muted rounded-full transition-opacity"><Edit className="w-4 h-4 text-muted-foreground"/></button>
+                        )}
                       </div>
                       <div>
                         <h4 className="font-bold text-lg mb-4">Detalles Financieros</h4>
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-center border-b border-border pb-3">
-                            <span className="text-muted-foreground font-medium text-sm">Expensas / Mantenimiento</span>
-                            <span className="font-bold">{formatPrice('2500')}</span>
+                        {editingSection === 'financial' ? (
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-xs text-muted-foreground font-semibold mb-1 block">Expensas / Mantenimiento</label>
+                              <input type="number" value={dynamicFeatures.expenses || ''} onChange={(e) => setDynamicFeatures({...dynamicFeatures, expenses: e.target.value})} className="w-full p-3 rounded-xl border border-border outline-none" placeholder="2500" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted-foreground font-semibold mb-1 block">Impuestos Anuales</label>
+                              <input type="number" value={dynamicFeatures.taxes || ''} onChange={(e) => setDynamicFeatures({...dynamicFeatures, taxes: e.target.value})} className="w-full p-3 rounded-xl border border-border outline-none" placeholder="12000" />
+                            </div>
+                            <div className="flex justify-end gap-2 mt-4 border-t border-border pt-4">
+                              <button onClick={() => setEditingSection(null)} className="px-4 py-2 text-sm font-semibold hover:bg-muted rounded-xl transition-colors">Cancelar</button>
+                              <button onClick={() => handleSaveSection(['dynamicFeatures'])} disabled={isSaving} className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-xl">Guardar</button>
+                            </div>
                           </div>
-                          <div className="flex justify-between items-center border-b border-border pb-3">
-                            <span className="text-muted-foreground font-medium text-sm">Impuestos Anuales</span>
-                            <span className="font-bold">{formatPrice('12000')}</span>
+                        ) : (
+                          <div className="space-y-4">
+                            <div className="flex justify-between items-center border-b border-border pb-3">
+                              <span className="text-muted-foreground font-medium text-sm">Expensas / Mantenimiento</span>
+                              <span className="font-bold">{dynamicFeatures.expenses ? formatPrice(dynamicFeatures.expenses) : '-'}</span>
+                            </div>
+                            <div className="flex justify-between items-center border-b border-border pb-3">
+                              <span className="text-muted-foreground font-medium text-sm">Impuestos Anuales</span>
+                              <span className="font-bold">{dynamicFeatures.taxes ? formatPrice(dynamicFeatures.taxes) : '-'}</span>
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
 
                     {/* Asesor Asignado Card */}
-                    <div className="bg-card border border-border rounded-3xl p-6 shadow-sm flex flex-col gap-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-full bg-muted border-2 border-primary/20 flex items-center justify-center overflow-hidden shrink-0">
-                          <Users className="w-8 h-8 text-muted-foreground opacity-50" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-primary uppercase tracking-wider mb-1 flex items-center gap-1"><BadgeCheck className="w-3.5 h-3.5" /> Asesor Asignado</p>
-                          <h4 className="font-bold text-lg leading-tight">Juan Pérez</h4>
-                          <p className="text-sm text-muted-foreground">Especialista en Ventas</p>
-                        </div>
+                    <div className="bg-card border border-border rounded-3xl p-6 shadow-sm flex flex-col gap-4 group">
+                      <div className="flex justify-end">
+                        {editingSection !== 'agent' && (
+                          <button onClick={() => setEditingSection('agent')} className="opacity-0 group-hover:opacity-100 p-2 hover:bg-muted rounded-full transition-opacity absolute"><Edit className="w-4 h-4 text-muted-foreground"/></button>
+                        )}
                       </div>
-                      <div className="flex gap-2 mt-2">
-                        <button className="flex-1 flex justify-center items-center gap-2 py-2 bg-green-500/10 text-green-600 rounded-xl text-xs font-bold hover:bg-green-500/20 transition-colors">
-                          <MessageCircle className="w-4 h-4" /> WhatsApp
-                        </button>
-                        <button className="flex-1 flex justify-center items-center gap-2 py-2 bg-muted text-foreground rounded-xl text-xs font-bold hover:bg-muted/80 transition-colors">
-                          <Phone className="w-4 h-4" /> Llamar
-                        </button>
-                      </div>
+                      {editingSection === 'agent' ? (
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-xs text-muted-foreground font-semibold mb-1 block">Seleccionar Asesor del Equipo</label>
+                            <select 
+                              className="w-full p-3 rounded-xl border border-border outline-none bg-background"
+                              onChange={(e) => {
+                                const selected = agentsList.find(a => a.name === e.target.value);
+                                if (selected) {
+                                  setDynamicFeatures({...dynamicFeatures, agentName: selected.name, agentRole: selected.role === 'AGENT' ? 'Asesor Inmobiliario' : 'Especialista en Ventas'});
+                                }
+                              }}
+                              value={agentsList.find(a => a.name === dynamicFeatures.agentName) ? dynamicFeatures.agentName : ""}
+                            >
+                              <option value="">Seleccionar un asesor...</option>
+                              {agentsList.map((agent, idx) => (
+                                <option key={idx} value={agent.name}>{agent.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground font-semibold mb-1 block">Nombre del Asesor (Personalizado)</label>
+                            <input type="text" value={dynamicFeatures.agentName || ''} onChange={(e) => setDynamicFeatures({...dynamicFeatures, agentName: e.target.value})} className="w-full p-3 rounded-xl border border-border outline-none" placeholder="Juan Pérez" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground font-semibold mb-1 block">Rol / Especialidad</label>
+                            <input type="text" value={dynamicFeatures.agentRole || ''} onChange={(e) => setDynamicFeatures({...dynamicFeatures, agentRole: e.target.value})} className="w-full p-3 rounded-xl border border-border outline-none" placeholder="Especialista en Ventas" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground font-semibold mb-1 block">WhatsApp (Número)</label>
+                            <input type="text" value={dynamicFeatures.agentWhatsapp || ''} onChange={(e) => setDynamicFeatures({...dynamicFeatures, agentWhatsapp: e.target.value})} className="w-full p-3 rounded-xl border border-border outline-none" placeholder="+972501234567" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground font-semibold mb-1 block">Teléfono (Llamada)</label>
+                            <input type="text" value={dynamicFeatures.agentPhone || ''} onChange={(e) => setDynamicFeatures({...dynamicFeatures, agentPhone: e.target.value})} className="w-full p-3 rounded-xl border border-border outline-none" placeholder="+972501234567" />
+                          </div>
+                          <div className="flex justify-end gap-2 mt-4 border-t border-border pt-4">
+                            <button onClick={() => setEditingSection(null)} className="px-4 py-2 text-sm font-semibold hover:bg-muted rounded-xl transition-colors">Cancelar</button>
+                            <button onClick={() => handleSaveSection(['dynamicFeatures'])} disabled={isSaving} className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-xl">Guardar</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 rounded-full bg-muted border-2 border-primary/20 flex items-center justify-center overflow-hidden shrink-0">
+                              <Users className="w-8 h-8 text-muted-foreground opacity-50" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-primary uppercase tracking-wider mb-1 flex items-center gap-1"><BadgeCheck className="w-3.5 h-3.5" /> Asesor Asignado</p>
+                              <h4 className="font-bold text-lg leading-tight">{dynamicFeatures.agentName || 'Sin Asignar'}</h4>
+                              <p className="text-sm text-muted-foreground">{dynamicFeatures.agentRole || 'Asesor Inmobiliario'}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 mt-2">
+                            <a href={dynamicFeatures.agentWhatsapp ? `https://wa.me/${dynamicFeatures.agentWhatsapp.replace(/[^0-9]/g, '')}` : '#'} target="_blank" rel="noopener noreferrer" className={`flex-1 flex justify-center items-center gap-2 py-2 bg-green-500/10 text-green-600 rounded-xl text-xs font-bold transition-colors ${!dynamicFeatures.agentWhatsapp ? 'opacity-50 pointer-events-none' : 'hover:bg-green-500/20'}`}>
+                              <MessageCircle className="w-4 h-4" /> WhatsApp
+                            </a>
+                            <a href={dynamicFeatures.agentPhone ? `tel:${dynamicFeatures.agentPhone.replace(/[^0-9+]/g, '')}` : '#'} className={`flex-1 flex justify-center items-center gap-2 py-2 bg-muted text-foreground rounded-xl text-xs font-bold transition-colors ${!dynamicFeatures.agentPhone ? 'opacity-50 pointer-events-none' : 'hover:bg-muted/80'}`}>
+                              <Phone className="w-4 h-4" /> Llamar
+                            </a>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {/* Location Card */}
@@ -1249,7 +1633,7 @@ export default function PropertyDetailsPage() {
                               {isVideoData ? (
                                 <video src={url} className="w-full h-full object-cover" />
                               ) : isImageData || url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                                <img src={url} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                                <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover" />
                               ) : (
                                 <Building className="w-5 h-5 text-muted-foreground" />
                               )}
@@ -1269,15 +1653,19 @@ export default function PropertyDetailsPage() {
                       )})}
                       <div className="flex gap-4">
                         <button onClick={() => setVideosList([...videosList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url) => setVideosList(prev => [...prev, url])} />
-                        <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
-                          <Upload className="w-4 h-4"/> Subir Archivo
+                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                          setVideosList(prev => [...prev, url]);
+                          if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
+                        }} />
+                        <label className={`text-sm font-semibold flex items-center gap-1 cursor-pointer ${isUploading ? 'text-gray-400' : 'text-primary hover:underline'}`}>
+                          {isUploading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Upload className="w-4 h-4"/>} 
+                          {isUploading ? 'Subiendo...' : 'Subir Archivo'}
                           <input 
                             type="file" 
                             accept="video/*,image/*,application/pdf"
                             multiple 
                             className="hidden" 
-                            onChange={(e) => handleFileUpload(e.target.files, setVideosList)} 
+                            onChange={(e) => { handleFileUpload(e.target.files, setVideosList); e.target.value = ''; }} 
                           />
                         </label>
                       </div>
@@ -1294,56 +1682,35 @@ export default function PropertyDetailsPage() {
                           let embedUrl = url;
                           if (url.includes('youtube.com/watch?v=')) embedUrl = url.replace('watch?v=', 'embed/');
                           else if (url.includes('youtu.be/')) embedUrl = url.replace('youtu.be/', 'www.youtube.com/embed/');
+                          else if (url.includes('drive.google.com/file/d/')) embedUrl = url.replace(/\/view.*$/, '/preview');
                           
-                          const isIframe = embedUrl.includes('youtube') || embedUrl.includes('matterport');
                           const isVideoFile = url.startsWith('data:video/') || url.match(/\.(mp4|webm|ogg)$/i);
-                          const canExpand = isIframe || isVideoFile;
-                          const isExpanded = expandedVideos.includes(i);
 
                           return (
                             <div key={i} className="flex flex-col gap-2">
-                              {!isExpanded ? (
-                                <button 
-                                  onClick={() => canExpand ? setExpandedVideos([...expandedVideos, i]) : window.open(url, '_blank')}
-                                  className="flex items-center justify-between p-3 bg-muted rounded-2xl hover:bg-primary/5 transition-colors group w-full text-left border border-transparent hover:border-primary/20"
-                                >
-                                  <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center shrink-0 shadow-sm">
-                                      <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-white border-b-[5px] border-b-transparent ml-1"></div>
+                              <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
+                                <div className="flex items-center justify-between gap-2 px-2">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center shrink-0">
+                                      <div className="w-0 h-0 border-t-[3px] border-t-transparent border-l-[4px] border-l-white border-b-[3px] border-b-transparent ml-0.5"></div>
                                     </div>
-                                    <span className="text-sm font-medium truncate group-hover:text-primary transition-colors">Ver Video / Recorrido {i + 1}</span>
+                                    <span className="font-bold text-sm text-foreground">Video / Recorrido {i + 1}</span>
                                   </div>
-                                  {canExpand ? (
-                                    <Maximize className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                                  ) : (
-                                    <div className="text-xs font-bold text-red-600 bg-red-500/10 px-3 py-1 rounded-full">Abrir link</div>
-                                  )}
-                                </button>
-                              ) : (
-                                <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
-                                  <div className="flex items-center justify-between gap-2 px-2">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center shrink-0">
-                                        <div className="w-0 h-0 border-t-[3px] border-t-transparent border-l-[4px] border-l-white border-b-[3px] border-b-transparent ml-0.5"></div>
-                                      </div>
-                                      <span className="font-bold text-sm text-foreground">Video / Recorrido {i + 1}</span>
-                                    </div>
-                                    <button 
-                                      onClick={() => setExpandedVideos(expandedVideos.filter(id => id !== i))}
-                                      className="text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1 bg-muted px-2 py-1 rounded-lg transition-colors"
-                                    >
-                                      <X className="w-3 h-3" /> Contraer
-                                    </button>
-                                  </div>
-                                  <div className="w-full aspect-video rounded-2xl overflow-hidden border border-border shadow-sm bg-muted relative">
-                                    {isVideoFile ? (
-                                      <video src={url} controls className="w-full h-full bg-black" />
-                                    ) : (
-                                      <iframe src={embedUrl} className="w-full h-full" allowFullScreen></iframe>
-                                    )}
-                                  </div>
+                                  <button 
+                                    onClick={() => window.open(url, '_blank')}
+                                    className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-xl transition-colors"
+                                  >
+                                    <Globe className="w-3 h-3" /> Abrir link
+                                  </button>
                                 </div>
-                              )}
+                                <div className="w-full aspect-video rounded-2xl overflow-hidden border border-border shadow-sm bg-muted relative">
+                                  {isVideoFile ? (
+                                    <video src={url} controls className="w-full h-full bg-black" />
+                                  ) : (
+                                    <iframe src={embedUrl} className="w-full h-full" allowFullScreen></iframe>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           );
                         })}
@@ -1363,7 +1730,13 @@ export default function PropertyDetailsPage() {
                       <FileText className="w-6 h-6 text-primary" />
                     </div>
                     <div className="flex justify-between items-center mb-4 group">
-                      <h4 className="font-bold text-lg">Presentaciones y Brochures</h4>
+                      <div className="flex items-center gap-4">
+                        <h4 className="font-bold text-lg">Presentaciones y Brochures</h4>
+                        <a href={`/presentacion/${property.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-gradient-to-r from-gray-900 to-gray-800 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:shadow-lg hover:from-black hover:to-gray-900 transition-all whitespace-nowrap">
+                          <FileText className="w-4 h-4" />
+                          Ver Presentación
+                        </a>
+                      </div>
                       {editingSection !== 'presentations' && (
                         <button onClick={() => setEditingSection('presentations')} className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-full transition-opacity"><Edit className="w-4 h-4 text-muted-foreground"/></button>
                       )}
@@ -1372,7 +1745,12 @@ export default function PropertyDetailsPage() {
                     {editingSection === 'presentations' ? (
                     <div className="space-y-4">
                       {presentationsList.map((url, i) => (
-                        <div key={i} className="flex gap-2">
+                        <div key={i} className="flex gap-2 items-center">
+                          {url && (
+                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+                              <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
+                            </div>
+                          )}
                           <input value={url} onChange={(e) => {
                             const newList = [...presentationsList]; newList[i] = e.target.value; setPresentationsList(newList);
                           }} placeholder="https://..." className="flex-1 p-3 rounded-xl border border-border outline-none" />
@@ -1381,15 +1759,19 @@ export default function PropertyDetailsPage() {
                       ))}
                       <div className="flex gap-4">
                         <button onClick={() => setPresentationsList([...presentationsList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url) => setPresentationsList(prev => [...prev, url])} />
-                        <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
-                          <Upload className="w-4 h-4"/> Subir Archivo
+                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                          setPresentationsList(prev => [...prev, url]);
+                          if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
+                        }} />
+                        <label className={`text-sm font-semibold flex items-center gap-1 cursor-pointer ${isUploading ? 'text-gray-400' : 'text-primary hover:underline'}`}>
+                          {isUploading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Upload className="w-4 h-4"/>} 
+                          {isUploading ? 'Subiendo...' : 'Subir Archivo'}
                           <input 
                             type="file" 
                             accept="image/*,application/pdf" 
                             multiple
                             className="hidden" 
-                            onChange={(e) => handleFileUpload(e.target.files, setPresentationsList)} 
+                            onChange={(e) => { handleFileUpload(e.target.files, setPresentationsList); e.target.value = ''; }} 
                           />
                         </label>
                       </div>
@@ -1458,7 +1840,41 @@ export default function PropertyDetailsPage() {
                         })}
                       </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground">No hay presentaciones cargadas.</p>
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Presentación Autogenerada</p>
+                        <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden border border-border shadow-sm bg-black relative group" ref={previewContainerRef}>
+                          <div 
+                            className="absolute top-0 left-0 w-[1920px] h-[1080px] origin-top-left pointer-events-none" 
+                            style={{ transform: `scale(${previewScale})` }}
+                          >
+                            {imagesList[5] || imagesList[0] ? (
+                              <DriveImagePreview url={imagesList[5] || imagesList[0]} alt="Exterior" thumbnails={driveThumbnails} className="absolute inset-0 w-full h-full object-cover" />
+                            ) : (
+                              <div className="absolute inset-0 bg-gray-900"></div>
+                            )}
+                            <Image src="/logo.png" alt="Mi Cassa" width={192} height={48} className="absolute top-12 left-24 object-contain mix-blend-screen invert grayscale opacity-90 z-20" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent w-[75%] z-0"></div>
+                            <div className="absolute inset-0 flex flex-col justify-center px-24 z-10 text-white w-[65%]">
+                              <div className="flex items-center gap-6 mb-6 mt-12">
+                                <div className="w-16 h-px bg-[#bda871]"></div>
+                                <p className="text-[#bda871] font-medium text-sm uppercase tracking-[0.25em]">Dos Residencias a Medida</p>
+                              </div>
+                              <h1 className="text-[4.5rem] font-serif font-bold leading-[1.1] mb-8">
+                                Su próximo hogar en el corazón de la Ciudad Santa
+                              </h1>
+                              <p className="text-xl text-gray-300 font-light leading-relaxed max-w-xl">
+                                Diseñados para la vida familiar, la tradición y el confort en Jerusalén. Encuentre la propiedad ideal adaptada a sus necesidades.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors pointer-events-none"></div>
+                          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 z-10">
+                            <a href={`/presentacion/${property.id}`} target="_blank" rel="noopener noreferrer" className="bg-white/90 backdrop-blur text-black text-xs font-bold px-3 py-2 rounded-xl shadow-sm flex items-center gap-2 hover:bg-white transition-colors pointer-events-auto">
+                              <Maximize className="w-4 h-4" /> Ver en pantalla completa
+                            </a>
+                          </div>
+                        </div>
+                      </div>
                     )}
                     </>
                   )}
@@ -1477,7 +1893,12 @@ export default function PropertyDetailsPage() {
                     {editingSection === 'posters' ? (
                     <div className="space-y-4">
                       {postersList.map((url, i) => (
-                        <div key={i} className="flex gap-2">
+                        <div key={i} className="flex gap-2 items-center">
+                          {url && (
+                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+                              <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
+                            </div>
+                          )}
                           <input value={url} onChange={(e) => {
                             const newList = [...postersList]; newList[i] = e.target.value; setPostersList(newList);
                           }} placeholder="https://..." className="flex-1 p-3 rounded-xl border border-border outline-none" />
@@ -1486,15 +1907,19 @@ export default function PropertyDetailsPage() {
                       ))}
                       <div className="flex gap-4">
                         <button onClick={() => setPostersList([...postersList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url) => setPostersList(prev => [...prev, url])} />
-                        <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
-                          <Upload className="w-4 h-4"/> Subir Archivo
+                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                          setPostersList(prev => [...prev, url]);
+                          if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
+                        }} />
+                        <label className={`text-sm font-semibold flex items-center gap-1 cursor-pointer ${isUploading ? 'text-gray-400' : 'text-primary hover:underline'}`}>
+                          {isUploading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Upload className="w-4 h-4"/>} 
+                          {isUploading ? 'Subiendo...' : 'Subir Archivo'}
                           <input 
                             type="file" 
                             accept="image/*,application/pdf" 
                             multiple
                             className="hidden" 
-                            onChange={(e) => handleFileUpload(e.target.files, setPostersList)} 
+                            onChange={(e) => { handleFileUpload(e.target.files, setPostersList); e.target.value = ''; }} 
                           />
                         </label>
                       </div>
@@ -1509,7 +1934,7 @@ export default function PropertyDetailsPage() {
                       <div className="grid grid-cols-2 gap-4">
                         {postersList.map((url, i) => (
                           <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="w-full aspect-[3/4] rounded-2xl overflow-hidden border border-border shadow-sm block group relative">
-                            <img src={url} alt={`Afiche ${i+1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Afiche ${i+1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                               <span className="text-white font-bold text-xs px-3 py-1.5 bg-black/50 rounded-xl backdrop-blur-sm">Ampliar</span>
                             </div>
@@ -1527,7 +1952,7 @@ export default function PropertyDetailsPage() {
                 </div>
 
                 {/* Planos Arquitectónicos */}
-                <div className="bg-card border border-border rounded-3xl p-8 shadow-sm">
+                <div className={`bg-card border border-border rounded-3xl shadow-sm h-fit max-h-min overflow-hidden ${plansList.length > 0 || editingSection === 'plans' ? 'p-8' : 'px-8 pt-8 pb-6'}`}>
                   <div className="flex justify-between items-center mb-6 group">
                     <h3 className="text-2xl font-bold text-foreground flex items-center gap-2">
                       <MapPin className="text-primary w-6 h-6" /> Planos Arquitectónicos
@@ -1539,7 +1964,12 @@ export default function PropertyDetailsPage() {
                   {editingSection === 'plans' ? (
                     <div className="space-y-4">
                       {plansList.map((url, i) => (
-                        <div key={i} className="flex gap-2">
+                        <div key={i} className="flex gap-2 items-center">
+                          {url && (
+                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+                              <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
+                            </div>
+                          )}
                           <input value={url} onChange={(e) => {
                             const newList = [...plansList]; newList[i] = e.target.value; setPlansList(newList);
                           }} placeholder="https://..." className="flex-1 p-3 rounded-xl border border-border outline-none" />
@@ -1548,15 +1978,19 @@ export default function PropertyDetailsPage() {
                       ))}
                       <div className="flex gap-4">
                         <button onClick={() => setPlansList([...plansList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url) => setPlansList(prev => [...prev, url])} />
-                        <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
-                          <Upload className="w-4 h-4"/> Subir Archivo
+                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                          setPlansList(prev => [...prev, url]);
+                          if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
+                        }} />
+                        <label className={`text-sm font-semibold flex items-center gap-1 cursor-pointer ${isUploading ? 'text-gray-400' : 'text-primary hover:underline'}`}>
+                          {isUploading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Upload className="w-4 h-4"/>} 
+                          {isUploading ? 'Subiendo...' : 'Subir Archivo'}
                           <input 
                             type="file" 
                             accept="image/*,application/pdf" 
                             multiple
                             className="hidden" 
-                            onChange={(e) => handleFileUpload(e.target.files, setPlansList)} 
+                            onChange={(e) => { handleFileUpload(e.target.files, setPlansList); e.target.value = ''; }} 
                           />
                         </label>
                       </div>
@@ -1575,7 +2009,7 @@ export default function PropertyDetailsPage() {
                           <div key={i} className="flex flex-col gap-3">
                             {isImage ? (
                               <a href={url} target="_blank" rel="noopener noreferrer" className="w-full aspect-[4/3] rounded-2xl overflow-hidden border border-border shadow-sm block group relative">
-                                <img src={url} alt={`Plano ${i+1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Plano ${i+1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                   <span className="text-white font-bold px-4 py-2 bg-black/50 rounded-xl backdrop-blur-sm">Ampliar Plano</span>
                                 </div>
@@ -1696,13 +2130,87 @@ export default function PropertyDetailsPage() {
                       <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
                         <Users className="w-5 h-5 text-primary" />
                       </div>
-                      <h4 className="font-bold text-base flex-1 flex justify-between items-center">
+                      <h4 className="font-bold text-base flex-1 flex items-center gap-2">
                         Clientes Interesados 
                         <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full text-xs">
                           {property.leads?.length || 0}
                         </span>
                       </h4>
+                      <button onClick={handleToggleAddLead} className="p-1.5 hover:bg-muted rounded-full transition-colors">
+                        {showAddLead ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5 text-primary" />}
+                      </button>
                     </div>
+
+                    {showAddLead && (
+                      <div className="mb-4 p-4 bg-muted/50 rounded-2xl border border-border space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <h5 className="font-bold text-sm text-foreground">Añadir Prospecto a Propiedad</h5>
+                        
+                        <div className="flex gap-2 p-1 bg-background rounded-xl border border-border">
+                          <button 
+                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${addLeadMode === 'new' ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-muted text-muted-foreground'}`}
+                            onClick={() => { setAddLeadMode('new'); setSelectedExistingLeadId(''); }}
+                          >
+                            Crear Nuevo
+                          </button>
+                          <button 
+                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${addLeadMode === 'existing' ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-muted text-muted-foreground'}`}
+                            onClick={() => setAddLeadMode('existing')}
+                          >
+                            Prospecto Existente
+                          </button>
+                        </div>
+
+                        {addLeadMode === 'existing' ? (
+                          <div className="space-y-3">
+                            <input 
+                              type="text" 
+                              placeholder="Buscar por nombre o teléfono..." 
+                              className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm"
+                              value={leadSearch}
+                              onChange={(e) => setLeadSearch(e.target.value)}
+                            />
+                            <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                              {allLeads.filter(l => l.name.toLowerCase().includes(leadSearch.toLowerCase()) || (l.phone && l.phone.includes(leadSearch))).map(l => (
+                                <div 
+                                  key={l.id} 
+                                  onClick={() => setSelectedExistingLeadId(l.id)}
+                                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedExistingLeadId === l.id ? 'border-primary bg-primary/5 ring-1 ring-primary/20' : 'border-border bg-background hover:bg-muted/50'}`}
+                                >
+                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${selectedExistingLeadId === l.id ? 'border-primary bg-primary' : 'border-muted-foreground/30'}`}>
+                                    {selectedExistingLeadId === l.id && <div className="w-1.5 h-1.5 bg-primary-foreground rounded-full" />}
+                                  </div>
+                                  <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 text-sm">
+                                    {l.name.substring(0, 1).toUpperCase()}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-sm truncate text-foreground">{l.name}</p>
+                                    {l.phone && <p className="text-xs text-muted-foreground truncate">{l.phone}</p>}
+                                  </div>
+                                  <div className="shrink-0 flex items-center gap-2">
+                                    <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
+                                      {l.status}
+                                    </span>
+                                    {l.budget && <span className="font-semibold text-xs whitespace-nowrap">${Number(l.budget).toLocaleString()}</span>}
+                                  </div>
+                                </div>
+                              ))}
+                              {allLeads.length === 0 && <p className="text-xs text-center text-muted-foreground py-4">Cargando prospectos...</p>}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <input type="text" className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm" value={newLeadData.name} onChange={e => setNewLeadData({...newLeadData, name: e.target.value})} placeholder="Nombre" />
+                            <input type="tel" className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm" value={newLeadData.phone} onChange={e => setNewLeadData({...newLeadData, phone: e.target.value})} placeholder="Teléfono" />
+                            <input type="email" className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm" value={newLeadData.email} onChange={e => setNewLeadData({...newLeadData, email: e.target.value})} placeholder="Correo (opcional)" />
+                            <input type="number" className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm" value={newLeadData.budget} onChange={e => setNewLeadData({...newLeadData, budget: e.target.value})} placeholder="Presupuesto (opcional)" />
+                          </div>
+                        )}
+                        <div className="flex justify-end gap-2 pt-2">
+                          <button onClick={() => setShowAddLead(false)} className="px-4 py-2 text-xs font-semibold hover:bg-background rounded-xl transition-colors">Cancelar</button>
+                          <button onClick={handleCreateLead} disabled={isSaving || (addLeadMode === 'existing' && !selectedExistingLeadId) || (addLeadMode === 'new' && (!newLeadData.name || !newLeadData.phone))} className="px-4 py-2 text-xs font-semibold bg-primary text-primary-foreground rounded-xl disabled:opacity-50">Guardar</button>
+                        </div>
+                      </div>
+                    )}
                     
                     {property.leads && property.leads.length > 0 ? (
                       <div className="space-y-3">
@@ -1942,10 +2450,34 @@ export default function PropertyDetailsPage() {
 
                   {/* Tasks Card */}
                     <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
-                      <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
-                        <ListTodo className="w-6 h-6 text-primary" />
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+                          <ListTodo className="w-6 h-6 text-primary" />
+                        </div>
+                        <button onClick={() => setShowAddTask(!showAddTask)} className="p-2 hover:bg-muted rounded-full transition-colors">
+                          {showAddTask ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5 text-primary" />}
+                        </button>
                       </div>
                       <h4 className="font-bold text-lg mb-4">Tareas Pendientes</h4>
+
+                      {showAddTask && (
+                        <div className="mb-4 p-3 bg-muted rounded-2xl border border-border space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                          <h5 className="font-bold text-sm text-foreground">Añadir Nueva Tarea</h5>
+                          <input type="text" className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm" value={newTaskData.title} onChange={e => setNewTaskData({...newTaskData, title: e.target.value})} placeholder="Título de la tarea" />
+                          <select className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm" value={newTaskData.leadId} onChange={e => setNewTaskData({...newTaskData, leadId: e.target.value})}>
+                            <option value="">Seleccionar Prospecto (Opcional)</option>
+                            {(property.leads || []).map(lead => (
+                              <option key={lead.id} value={lead.id}>{lead.name}</option>
+                            ))}
+                          </select>
+                          <input type="date" className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm" value={newTaskData.dueDate} onChange={e => setNewTaskData({...newTaskData, dueDate: e.target.value})} />
+                          <div className="flex justify-end gap-2 pt-2">
+                            <button onClick={() => setShowAddTask(false)} className="px-3 py-1.5 text-xs font-semibold hover:bg-background rounded-lg transition-colors">Cancelar</button>
+                            <button onClick={handleCreateTask} disabled={isSaving || !newTaskData.title} className="px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground rounded-lg disabled:opacity-50">Guardar</button>
+                          </div>
+                        </div>
+                      )}
+
                       {(() => {
                         const tasks = property.leads?.flatMap(l => (l.tasks || []).map(t => ({...t, leadName: l.name}))) || [];
                         const pendingTasks = tasks.filter(t => t.status !== 'COMPLETADO').sort((a, b) => new Date(a.dueDate || 0).getTime() - new Date(b.dueDate || 0).getTime());
@@ -1992,7 +2524,22 @@ export default function PropertyDetailsPage() {
                         )}
                       </div>
                       
-                      {property.ownerName || property.ownerPhone || property.ownerEmail || property.ownerNotes ? (
+                      {editingSection === 'owner' ? (
+                        <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                          <input id="ownerNameInput" type="text" className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm" value={formData.ownerName || ''} onChange={e => setFormData({...formData, ownerName: e.target.value})} placeholder="Nombre del Propietario" />
+                          <div className="flex gap-3">
+                            <input type="tel" className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm" value={formData.ownerPhone || ''} onChange={e => setFormData({...formData, ownerPhone: e.target.value})} placeholder="Teléfono" />
+                            <input type="email" className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm" value={formData.ownerEmail || ''} onChange={e => setFormData({...formData, ownerEmail: e.target.value})} placeholder="Correo Electrónico" />
+                          </div>
+                          <textarea className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm h-24 resize-none" value={formData.ownerNotes || ''} onChange={e => setFormData({...formData, ownerNotes: e.target.value})} placeholder="Notas Internas sobre el propietario"></textarea>
+                          <div className="flex justify-end gap-2 pt-2">
+                            <button onClick={() => setEditingSection(null)} className="px-4 py-2 text-sm font-semibold hover:bg-muted rounded-xl transition-colors">Cancelar</button>
+                            <button onClick={() => handleSaveSection(['ownerName', 'ownerPhone', 'ownerEmail', 'ownerNotes'])} disabled={isSaving} className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-xl flex items-center gap-2">
+                              <Save className="w-4 h-4" /> Guardar
+                            </button>
+                          </div>
+                        </div>
+                      ) : property.ownerName || property.ownerPhone || property.ownerEmail || property.ownerNotes ? (
                         <div className="space-y-4">
                           {property.ownerName && (
                             <div>
@@ -2056,7 +2603,12 @@ export default function PropertyDetailsPage() {
                       {editingSection === 'legalDocs' ? (
                     <div className="space-y-4">
                       {legalDocsList.map((url, i) => (
-                        <div key={i} className="flex gap-2">
+                        <div key={i} className="flex gap-2 items-center">
+                          {url && (
+                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+                              <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
+                            </div>
+                          )}
                           <input value={url} onChange={(e) => {
                             const newList = [...legalDocsList]; newList[i] = e.target.value; setLegalDocsList(newList);
                           }} placeholder="https://..." className="flex-1 p-3 rounded-xl border border-border outline-none" />
@@ -2065,15 +2617,19 @@ export default function PropertyDetailsPage() {
                       ))}
                       <div className="flex gap-4">
                         <button onClick={() => setLegalDocsList([...legalDocsList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url) => setLegalDocsList(prev => [...prev, url])} />
-                        <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
-                          <Upload className="w-4 h-4"/> Subir Archivo
+                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                          setLegalDocsList(prev => [...prev, url]);
+                          if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
+                        }} />
+                        <label className={`text-sm font-semibold flex items-center gap-1 cursor-pointer ${isUploading ? 'text-gray-400' : 'text-primary hover:underline'}`}>
+                          {isUploading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Upload className="w-4 h-4"/>} 
+                          {isUploading ? 'Subiendo...' : 'Subir Archivo'}
                           <input 
                             type="file" 
                             accept="image/*,application/pdf" 
                             multiple
                             className="hidden" 
-                            onChange={(e) => handleFileUpload(e.target.files, setLegalDocsList)} 
+                            onChange={(e) => { handleFileUpload(e.target.files, setLegalDocsList); e.target.value = ''; }} 
                           />
                         </label>
                       </div>
@@ -2126,7 +2682,7 @@ export default function PropertyDetailsPage() {
                               <span className="font-bold text-xs text-foreground">Visita Completada</span>
                               <span className="text-[10px] text-muted-foreground">Hace 5 hrs</span>
                             </div>
-                            <p className="text-xs text-muted-foreground leading-tight">Recorrido físico con cliente "Carlos Ruiz".</p>
+                            <p className="text-xs text-muted-foreground leading-tight">Recorrido físico con cliente &quot;Carlos Ruiz&quot;.</p>
                           </div>
                         </div>
                       </div>
@@ -2136,6 +2692,205 @@ export default function PropertyDetailsPage() {
                 
                 <MortgageCalculator price={Number(property.price)} />
               </div>
+            )}
+
+            {activeTab === 'presentacion' && (
+              <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm flex h-[800px] flex-row animate-in fade-in slide-in-from-bottom-4">
+                {/* Chat Column */}
+                <div className="w-1/3 border-r border-border bg-muted/10 flex flex-col h-full relative z-10">
+                  <div className="p-4 border-b border-border bg-background flex justify-between items-center shrink-0">
+                    <div>
+                      <h3 className="font-bold flex items-center gap-2"><Sparkles className="w-5 h-5 text-primary"/> Asistente de Diseño</h3>
+                      <p className="text-xs text-muted-foreground">Desarrollado con Gemini</p>
+                    </div>
+                    <select 
+                      value={selectedModel} 
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                      className="text-sm bg-muted rounded-lg px-2 py-1 outline-none border border-border"
+                    >
+                      <option>Gemini 3.5 Flash</option>
+                      <option>Gemini 3.1 Pro (High)</option>
+                      <option>Gemini 3.1 Pro</option>
+                      <option>Gemini 3.0 Ultra</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {chatMessages.length === 0 && (
+                      <div className="text-center p-6 bg-muted/50 rounded-2xl">
+                        <Sparkles className="w-8 h-8 text-primary mx-auto mb-3" />
+                        <h4 className="font-bold text-sm mb-2">¡Hola! Soy tu Asistente de Diseño.</h4>
+                        <p className="text-xs text-muted-foreground">Puedo crear una presentación espectacular basada en las características de esta propiedad. ¿Qué enfoque quieres darle? (Ej: &quot;Enfocado en inversionistas&quot;, &quot;Hazlo ideal para familias&quot;).</p>
+                      </div>
+                    )}
+                    {chatMessages.map((msg, i) => (
+                      <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[85%] rounded-2xl p-3 text-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-tr-sm' : 'bg-muted rounded-tl-sm'}`}>
+                          {msg.parts.map((part: any, pIdx: number) => {
+                            if (part.text) {
+                              return <p key={pIdx} className="mb-1">{part.text}</p>;
+                            }
+                            if (part.inlineData) {
+                              if (part.inlineData.mimeType.startsWith('image/')) {
+                                return (
+                                  <div key={pIdx} className="mt-2 mb-1">
+                                    <img src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} className="w-32 h-32 object-cover rounded-lg border border-primary/20" alt="Adjunto" />
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div key={pIdx} className="mt-2 mb-1 flex items-center gap-1 bg-background/20 px-2 py-1 rounded text-xs">
+                                  <FileText className="w-3 h-3" /> Archivo ({part.inlineData.mimeType})
+                                </div>
+                              );
+                            }
+                            return null;
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                    {isChatLoading && (
+                      <div className="flex justify-start">
+                        <div className="bg-muted rounded-2xl rounded-tl-sm p-3 text-sm flex items-center gap-2 text-muted-foreground">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Escribiendo y diseñando...
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="p-4 bg-background border-t border-border shrink-0">
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!chatInput.trim() && chatAttachments.length === 0) return;
+                      const parts: any[] = [];
+                      if (chatInput.trim()) parts.push({ text: chatInput });
+                      else parts.push({ text: "Analiza estos archivos." });
+                      
+                      chatAttachments.forEach(att => {
+                        parts.push({ inlineData: { data: att.data, mimeType: att.mimeType } });
+                      });
+
+                      const newMessages = [...chatMessages, { role: 'user', parts }];
+                      setChatMessages(newMessages);
+                      setChatInput('');
+                      const currentAtts = [...chatAttachments];
+                      setChatAttachments([]);
+                      setIsChatLoading(true);
+                      
+                      try {
+                        const res = await fetch(`/api/properties/${property.id}/presentation-chat`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            message: chatInput,
+                            attachments: currentAtts,
+                            history: chatMessages,
+                            model: selectedModel,
+                            propertyContext: {
+                              title: property.title,
+                              location: property.location,
+                              price: property.price,
+                              area: property.area,
+                              bedrooms: property.bedrooms,
+                              bathrooms: property.bathrooms,
+                              images: imagesList,
+                              dynamicFeatures: dynamicFeatures
+                            }
+                          })
+                        });
+                        const data = await res.json();
+                        const updatedMessages = [...newMessages, { role: 'model', parts: [{ text: data.message }] }];
+                        setChatMessages(updatedMessages);
+                        
+                        if (data.presentationData) {
+                          setPresentationDataPreview(data.presentationData);
+                          // Auto save dynamicFeatures
+                          const updatedDynamic = { 
+                            ...dynamicFeatures, 
+                            aiPresentation: data.presentationData,
+                            presentationChatHistory: updatedMessages
+                          };
+                          setDynamicFeatures(updatedDynamic);
+                          
+                          // Optional: call save in background
+                          await fetch(`/api/properties/${property.id}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ dynamicFeatures: JSON.stringify(updatedDynamic) })
+                          });
+                        }
+                      } catch (error) {
+                        console.error(error);
+                        setChatMessages([...newMessages, { role: 'model', parts: [{ text: 'Hubo un error al comunicarme con Gemini.' }] }]);
+                      } finally {
+                        setIsChatLoading(false);
+                      }
+                    }} className="flex items-end gap-2 relative">
+                      <div className="flex flex-col gap-2 w-full">
+                        {chatAttachments.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {chatAttachments.map((att, i) => (
+                              <div key={i} className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md text-xs border border-border">
+                                <span className="truncate max-w-[100px]">{att.name}</span>
+                                <button type="button" onClick={() => setChatAttachments(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3"/></button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex items-end gap-2 relative w-full">
+                          <input type="file" ref={fileInputRef} className="hidden" multiple accept="image/*,application/pdf" onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            if (!files.length) return;
+                            Promise.all(files.map(file => new Promise<any>((resolve, reject) => {
+                              const reader = new FileReader();
+                              reader.onload = () => resolve({ name: file.name, data: (reader.result as string).split(',')[1], mimeType: file.type });
+                              reader.onerror = reject;
+                              reader.readAsDataURL(file);
+                            }))).then(atts => setChatAttachments(prev => [...prev, ...atts]));
+                            if (fileInputRef.current) fileInputRef.current.value = '';
+                          }} />
+                          <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors shrink-0" title="Adjuntar archivos"><Paperclip className="w-5 h-5"/></button>
+                      <textarea
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        placeholder="Pide un diseño, ej. 'Genera una presentación para una familia'..."
+                        className="flex-1 bg-muted resize-none rounded-xl border-none outline-none p-3 text-sm focus:ring-2 focus:ring-primary/20 min-h-[50px] max-h-[120px]"
+                        rows={1}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            e.currentTarget.form?.requestSubmit();
+                          }
+                        }}
+                      />
+                      <button type="submit" disabled={isChatLoading || (!chatInput.trim() && chatAttachments.length === 0)} className="p-3 bg-primary text-primary-foreground rounded-xl disabled:opacity-50 shrink-0">
+                        <Send className="w-4 h-4" />
+                      </button>
+                      </div>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+                
+                {/* Preview Column */}
+                <div className="w-2/3 bg-gray-100 overflow-y-auto relative hidden md:block">
+                  {presentationDataPreview ? (
+                    <div className="origin-top scale-[0.65] md:scale-[0.8] transition-transform w-[150%] xl:w-full xl:scale-100 p-8 flex flex-col gap-8">
+                       <PresentationRenderer data={presentationDataPreview} />
+                    </div>
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground p-8 text-center bg-[#faf9f6]">
+                      <div className="w-32 h-32 opacity-10 mb-6 bg-[url('/logo.png')] bg-contain bg-center bg-no-repeat grayscale"></div>
+                      <h3 className="font-bold text-xl mb-2">No hay diseño generado</h3>
+                      <p className="max-w-sm">Escríbele al Asistente de Diseño para crear una presentación espectacular basada en esta propiedad.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'comisiones' && (
+              <PropertyCommissions property={property} onSave={fetchProperty} />
             )}
       </div>
       {/* Lightbox */}
@@ -2155,14 +2910,15 @@ export default function PropertyDetailsPage() {
             <ArrowLeft className="w-6 h-6 md:w-8 md:h-8" />
           </button>
 
-          <div className="w-full max-w-6xl max-h-[90vh] p-4 flex items-center justify-center relative" onClick={() => setIsLightboxOpen(false)}>
-            <img 
-              src={imagesList[currentImageIndex]} 
+          <div className="w-full max-w-6xl h-[85vh] p-4 flex items-center justify-center relative" onClick={() => setIsLightboxOpen(false)}>
+            <DriveImagePreview 
+              url={imagesList[currentImageIndex]} 
+              thumbnails={driveThumbnails}
               alt={`Imagen ${currentImageIndex + 1}`} 
-              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" 
+              className="object-contain rounded-lg shadow-2xl p-4" 
               onClick={(e) => e.stopPropagation()}
             />
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-sm font-medium backdrop-blur-md">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-sm font-medium backdrop-blur-md">
               {currentImageIndex + 1} / {imagesList.length}
             </div>
           </div>

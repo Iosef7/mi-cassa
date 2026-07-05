@@ -1,7 +1,67 @@
 import React from 'react';
-import { Home, Building, Users, Calendar, Phone, TrendingUp, Search, Plus, Bell, MoreHorizontal, MapPin } from 'lucide-react';
+import { Home, Building, Users, Calendar, Phone, TrendingUp, Search, Plus, MoreHorizontal, MapPin } from 'lucide-react';
+import Image from 'next/image';
+import NotificationsDropdown from '@/components/NotificationsDropdown';
+import { prisma } from '@/lib/prisma';
+import Link from 'next/link';
+import { DriveImagePreview } from '@/components/DriveImagePreview';
 
-export default function Dashboard() {
+export const dynamic = 'force-dynamic'; // Ensure dashboard always fetches fresh data
+
+export default async function Dashboard() {
+  // Fetch real data in parallel
+  const [
+    activePropertiesCount,
+    newLeadsCount,
+    scheduledAppointmentsCount,
+    closedSalesAggregate,
+    pipelineLeads,
+    recentCalls,
+    featuredProperties
+  ] = await Promise.all([
+    prisma.property.count({ where: { status: 'DISPONIBLE' } }),
+    prisma.lead.count({ where: { status: 'NUEVO' } }),
+    prisma.appointment.count({ where: { status: 'PENDIENTE' } }),
+    prisma.lead.aggregate({
+      where: { status: 'CERRADO_GANADO' },
+      _sum: { budget: true }
+    }),
+    prisma.lead.findMany({
+      where: { status: { notIn: ['CERRADO_GANADO', 'PERDIDO'] } },
+      take: 4,
+      orderBy: { updatedAt: 'desc' },
+      include: { property: true }
+    }),
+    prisma.call.findMany({
+      take: 3,
+      orderBy: { createdAt: 'desc' },
+      include: { lead: true }
+    }),
+    prisma.property.findMany({
+      take: 3,
+      orderBy: { createdAt: 'desc' }
+    })
+  ]);
+
+  const closedSalesAmount = Number(closedSalesAggregate._sum.budget || 0);
+
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(val);
+  };
+
+  const getProgressByStatus = (status: string) => {
+    switch (status) {
+      case 'NUEVO': return 10;
+      case 'CONTACTADO': return 25;
+      case 'VISITA': return 50;
+      case 'NEGOCIACION': return 75;
+      case 'CERRADO_GANADO': return 100;
+      default: return 0;
+    }
+  };
+
+  const todayStr = new Intl.DateTimeFormat('es-MX', { dateStyle: 'long' }).format(new Date());
+
   return (
     <>
       {/* Top Navbar */}
@@ -15,13 +75,10 @@ export default function Dashboard() {
           />
         </div>
         <div className="flex items-center gap-4">
-          <button className="p-2 rounded-full hover:bg-border transition-colors relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
-          </button>
-          <button className="bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2 hover-lift">
+          <NotificationsDropdown />
+          <Link href="/admin/propiedades/new" className="bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2 hover-lift">
             <Plus className="w-4 h-4" /> Nueva Propiedad
-          </button>
+          </Link>
         </div>
       </header>
 
@@ -33,17 +90,17 @@ export default function Dashboard() {
             <h2 className="text-3xl font-bold">Hola, Equipo 👋</h2>
             <p className="text-foreground/60 mt-1">Aquí está el resumen de la inmobilaria para hoy.</p>
           </div>
-          <div className="text-sm px-3 py-1 rounded-full bg-card border border-border">
-            21 de Junio, 2026
+          <div className="text-sm px-3 py-1 rounded-full bg-card border border-border capitalize">
+            {todayStr}
           </div>
         </div>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatCard title="Propiedades Activas" value="124" trend="+3 esta semana" />
-          <StatCard title="Nuevos Leads (Meta)" value="45" trend="+12% vs mes pasado" />
-          <StatCard title="Citas Programadas" value="12" trend="Para hoy y mañana" />
-          <StatCard title="Ventas Cerradas" value="$4.2M" trend="Este trimestre" highlight />
+          <StatCard title="Propiedades Activas" value={activePropertiesCount.toString()} trend="En inventario" />
+          <StatCard title="Nuevos Leads" value={newLeadsCount.toString()} trend="Sin contactar" />
+          <StatCard title="Citas Pendientes" value={scheduledAppointmentsCount.toString()} trend="Próximos días" />
+          <StatCard title="Ventas Cerradas" value={formatCurrency(closedSalesAmount)} trend="Valor total histórico" highlight />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -52,12 +109,21 @@ export default function Dashboard() {
           <div className="col-span-2 bg-card border border-border rounded-2xl p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold">Pipeline Activo (CRM)</h3>
-              <button className="text-primary text-sm font-medium hover:underline">Ver todo</button>
+              <Link href="/admin/prospectos" className="text-primary text-sm font-medium hover:underline">Ver todo</Link>
             </div>
             <div className="space-y-4">
-              <PipelineItem name="Carlos Martínez" status="Negociación" property="Penthouse Polanco" amount="$1,200,000" progress={75} />
-              <PipelineItem name="Laura Gómez" status="Firma de Contrato" property="Casa Lomas" amount="$850,000" progress={90} />
-              <PipelineItem name="Roberto Sánchez" status="Visita Agendada" property="Depto Condesa" amount="$450,000" progress={30} />
+              {pipelineLeads.length > 0 ? pipelineLeads.map(lead => (
+                <PipelineItem 
+                  key={lead.id}
+                  name={lead.name} 
+                  status={lead.status} 
+                  property={lead.property?.title || 'Sin propiedad asignada'} 
+                  amount={lead.budget ? formatCurrency(Number(lead.budget)) : 'TBD'} 
+                  progress={getProgressByStatus(lead.status)} 
+                />
+              )) : (
+                <p className="text-sm text-foreground/50 py-4 text-center border border-dashed border-border rounded-xl">No hay prospectos activos.</p>
+              )}
             </div>
           </div>
 
@@ -71,18 +137,21 @@ export default function Dashboard() {
             </div>
             
             <div className="flex-1 space-y-4">
-              <CallItem 
-                caller="+52 55 1234 5678" 
-                time="Hace 10 min" 
-                summary="Cliente interesado en la casa de zona sur. Generar tarea para enviarle fotos."
-                aiAction="Tarea Creada"
-              />
-              <CallItem 
-                caller="María Fernanda" 
-                time="Hace 1 hora" 
-                summary="Pregunta por comisiones de venta. Se le enviará el PDF con las políticas."
-                aiAction="Resumen Guardado"
-              />
+              {recentCalls.length > 0 ? recentCalls.map(call => {
+                const timeDiff = Math.floor((new Date().getTime() - new Date(call.createdAt).getTime()) / 1000 / 60);
+                const timeStr = timeDiff < 60 ? `Hace ${timeDiff} min` : `Hace ${Math.floor(timeDiff/60)} h`;
+                return (
+                  <CallItem 
+                    key={call.id}
+                    caller={call.lead?.name || 'Desconocido'} 
+                    time={timeStr} 
+                    summary={call.summary || 'Sin resumen'}
+                    aiAction={call.commitments ? "Compromiso Guardado" : "Resumen Guardado"}
+                  />
+                )
+              }) : (
+                <p className="text-sm text-foreground/50 py-4 text-center border border-dashed border-border rounded-xl">No hay llamadas recientes.</p>
+              )}
             </div>
 
             <button className="w-full mt-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-background transition-colors">
@@ -95,27 +164,31 @@ export default function Dashboard() {
         {/* Properties Showcase */}
         <div className="mt-8">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold">Propiedades Destacadas</h3>
+            <h3 className="text-xl font-bold">Propiedades Recientes</h3>
+            <Link href="/admin/propiedades" className="text-primary text-sm font-medium hover:underline">Ver catálogo completo</Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <PropertyCard 
-              title="Villa Contemporánea" 
-              location="Jardines del Pedregal" 
-              price="$1,500,000"
-              image="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=600"
-            />
-            <PropertyCard 
-              title="Departamento Luxury" 
-              location="Polanco, CDMX" 
-              price="$850,000"
-              image="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=600"
-            />
-            <PropertyCard 
-              title="Casa Estilo Colonial" 
-              location="Coyoacán" 
-              price="$1,100,000"
-              image="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600"
-            />
+            {featuredProperties.length > 0 ? featuredProperties.map(prop => {
+              let imageStr = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=600';
+              try {
+                const parsed = JSON.parse(prop.images || '[]');
+                if (parsed.length > 0) imageStr = parsed[0];
+              } catch(e) {}
+              
+              return (
+                <PropertyCard 
+                  key={prop.id}
+                  title={prop.title} 
+                  location={prop.location} 
+                  price={formatCurrency(Number(prop.price))}
+                  image={imageStr}
+                />
+              )
+            }) : (
+              <div className="col-span-3">
+                <p className="text-sm text-foreground/50 py-8 text-center border border-dashed border-border rounded-xl">No hay propiedades registradas aún.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -125,16 +198,7 @@ export default function Dashboard() {
 }
 
 // Helper Components
-function NavItem({ icon, label, active = false }: { icon: React.ReactNode, label: string, active?: boolean }) {
-  return (
-    <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${active ? 'bg-primary text-primary-foreground' : 'text-foreground/70 hover:bg-background hover:text-foreground'}`}>
-      {React.cloneElement(icon as React.ReactElement<any>, { className: "w-5 h-5" })}
-      {label}
-    </button>
-  );
-}
-
-function StatCard({ title, value, trend, highlight = false }: { title: string, value: string, trend: string, highlight?: boolean }) {
+const StatCard = React.memo(function StatCard({ title, value, trend, highlight = false }: { title: string, value: string, trend: string, highlight?: boolean }) {
   return (
     <div className={`p-6 rounded-2xl border ${highlight ? 'border-primary bg-primary/5' : 'border-border bg-card'} hover-lift`}>
       <p className="text-sm text-foreground/60 font-medium mb-1">{title}</p>
@@ -142,18 +206,18 @@ function StatCard({ title, value, trend, highlight = false }: { title: string, v
       <p className="text-xs text-foreground/50 mt-2">{trend}</p>
     </div>
   );
-}
+});
 
-function PipelineItem({ name, status, property, amount, progress }: { name: string, status: string, property: string, amount: string, progress: number }) {
+const PipelineItem = React.memo(function PipelineItem({ name, status, property, amount, progress }: { name: string, status: string, property: string, amount: string, progress: number }) {
   return (
     <div className="p-4 rounded-xl border border-border/50 bg-background/50 hover:bg-background transition-colors flex items-center justify-between">
       <div className="flex flex-col gap-1 w-1/3">
         <span className="font-semibold">{name}</span>
-        <span className="text-xs text-foreground/60">{property}</span>
+        <span className="text-xs text-foreground/60 truncate">{property}</span>
       </div>
       <div className="w-1/3 px-4">
         <div className="flex justify-between text-xs mb-1">
-          <span>{status}</span>
+          <span className="truncate max-w-[80%]">{status}</span>
           <span>{progress}%</span>
         </div>
         <div className="w-full bg-border rounded-full h-1.5">
@@ -168,38 +232,38 @@ function PipelineItem({ name, status, property, amount, progress }: { name: stri
       </button>
     </div>
   );
-}
+});
 
-function CallItem({ caller, time, summary, aiAction }: { caller: string, time: string, summary: string, aiAction: string }) {
+const CallItem = React.memo(function CallItem({ caller, time, summary, aiAction }: { caller: string, time: string, summary: string, aiAction: string }) {
   return (
     <div className="p-4 rounded-xl bg-background border border-border/50 text-sm relative">
       <div className="flex justify-between items-start mb-2">
         <span className="font-bold">{caller}</span>
         <span className="text-xs text-foreground/50">{time}</span>
       </div>
-      <p className="text-foreground/70 text-xs mb-3 leading-relaxed">{summary}</p>
+      <p className="text-foreground/70 text-xs mb-3 leading-relaxed line-clamp-2">{summary}</p>
       <div className="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2 py-1 rounded text-xs font-medium">
         ✨ IA: {aiAction}
       </div>
     </div>
   );
-}
+});
 
-function PropertyCard({ title, location, price, image }: { title: string, location: string, price: string, image: string }) {
+const PropertyCard = React.memo(function PropertyCard({ title, location, price, image }: { title: string, location: string, price: string, image: string }) {
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden hover-lift group cursor-pointer">
       <div className="h-48 overflow-hidden relative">
-        <img src={image} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        <DriveImagePreview url={image} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         <div className="absolute top-3 left-3 bg-card/80 backdrop-blur-md px-2 py-1 rounded text-xs font-bold">
           {price}
         </div>
       </div>
       <div className="p-4">
-        <h4 className="font-bold text-lg mb-1">{title}</h4>
-        <p className="text-foreground/60 text-sm flex items-center gap-1">
-          <MapPin className="w-3 h-3" /> {location}
+        <h4 className="font-bold text-lg mb-1 truncate">{title}</h4>
+        <p className="text-foreground/60 text-sm flex items-center gap-1 truncate">
+          <MapPin className="w-3 h-3 shrink-0" /> {location}
         </p>
       </div>
     </div>
   );
-}
+});

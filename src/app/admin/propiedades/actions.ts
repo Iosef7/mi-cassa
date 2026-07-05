@@ -73,11 +73,10 @@ export async function createProject(formData: FormData) {
   }
 }
 
-import { GoogleGenAI } from '@google/genai';
+import { generateAiContent } from '@/lib/ai-service';
 
 export async function generatePropertyDescription(data: any) {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const prompt = `Eres un experto redactor inmobiliario (copywriter). Escribe una descripción atractiva y profesional para una propiedad con los siguientes datos:
     
 - Título: ${data.title || 'Sin especificar'}
@@ -91,8 +90,8 @@ export async function generatePropertyDescription(data: any) {
 
 Escribe la descripción en español, resaltando los beneficios y creando un tono persuasivo, elegante y directo. Separa los párrafos para que sea fácil de leer. No uses saludos, ni inventes características irreales (pero puedes inferir beneficios obvios). Devuelve directamente el texto de la descripción sin introducciones.`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const response = await generateAiContent({
+      operationType: 'PropertyDescriptionGeneration',
       contents: prompt,
     });
     return { success: true, description: response.text };

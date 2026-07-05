@@ -2,16 +2,21 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createFolder } from '@/lib/google-drive';
 
+import { revalidatePath } from 'next/cache';
+
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const url = new URL(request.url);
+    const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!) : 50;
+
     const properties = await prisma.property.findMany({
+      take: limit,
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         title: true,
-        description: true,
         price: true,
         minPrice: true,
         type: true,
@@ -21,8 +26,8 @@ export async function GET() {
         bathrooms: true,
         area: true,
         availableUnits: true,
-        deliveryDate: true
-        // NOT FETCHING 'images' because it contains massive base64 strings that take 12s to download
+        deliveryDate: true,
+        images: true // Re-enable fetching images to show the preview
       }
     });
 
@@ -98,6 +103,8 @@ export async function POST(request: Request) {
       }
     });
 
+    revalidatePath('/admin/propiedades');
+    revalidatePath('/api/properties');
     return NextResponse.json(property, { status: 201 });
   } catch (error) {
     console.error("Error creating property:", error);

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { uploadFile } from '@/lib/google-drive';
+import { uploadFile, uploadFileWithUserToken } from '@/lib/google-drive';
 
 export async function POST(request: Request) {
   try {
@@ -11,15 +11,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Faltan parámetros requeridos (file, parentId)' }, { status: 400 });
     }
 
+    const authHeader = request.headers.get('Authorization');
+    let userToken = null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      userToken = authHeader.split(' ')[1];
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
     
     // Subir a Drive
-    const uploaded = await uploadFile(
-      buffer,
-      file.name,
-      file.type,
-      parentId
-    );
+    let uploaded;
+    if (userToken) {
+      uploaded = await uploadFileWithUserToken(buffer, file.name, file.type, parentId, userToken);
+    } else {
+      uploaded = await uploadFile(buffer, file.name, file.type, parentId);
+    }
 
     return NextResponse.json(uploaded);
   } catch (error) {

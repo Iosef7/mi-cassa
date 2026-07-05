@@ -1,20 +1,18 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
 import { prisma } from '@/lib/prisma';
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+import { generateAiContent } from '@/lib/ai-service';
 
 export async function POST(request: Request) {
   try {
-    const { prompt, currentUserId } = await request.json();
+    const { prompt, currentUserId, targetUserId } = await request.json();
 
     if (!prompt) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
     }
 
-    // Fetch agents and leads to provide context to the AI
-    const agents = await prisma.user.findMany({ select: { id: true, name: true, role: true } });
-    const leads = await prisma.lead.findMany({ select: { id: true, name: true } });
+    // Fetch agents and leads to provide context to the AI (limited to prevent memory/token exhaustion)
+    const agents = await prisma.user.findMany({ take: 50, select: { id: true, name: true, role: true } });
+    const leads = await prisma.lead.findMany({ take: 50, orderBy: { createdAt: 'desc' }, select: { id: true, name: true } });
     
     // Find the current user name for self-referential mapping
     const currentUser = agents.find(a => a.id === currentUserId);
@@ -31,6 +29,9 @@ ${JSON.stringify(leads)}
 The user requesting this is: ${currentUser?.name || 'Unknown'} (ID: ${currentUserId}). 
 If the user uses words like "yo", "mí", "mi", "me", "recuérdame", "recordarme", it refers to this user.
 
+${targetUserId ? `CRITICAL RULE: The user has EXPLICITLY selected to assign these tasks to the agent with ID "${targetUserId}". 
+Unless the text explicitly mentions another agent's name, you MUST set "assignedTo" to "${targetUserId}" for all tasks.` : ''}
+
 Given the prompt, return a JSON array containing objects with the following fields:
 - title: The task title
 - assignedTo: The ID of the agent this task should be assigned to. Map names correctly. If it refers to "me", use ${currentUserId}.
@@ -40,8 +41,8 @@ Given the prompt, return a JSON array containing objects with the following fiel
 
 Return ONLY a valid JSON array of objects. Do not include markdown formatting or backticks around the json.`;
 
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+    const response = await generateAiContent({
+        operationType: 'TaskDelegation',
         contents: prompt,
         config: {
             systemInstruction: systemPrompt,
@@ -61,7 +62,7 @@ Return ONLY a valid JSON array of objects. Do not include markdown formatting or
 
     // Create the tasks in parallel
     const createdTasks = await Promise.all(tasksData.map(async (taskObj) => {
-      return prisma.task.create({
+      const createdTask = await prisma.task.create({
         data: {
           title: taskObj.title || prompt,
           assignedTo: taskObj.assignedTo || null,
@@ -74,6 +75,20 @@ Return ONLY a valid JSON array of objects. Do not include markdown formatting or
           lead: true,
         }
       });
+      
+      // Crear notificación si está asignado a alguien y no es el creador mismo (opcional, pero útil)
+      if (createdTask.assignedTo && createdTask.assignedTo !== currentUserId) {
+        await prisma.notification.create({
+          data: {
+            userId: createdTask.assignedTo,
+            title: "Nueva Tarea Asignada",
+            message: createdTask.title,
+            link: "/admin/tareas", // Enlace a donde puedan ver sus tareas
+          }
+        });
+      }
+      
+      return createdTask;
     }));
 
     return NextResponse.json(createdTasks);

@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { GoogleGenAI } from '@google/genai';
-
-// Instanciar Gemini
-// El SDK usa la variable GEMINI_API_KEY del entorno automáticamente si está disponible.
-const ai = new GoogleGenAI({});
+import { generateAiContent } from '@/lib/ai-service';
 
 export async function POST(req: Request) {
   try {
@@ -27,19 +23,28 @@ export async function POST(req: Request) {
         "leadNameOrPhone": "Nombre o número de teléfono del cliente si se menciona. Si no hay indicios, devuelve nulo",
         "sentiment": "POSITIVO, NEUTRO o NEGATIVO (qué tan buena fue la interacción)",
         "keyPoints": ["punto 1", "punto 2"],
-        "commitments": ["tarea 1 acordada", "tarea 2 acordada"]
+        "commitments": ["tarea 1 acordada", "tarea 2 acordada"],
+        "extractedFields": {
+          "type": "CLIENTE o PROPIETARIO",
+          "budget": "numero (float) o nulo",
+          "urgency": "Alta, Media, Baja o nulo",
+          "propertyTypeOfInterest": "string o nulo",
+          "targetLocations": "string o nulo",
+          "reasonForSelling": "string o nulo",
+          "hasPropertyToSell": "booleano o nulo",
+          "requiresMortgage": "booleano o nulo",
+          "isLegalClear": "booleano o nulo"
+        }
       }
       
       Solo devuelve el JSON puro, sin marcadores de markdown.
     `;
 
-    // Medir uso de tokens
-    let aiUsageRecord = null;
     let aiResponseText = '';
 
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+      const response = await generateAiContent({
+        operationType: 'CallSummaryAndExtraction',
         contents: promptText,
         config: {
           temperature: 0.2, // Baja temperatura para mayor precisión y JSON determinista
@@ -49,27 +54,6 @@ export async function POST(req: Request) {
       // Limpiar texto para asegurar que es JSON
       aiResponseText = response.text || '{}';
       const cleanJsonStr = aiResponseText.replace(/^```json\n?/, '').replace(/```$/m, '').trim();
-      
-      // Registrar el uso en la BD
-      // Nota: El SDK nuevo de @google/genai puede que no exponga los usage metadata directamente en la forma fácil, 
-      // así que estimaremos el token count basándonos en caracteres o si lo trae el response.
-      const promptTokens = response.usageMetadata?.promptTokenCount || Math.floor(promptText.length / 4);
-      const completionTokens = response.usageMetadata?.candidatesTokenCount || Math.floor(aiResponseText.length / 4);
-      
-      // Costo estimado Gemini 2.5 Flash: $0.075 / 1M prompt tokens, $0.30 / 1M completion tokens
-      const costUSD = (promptTokens / 1000000) * 0.075 + (completionTokens / 1000000) * 0.3;
-
-      aiUsageRecord = await prisma.aiUsage.create({
-        data: {
-          provider: 'Google',
-          model: 'gemini-2.5-flash',
-          operationType: 'CallSummaryAndExtraction',
-          promptTokens,
-          completionTokens,
-          costUSD,
-          status: 'SUCCESS'
-        }
-      });
       
       const extractedData = JSON.parse(cleanJsonStr);
       
@@ -87,6 +71,18 @@ export async function POST(req: Request) {
         });
       }
 
+      const extracted = extractedData.extractedFields || {};
+      const leadDataToUpdate: any = {};
+      if (extracted.type && ["CLIENTE", "PROPIETARIO"].includes(extracted.type)) leadDataToUpdate.type = extracted.type;
+      if (typeof extracted.budget === 'number') leadDataToUpdate.budget = extracted.budget;
+      if (extracted.urgency && ["Alta", "Media", "Baja"].includes(extracted.urgency)) leadDataToUpdate.urgency = extracted.urgency;
+      if (extracted.propertyTypeOfInterest && typeof extracted.propertyTypeOfInterest === 'string') leadDataToUpdate.propertyTypeOfInterest = extracted.propertyTypeOfInterest;
+      if (extracted.targetLocations && typeof extracted.targetLocations === 'string') leadDataToUpdate.targetLocations = extracted.targetLocations;
+      if (extracted.reasonForSelling && typeof extracted.reasonForSelling === 'string') leadDataToUpdate.reasonForSelling = extracted.reasonForSelling;
+      if (typeof extracted.hasPropertyToSell === 'boolean') leadDataToUpdate.hasPropertyToSell = extracted.hasPropertyToSell;
+      if (typeof extracted.requiresMortgage === 'boolean') leadDataToUpdate.requiresMortgage = extracted.requiresMortgage;
+      if (typeof extracted.isLegalClear === 'boolean') leadDataToUpdate.isLegalClear = extracted.isLegalClear;
+
       // Si no encontró Lead específico, asignamos a un Lead Genérico de "Llamadas por Asignar"
       if (!targetLead) {
         targetLead = await prisma.lead.findFirst({
@@ -100,10 +96,22 @@ export async function POST(req: Request) {
               name: 'Llamadas por Asignar',
               phone: '0000000000',
               status: 'NUEVO',
-              notes: 'Leads no identificados provenientes de llamadas automáticas.'
+              notes: 'Leads no identificados provenientes de llamadas automáticas.',
+              ...leadDataToUpdate
             }
           });
+        } else if (Object.keys(leadDataToUpdate).length > 0) {
+          targetLead = await prisma.lead.update({
+            where: { id: targetLead.id },
+            data: leadDataToUpdate
+          });
         }
+      } else if (Object.keys(leadDataToUpdate).length > 0) {
+        // Actualizar el lead existente encontrado
+        targetLead = await prisma.lead.update({
+          where: { id: targetLead.id },
+          data: leadDataToUpdate
+        });
       }
 
       // --- 3. Guardar la Llamada ---
@@ -142,16 +150,7 @@ export async function POST(req: Request) {
     } catch (aiError) {
       console.error('Error de IA:', aiError);
       
-      // Registrar error
-      await prisma.aiUsage.create({
-        data: {
-          provider: 'Google',
-          model: 'gemini-2.5-flash',
-          operationType: 'CallSummaryAndExtraction',
-          status: 'ERROR',
-          errorMessage: String(aiError)
-        }
-      });
+      // Registrar error se encarga ai-service
       
       return NextResponse.json({ error: 'Error procesando la IA' }, { status: 500 });
     }

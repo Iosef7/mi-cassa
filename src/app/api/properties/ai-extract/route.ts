@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+import { generateAiContent, ai } from "@/lib/ai-service";
 import { writeFile, unlink } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -19,7 +19,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const uploadedAiFiles = [];
     const tempFilePaths = [];
 
@@ -155,8 +154,8 @@ Responde SOLO con el JSON válido.
     contents.push({ text: promptText });
 
     // 3. Llamar al modelo de Gemini
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+    const response = await generateAiContent({
+      operationType: "PropertyDataExtraction",
       contents: contents,
       config: {
         responseMimeType: "application/json",

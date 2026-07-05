@@ -106,7 +106,7 @@ export default function CallCard({ call }: CallCardProps) {
               <PlayCircle size={16} className="text-slate-400" />
               Grabación Original
             </h4>
-            <audio controls className="w-full max-w-md h-10 outline-none">
+            <audio controls preload="metadata" className="w-full max-w-md h-10 outline-none min-w-0">
               <source src={call.audioUrl} type="audio/mpeg" />
               Tu navegador no soporta el elemento de audio.
             </audio>

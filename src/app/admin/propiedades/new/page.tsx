@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Edit, Save, Trash2, MapPin, Building, Image as ImageIcon, FileText, Plus, X, BedDouble, Bath, Maximize, Car, Calendar, Users, Phone, Mail, FolderLock, Globe, Shield, Dumbbell, Waves, Trees, Link as LinkIcon, BadgePercent, BadgeCheck, Upload, GripVertical, Loader2, Activity, CheckCircle2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { GoogleDrivePicker } from '@/components/GoogleDrivePicker';
 import { DriveFolderManager } from '@/components/DriveFolderManager';
 import { createProject, generatePropertyDescription } from '../actions';
+import { showAlert } from '@/lib/alerts';
 
 const getDisplayUrl = (url: string, driveThumbnails?: Record<string, string>) => {
   if (driveThumbnails && driveThumbnails[url]) return driveThumbnails[url];
@@ -80,17 +82,17 @@ const MortgageCalculator = ({ price }: { price: number }) => {
   const formatPrice = (p: number) => new Intl.NumberFormat('en-IL', { style: 'currency', currency: 'ILS' }).format(p);
 
   return (
-    <div className="bg-card border border-border rounded-3xl p-8 shadow-sm mt-8">
-      <div className="flex items-center gap-3 mb-8">
+    <div className="bg-card border border-border rounded-3xl p-6 shadow-sm mt-6">
+      <div className="flex items-center gap-3 mb-6">
         <div className="w-4 h-4 bg-red-600 rotate-45 rounded-sm"></div>
         <h3 className="text-2xl font-bold text-foreground">Primer paso hacia tu nuevo hogar</h3>
       </div>
       
-      <div className="space-y-8">
+      <div className="space-y-6">
         <div>
-          <div className="flex justify-between mb-4">
+          <div className="flex justify-between mb-2">
             <span className="font-bold text-lg">{formatPrice(downPayment)}</span>
-            <span className="text-muted-foreground font-medium">¿Cuál es tu capital inicial?</span>
+            <span className="text-muted-foreground font-medium text-sm">¿Cuál es tu capital inicial?</span>
           </div>
           <input 
             type="range" 
@@ -102,9 +104,9 @@ const MortgageCalculator = ({ price }: { price: number }) => {
         </div>
 
         <div>
-          <div className="flex justify-between mb-4">
+          <div className="flex justify-between mb-2">
             <span className="font-bold text-lg">{years} Años</span>
-            <span className="text-muted-foreground font-medium">¿A cuántos años quieres pagarlo?</span>
+            <span className="text-muted-foreground font-medium text-sm">¿A cuántos años quieres pagarlo?</span>
           </div>
           <input 
             type="range" 
@@ -115,7 +117,22 @@ const MortgageCalculator = ({ price }: { price: number }) => {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-muted/30 p-6 rounded-2xl border border-border mt-8">
+        <div className="flex gap-3 justify-start items-center mb-4">
+          <button 
+            onClick={(e) => { e.preventDefault(); setDownPayment(price * 0.25); }}
+            className="px-4 py-1.5 bg-muted hover:bg-muted/80 text-foreground font-medium rounded-full text-xs transition-colors border border-border"
+          >
+            25% Enganche ({formatPrice(price * 0.25)})
+          </button>
+          <button 
+            onClick={(e) => { e.preventDefault(); setDownPayment(price * 0.50); }}
+            className="px-4 py-1.5 bg-muted hover:bg-muted/80 text-foreground font-medium rounded-full text-xs transition-colors border border-border"
+          >
+            50% Enganche ({formatPrice(price * 0.50)})
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-muted/30 p-4 rounded-2xl border border-border">
           <div className="text-center border-b md:border-b-0 md:border-r border-border pb-4 md:pb-0">
             <p className="text-muted-foreground text-sm font-medium mb-1">Pago mensual estimado</p>
             <p className="text-3xl font-black text-red-600">{formatPrice(monthlyPayment)}</p>
@@ -130,8 +147,8 @@ const MortgageCalculator = ({ price }: { price: number }) => {
           </div>
         </div>
 
-        <div className="flex justify-center mt-8">
-          <button className="bg-red-600 hover:bg-red-700 text-white px-10 py-4 rounded-full text-lg font-bold transition-colors shadow-lg shadow-red-600/20">
+        <div className="flex justify-center mt-6">
+          <button onClick={(e) => e.preventDefault()} className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full text-base font-bold transition-colors shadow-lg shadow-red-600/20">
             Obtener Propuesta
           </button>
         </div>
@@ -206,9 +223,6 @@ export default function NewProjectPage() {
   const handleFileUpload = async (files: FileList | null, listSetter: React.Dispatch<React.SetStateAction<string[]>>) => {
     if (!files || files.length === 0) return;
     
-    // In creation mode we can't upload directly to Drive because the folder doesn't exist yet.
-    // For now we'll convert images to base64 for preview, but note that large files might fail.
-    // Ideally, users will provide URLs or sync from Drive later, but we support local upload via Data URI for preview.
     setIsUploading(true);
     try {
       const uploadedUrls: string[] = [];
@@ -225,7 +239,7 @@ export default function NewProjectPage() {
       listSetter(prev => [...prev, ...uploadedUrls]);
     } catch (err) {
       console.error(err);
-      alert("Error procesando archivos locales.");
+      showAlert('Error', 'Error procesando archivos locales.', 'error');
     } finally {
       setIsUploading(false);
     }
@@ -275,31 +289,25 @@ export default function NewProjectPage() {
       
       if (result.success && result.data) {
         const d = result.data;
-        setProperty(prev => ({
-          ...prev,
-          title: d.title || prev.title,
-          description: d.description || prev.description,
-          price: d.price?.toString() || prev.price,
-          type: d.type || prev.type,
-          location: d.location || prev.location,
-          bedrooms: d.bedrooms || prev.bedrooms,
-          bathrooms: d.bathrooms || prev.bathrooms,
-          area: d.area || prev.area
-        }));
-        setFormData(prev => ({ 
-          ...prev,
-          title: d.title || prev.title,
-          description: d.description || prev.description,
-          price: d.price?.toString() || prev.price,
-          type: d.type || prev.type,
-          location: d.location || prev.location,
-          bedrooms: d.bedrooms || prev.bedrooms,
-          bathrooms: d.bathrooms || prev.bathrooms,
-          area: d.area || prev.area
-        }));
+        let keysUpdated = 0;
+        const newData = {
+          title: d.title || property.title,
+          description: d.description || property.description,
+          price: d.price?.toString() || property.price,
+          type: d.type || property.type,
+          location: d.location || property.location,
+          bedrooms: d.bedrooms || property.bedrooms,
+          bathrooms: d.bathrooms || property.bathrooms,
+          area: d.area || property.area
+        };
+        Object.keys(newData).forEach(k => { if ((newData as any)[k] !== (property as any)[k]) keysUpdated++; });
+        
+        setProperty(prev => ({ ...prev, ...newData }));
+        setFormData(prev => ({ ...prev, ...newData }));
         
         if (d.dynamicFeatures && Object.keys(d.dynamicFeatures).length > 0) {
           setDynamicFeatures(d.dynamicFeatures);
+          keysUpdated++;
         }
         
         if (d.fileCategorization && result.filesData) {
@@ -307,33 +315,30 @@ export default function NewProjectPage() {
             
             if (d.fileCategorization.images) {
                 const imgUrls = d.fileCategorization.images.map((name: string) => filesData[name] || (name.startsWith('http') ? name : null)).filter(Boolean);
-                if (imgUrls.length > 0) setImagesList(prev => [...prev, ...imgUrls]);
+                if (imgUrls.length > 0) { setImagesList(prev => [...prev, ...imgUrls]); keysUpdated++; }
             }
             if (d.fileCategorization.presentations) {
                 const presUrls = d.fileCategorization.presentations.map((name: string) => filesData[name] || (name.startsWith('http') ? name : null)).filter(Boolean);
-                if (presUrls.length > 0) setPresentationsList(prev => [...prev, ...presUrls]);
+                if (presUrls.length > 0) { setPresentationsList(prev => [...prev, ...presUrls]); keysUpdated++; }
             }
             if (d.fileCategorization.videos) {
                 const vidUrls = d.fileCategorization.videos.map((name: string) => filesData[name] || (name.startsWith('http') ? name : null)).filter(Boolean);
-                if (vidUrls.length > 0) setVideosList(prev => [...prev, ...vidUrls]);
+                if (vidUrls.length > 0) { setVideosList(prev => [...prev, ...vidUrls]); keysUpdated++; }
             }
             if (d.fileCategorization.posters) {
                 const postUrls = d.fileCategorization.posters.map((name: string) => filesData[name] || (name.startsWith('http') ? name : null)).filter(Boolean);
-                if (postUrls.length > 0) setPostersList(prev => [...prev, ...postUrls]);
+                if (postUrls.length > 0) { setPostersList(prev => [...prev, ...postUrls]); keysUpdated++; }
             }
             if (d.fileCategorization.legalDocs) {
                 const docUrls = d.fileCategorization.legalDocs.map((name: string) => filesData[name] || (name.startsWith('http') ? name : null)).filter(Boolean);
-                if (docUrls.length > 0) setLegalDocsList(prev => [...prev, ...docUrls]);
+                if (docUrls.length > 0) { setLegalDocsList(prev => [...prev, ...docUrls]); keysUpdated++; }
             }
         }
         
-        // Check if anything was actually extracted
-        const hasExtractedInfo = d.title || d.description || d.price || d.type || d.location || d.bedrooms || d.bathrooms || d.area || (d.dynamicFeatures && Object.keys(d.dynamicFeatures).length > 0) || (d.fileCategorization && Object.values(d.fileCategorization).some((arr: any) => arr.length > 0));
-        
-        if (hasExtractedInfo) {
-          alert("¡Información extraída y autocompletada con éxito!");
+        if (keysUpdated > 0) {
+          showAlert('Éxito', '¡Información extraída y autocompletada con éxito!', 'success');
         } else {
-          alert("La IA analizó tu solicitud pero no encontró nueva información clara para extraer. Si usaste archivos de Google Drive sin añadir texto, recuerda que la IA no puede leer el contenido interno de esos enlaces privados por seguridad.");
+          showAlert('Atención', 'La IA analizó tu solicitud pero no encontró nueva información clara para extraer. Si usaste archivos de Google Drive sin añadir texto, recuerda que la IA no puede leer el contenido interno de esos enlaces privados por seguridad.', 'warning');
         }
 
         // Clear AI inputs after success
@@ -342,12 +347,11 @@ export default function NewProjectPage() {
         setAiDriveUrls([]);
         setAiDriveToken(null);
       } else {
-        alert(result.error || "Error al procesar la IA.");
+        showAlert('Error', result.error || "Error al procesar la IA.", 'error');
       }
-    } catch (e) {
-      clearInterval(progressInterval);
-      console.error(e);
-      alert("Error crítico conectando con el asistente IA.");
+    } catch (error) {
+      console.error("AI Assistant Error:", error);
+      showAlert('Error Crítico', "Error conectando con el asistente IA.", 'error');
     } finally {
       setTimeout(() => {
         setIsAiLoading(false);
@@ -367,7 +371,7 @@ export default function NewProjectPage() {
 
   const handleCreateSubmit = async () => {
     if (!selectedFolder) {
-      alert("Por favor selecciona una carpeta de Google Drive en Configuración Inicial.");
+      showAlert('Atención', 'Por favor selecciona una carpeta de Google Drive en Configuración Inicial.', 'warning');
       return;
     }
     
@@ -836,7 +840,7 @@ export default function NewProjectPage() {
                                 if (res.success && res.description) {
                                   setFormData({ ...formData, description: res.description });
                                 } else {
-                                  alert('Error al generar la descripción');
+                                  showAlert('Error', 'Error al generar la descripción', 'error');
                                 }
                                 setIsGenerating(false);
                               }}
@@ -1142,10 +1146,10 @@ export default function NewProjectPage() {
                                 if (data.results && data.results.length > 0) {
                                   setNearbyPlacesList([...nearbyPlacesList, ...data.results]);
                                 } else {
-                                  alert('No se encontraron lugares o falta configurar la API Key de Google.');
+                                  showAlert('Atención', 'No se encontraron lugares o falta configurar la API Key de Google.', 'warning');
                                 }
                               } catch (err) {
-                                alert('Error al buscar lugares.');
+                                showAlert('Error', 'Error al buscar lugares.', 'error');
                               }
                             }} className="text-sm font-semibold text-blue-600 flex items-center gap-1 hover:underline ml-4"><Globe className="w-4 h-4"/> Autocompletar con Google</button>
                           </div>
@@ -1315,63 +1319,42 @@ export default function NewProjectPage() {
                 <>
                 {videosList.length > 0 ? (
                   <div className="grid grid-cols-1 gap-4">
-                    {videosList.map((url, i) => {
-                      let embedUrl = url;
-                      if (url.includes('youtube.com/watch?v=')) embedUrl = url.replace('watch?v=', 'embed/');
-                      else if (url.includes('youtu.be/')) embedUrl = url.replace('youtu.be/', 'www.youtube.com/embed/');
-                      
-                      const isIframe = embedUrl.includes('youtube') || embedUrl.includes('matterport');
-                      const isVideoFile = url.startsWith('data:video/') || url.match(/\.(mp4|webm|ogg)$/i);
-                      const canExpand = isIframe || isVideoFile;
-                      const isExpanded = expandedVideos.includes(i);
+                        {videosList.map((url, i) => {
+                          let embedUrl = url;
+                          if (url.includes('youtube.com/watch?v=')) embedUrl = url.replace('watch?v=', 'embed/');
+                          else if (url.includes('youtu.be/')) embedUrl = url.replace('youtu.be/', 'www.youtube.com/embed/');
+                          else if (url.includes('drive.google.com/file/d/')) embedUrl = url.replace(/\/view.*$/, '/preview');
+                          
+                          const isVideoFile = url.startsWith('data:video/') || url.match(/\.(mp4|webm|ogg)$/i);
 
-                      return (
-                        <div key={i} className="flex flex-col gap-2">
-                          {!isExpanded ? (
-                            <button 
-                              onClick={() => canExpand ? setExpandedVideos([...expandedVideos, i]) : window.open(url, '_blank')}
-                              className="flex items-center justify-between p-3 bg-muted rounded-2xl hover:bg-primary/5 transition-colors group w-full text-left border border-transparent hover:border-primary/20"
-                            >
-                              <div className="flex items-center gap-3 overflow-hidden">
-                                <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center shrink-0 shadow-sm">
-                                  <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-white border-b-[5px] border-b-transparent ml-1"></div>
-                                </div>
-                                <span className="text-sm font-medium truncate group-hover:text-primary transition-colors">Ver Video / Recorrido {i + 1}</span>
-                              </div>
-                              {canExpand ? (
-                                <Maximize className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                              ) : (
-                                <div className="text-xs font-bold text-red-600 bg-red-500/10 px-3 py-1 rounded-full">Abrir link</div>
-                              )}
-                            </button>
-                          ) : (
-                            <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
-                              <div className="flex items-center justify-between gap-2 px-2">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center shrink-0">
-                                    <div className="w-0 h-0 border-t-[3px] border-t-transparent border-l-[4px] border-l-white border-b-[3px] border-b-transparent ml-0.5"></div>
+                          return (
+                            <div key={i} className="flex flex-col gap-2">
+                              <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
+                                <div className="flex items-center justify-between gap-2 px-2">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center shrink-0">
+                                      <div className="w-0 h-0 border-t-[3px] border-t-transparent border-l-[4px] border-l-white border-b-[3px] border-b-transparent ml-0.5"></div>
+                                    </div>
+                                    <span className="font-bold text-sm text-foreground">Video / Recorrido {i + 1}</span>
                                   </div>
-                                  <span className="font-bold text-sm text-foreground">Video / Recorrido {i + 1}</span>
+                                  <button 
+                                    onClick={() => window.open(url, '_blank')}
+                                    className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-xl transition-colors"
+                                  >
+                                    <Globe className="w-3 h-3" /> Abrir link
+                                  </button>
                                 </div>
-                                <button 
-                                  onClick={() => setExpandedVideos(expandedVideos.filter(id => id !== i))}
-                                  className="text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1 bg-muted px-2 py-1 rounded-lg transition-colors"
-                                >
-                                  <X className="w-3 h-3" /> Contraer
-                                </button>
-                              </div>
-                              <div className="w-full aspect-video rounded-2xl overflow-hidden border border-border shadow-sm bg-muted relative">
-                                {isVideoFile ? (
-                                  <video src={url} controls className="w-full h-full bg-black" />
-                                ) : (
-                                  <iframe src={embedUrl} className="w-full h-full" allowFullScreen></iframe>
-                                )}
+                                <div className="w-full aspect-video rounded-2xl overflow-hidden border border-border shadow-sm bg-muted relative">
+                                  {isVideoFile ? (
+                                    <video src={url} controls className="w-full h-full bg-black" />
+                                  ) : (
+                                    <iframe src={embedUrl} className="w-full h-full" allowFullScreen></iframe>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                          );
+                        })}
                   </div>
                 ) : (
                   <div onClick={() => setEditingSection('videos')} className="cursor-pointer hover:bg-muted/80 transition-colors p-6 bg-muted rounded-2xl border border-dashed border-border flex flex-col items-center justify-center text-muted-foreground text-sm text-center">
@@ -1753,11 +1736,13 @@ export default function NewProjectPage() {
           </button>
 
           <div className="w-full max-w-6xl max-h-[90vh] p-4 flex items-center justify-center relative" onClick={() => setIsLightboxOpen(false)}>
-            <img 
+            <Image 
               src={imagesList[currentImageIndex]} 
               alt={`Imagen ${currentImageIndex + 1}`} 
-              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" 
-              onClick={(e) => e.stopPropagation()}
+              fill
+              className="object-contain rounded-lg shadow-2xl p-4" 
+              sizes="100vw"
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
             />
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-sm font-medium backdrop-blur-md">
               {currentImageIndex + 1} / {imagesList.length}
@@ -1789,11 +1774,15 @@ export default function NewProjectPage() {
             {aiLightboxUrl.includes('/preview') ? (
               <iframe src={aiLightboxUrl} className="w-full h-full border-0 rounded-xl shadow-2xl bg-white" title="Google Drive Preview" />
             ) : (
-              <img 
-                src={aiLightboxUrl} 
-                alt="Previsualización" 
-                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" 
-              />
+              <div className="relative w-full h-full">
+                <Image 
+                  src={aiLightboxUrl} 
+                  alt="Previsualización" 
+                  fill
+                  className="object-contain rounded-lg shadow-2xl" 
+                  unoptimized={aiLightboxUrl.startsWith('blob:')}
+                />
+              </div>
             )}
           </div>
         </div>
@@ -1823,3 +1812,5 @@ export default function NewProjectPage() {
     </div>
   );
 }
+
+// HMR trigger 1

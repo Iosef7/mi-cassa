@@ -59,6 +59,9 @@ export default async function ProspectoDetailPage({ params }: { params: Promise<
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-3xl font-bold text-slate-900">{lead.name}</h1>
               {getStatusBadge(lead.status)}
+              <span className="bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider">
+                {lead.type}
+              </span>
             </div>
             <div className="flex flex-wrap gap-4 text-sm text-slate-600">
               <span className="flex items-center gap-1.5"><Phone size={16} className="text-slate-400" /> {lead.phone}</span>
@@ -67,10 +70,10 @@ export default async function ProspectoDetailPage({ params }: { params: Promise<
           </div>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium transition-colors border border-slate-200">
+          <Link href={`/admin/prospectos/${lead.id}/editar`} className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium transition-colors border border-slate-200">
             <Edit3 size={18} />
             Editar
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -83,42 +86,92 @@ export default async function ProspectoDetailPage({ params }: { params: Promise<
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
               <User size={18} className="text-blue-500" />
-              Detalles del Cliente
+              Detalles del {lead.type === 'PROPIETARIO' ? 'Propietario' : 'Cliente'}
             </h3>
             <div className="space-y-4">
               <div>
-                <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Presupuesto</p>
+                <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">{lead.type === 'PROPIETARIO' ? 'Precio Esperado' : 'Presupuesto'}</p>
                 <p className="text-slate-900 font-medium flex items-center gap-2 mt-1">
                   <Banknote size={16} className="text-green-600" />
                   {lead.budget ? `$${Number(lead.budget).toLocaleString()}` : 'No definido'}
                 </p>
               </div>
-              <div>
-                <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Origen</p>
-                <p className="text-slate-900 flex items-center gap-2 mt-1">
-                  <Tag size={16} className="text-amber-500" />
-                  {lead.source || 'Desconocido'}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Propiedad de Interés</p>
-                <p className="text-slate-900 flex items-center gap-2 mt-1">
-                  <Building size={16} className="text-purple-500" />
-                  {lead.property ? lead.property.title : 'Ninguna seleccionada'}
-                </p>
-              </div>
               
+              {lead.urgency && (
+                <div>
+                  <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Urgencia</p>
+                  <p className="text-slate-900 mt-1">{lead.urgency}</p>
+                </div>
+              )}
+              
+              {lead.propertyTypeOfInterest && (
+                <div>
+                  <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Tipo de Propiedad</p>
+                  <p className="text-slate-900 mt-1">{lead.propertyTypeOfInterest}</p>
+                </div>
+              )}
+
+              {lead.type === 'CLIENTE' && lead.targetLocations && (
+                <div>
+                  <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Zonas de Interés</p>
+                  <p className="text-slate-900 mt-1">{lead.targetLocations}</p>
+                </div>
+              )}
+              
+              {lead.type === 'PROPIETARIO' && lead.reasonForSelling && (
+                <div>
+                  <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Motivo de Venta</p>
+                  <p className="text-slate-900 mt-1">{lead.reasonForSelling}</p>
+                </div>
+              )}
+
+              {lead.type === 'PROPIETARIO' && lead.viewingAvailability && (
+                <div>
+                  <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Disponibilidad Visitas</p>
+                  <p className="text-slate-900 mt-1">{lead.viewingAvailability}</p>
+                </div>
+              )}
+
+              {lead.type === 'PROPIETARIO' && lead.mandateType && (
+                <div>
+                  <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Tipo de Mandato</p>
+                  <p className="text-slate-900 mt-1 font-medium">{lead.mandateType}</p>
+                </div>
+              )}
+
               <div className="pt-4 border-t border-slate-100">
-                <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Requiere Hipoteca (Mashkanta)</p>
-                <p className="text-slate-900 font-medium mt-1">
-                  {lead.requiresMortgage ? 'Sí' : 'No'}
-                </p>
+                {lead.type === 'CLIENTE' ? (
+                  <>
+                    <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider mb-2">Estado Financiero</p>
+                    <div className="space-y-1">
+                      <p className="text-slate-900 text-sm flex justify-between">Requiere Hipoteca: <span className="font-medium">{lead.requiresMortgage ? 'Sí' : 'No'}</span></p>
+                      <p className="text-slate-900 text-sm flex justify-between">Tiene Propiedad para vender: <span className="font-medium">{lead.hasPropertyToSell ? 'Sí' : 'No'}</span></p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider mb-2">Estado Legal</p>
+                    <div className="space-y-1">
+                      <p className="text-slate-900 text-sm flex justify-between">Documentos al día: <span className="font-medium">{lead.isLegalClear ? 'Sí' : 'No'}</span></p>
+                      <p className="text-slate-900 text-sm flex justify-between">Hipotecada: <span className="font-medium">{lead.hasMortgage ? 'Sí' : 'No'}</span></p>
+                      <p className="text-slate-900 text-sm flex justify-between">Acepta permuta: <span className="font-medium">{lead.acceptsTrade ? 'Sí' : 'No'}</span></p>
+                    </div>
+                  </>
+                )}
               </div>
               
               <div>
-                <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Preferencias</p>
+                <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Preferencias adicionales</p>
                 <p className="text-slate-900 text-sm mt-1 whitespace-pre-wrap bg-slate-50 p-3 rounded-lg border border-slate-100">
-                  {lead.preferences ? JSON.parse(lead.preferences) : 'No especificadas'}
+                  {(() => {
+                    if (!lead.preferences) return 'No especificadas';
+                    try {
+                      const parsed = JSON.parse(lead.preferences);
+                      return typeof parsed === 'object' ? JSON.stringify(parsed, null, 2) : String(parsed);
+                    } catch (e) {
+                      return lead.preferences;
+                    }
+                  })()}
                 </p>
               </div>
             </div>

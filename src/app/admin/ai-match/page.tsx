@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Bot, Send, Search, MapPin, Building, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Property {
   id: string;
@@ -145,7 +146,7 @@ export default function AIMatchPage() {
                     <div key={index} className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden flex flex-col md:flex-row group hover-lift animate-in" style={{animationDelay: `${index * 100}ms`}}>
                       <div className="w-full md:w-56 h-56 md:h-auto relative shrink-0">
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10 md:bg-gradient-to-l"></div>
-                        <img src={img} alt={match.property.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                        <Image src={img} alt={match.property.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 256px" />
                         <div className="absolute top-3 left-3 z-20 bg-primary/90 backdrop-blur text-primary-foreground px-3 py-1 rounded-full text-xs font-bold shadow-md">
                           Match #{index + 1}
                         </div>

@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { verifyAuth } from '@/lib/auth';
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('session')?.value;
+    const auth = await verifyAuth(token);
+    if (!auth) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
     const { id } = await params;
     const body = await request.json();
 
@@ -25,6 +32,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       }
     });
 
+    // Create Audit Log
+    await prisma.taskAuditLog.create({
+      data: {
+        action: 'UPDATE',
+        details: `Task updated by ${auth.name}`,
+        taskId: id,
+        userId: auth.id
+      }
+    });
+
     return NextResponse.json(task);
   } catch (error) {
     console.error("Error updating task:", error);
@@ -34,6 +51,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('session')?.value;
+    const auth = await verifyAuth(token);
+    if (!auth) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    
+    // Solo los administradores pueden borrar tareas
+    if (auth.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Acceso denegado: Solo los administradores pueden eliminar tareas.' }, { status: 403 });
+    }
+
     const { id } = await params;
     
     await prisma.task.delete({

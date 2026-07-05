@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
 import { prisma } from "@/lib/prisma";
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+import { generateAiContent } from "@/lib/ai-service";
 
 // VERIFICACIÓN DEL WEBHOOK (Requerido por Meta)
 export async function GET(req: NextRequest) {
@@ -114,8 +113,8 @@ export async function POST(req: NextRequest) {
           - IMPORTANTE: Tu respuesta será enviada directamente al cliente. Genera SOLO el texto de tu respuesta.
         `;
 
-        const aiResponse = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
+        const aiResponse = await generateAiContent({
+          operationType: 'WhatsAppBot',
           contents: [{ role: "user", parts: [{ text: prompt }] }]
         });
 

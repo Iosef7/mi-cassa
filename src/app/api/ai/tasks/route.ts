@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
 import { prisma } from '@/lib/prisma';
-
-// Ensure the API key is set in .env
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+import { generateAiContent } from '@/lib/ai-service';
 
 export async function POST(request: Request) {
   try {
@@ -13,9 +10,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
     }
 
-    // Fetch agents and leads to provide context to the AI
-    const agents = await prisma.user.findMany({ select: { id: true, name: true, role: true } });
-    const leads = await prisma.lead.findMany({ select: { id: true, name: true } });
+    // Fetch agents and leads to provide context to the AI (limited to prevent memory/token exhaustion)
+    const agents = await prisma.user.findMany({ take: 50, select: { id: true, name: true, role: true } });
+    const leads = await prisma.lead.findMany({ take: 50, orderBy: { createdAt: 'desc' }, select: { id: true, name: true } });
 
     const systemPrompt = `You are a smart task delegation AI. Your goal is to extract task information from user input.
 You have access to the following team members (agents):
@@ -33,8 +30,8 @@ Given the user prompt, return a JSON object with the following fields:
 
 Return ONLY valid JSON.`;
 
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+    const response = await generateAiContent({
+        operationType: 'TaskExtraction',
         contents: prompt,
         config: {
             systemInstruction: systemPrompt,

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Folder, ChevronRight, Plus, Loader2, ArrowLeft, Check } from 'lucide-react';
+import { showAlert } from '@/lib/alerts';
 
 interface DriveFolderManagerProps {
   selectedFolderId: string;
@@ -78,11 +79,11 @@ export function DriveFolderManager({ selectedFolderId, onSelectFolder }: DriveFo
         setIsCreating(false);
       } else {
         const errData = await res.json();
-        alert(errData.error || 'Error al crear la carpeta');
+        showAlert('Error', errData.error || 'Error al crear la carpeta', 'error');
       }
     } catch (err) {
       console.error("Error creating folder:", err);
-      alert('Error al crear la carpeta');
+      showAlert('Error', 'Error al crear la carpeta', 'error');
     }
     setCreatingLoading(false);
   };

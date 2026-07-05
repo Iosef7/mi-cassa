@@ -1,25 +1,50 @@
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { Activity, BrainCircuit, Zap, BarChart3, Database, AlertCircle, RefreshCw } from 'lucide-react';
-import Link from 'next/link';
+import { Activity, BrainCircuit, Zap, BarChart3, Database, AlertCircle, RefreshCw, PieChart, Shield } from 'lucide-react';
+import { AiSettingsPanel } from './AiSettingsPanel';
 
 export default async function AIDashboardPage() {
-  // Fetch AI usage data
-  const logs = await prisma.aiUsage.findMany({
-    orderBy: { createdAt: 'desc' },
-    take: 50 // last 50 operations
+  const session = await auth();
+  if (session?.user?.role !== 'ADMIN') {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center bg-background h-[calc(100vh-theme(spacing.16))] p-8 text-center animate-in fade-in">
+        <Shield className="w-16 h-16 text-red-500 mb-4" />
+        <h1 className="text-2xl font-bold text-foreground">Acceso Restringido</h1>
+        <p className="text-muted-foreground mt-2">Solo los administradores pueden visualizar y gestionar el consumo de IA.</p>
+      </div>
+    );
+  }
+
+  // Fetch ALL AI usage data for total calculations
+  const allLogs = await prisma.aiUsage.findMany({
+    orderBy: { createdAt: 'desc' }
   });
 
-  // Calculate totals
-  const totalCost = logs.reduce((acc, log) => acc + log.costUSD, 0);
-  const totalPromptTokens = logs.reduce((acc, log) => acc + log.promptTokens, 0);
-  const totalCompletionTokens = logs.reduce((acc, log) => acc + log.completionTokens, 0);
+  // Last 50 for the table
+  const logs = allLogs.slice(0, 50);
+
+  // Calculate totals from ALL logs
+  const totalCost = allLogs.reduce((acc, log) => acc + log.costUSD, 0);
+  const totalPromptTokens = allLogs.reduce((acc, log) => acc + log.promptTokens, 0);
+  const totalCompletionTokens = allLogs.reduce((acc, log) => acc + log.completionTokens, 0);
   
-  // Budget Limit Configuration (can be moved to SiteSettings later)
-  const monthlyBudget = 20.00;
+  // Load AI Settings
+  const allSettings = await prisma.siteSettings.findMany({
+    where: { key: { startsWith: 'ai_' } }
+  });
+  const settingsMap = allSettings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {} as Record<string, string>);
+  
+  const monthlyBudget = settingsMap['ai_monthly_budget'] ? parseFloat(settingsMap['ai_monthly_budget']) : 20.00;
   const percentUsed = Math.min((totalCost / monthlyBudget) * 100, 100);
+
+  // Group by operation
+  const costByOp = allLogs.reduce((acc, log) => {
+    acc[log.operationType] = (acc[log.operationType] || 0) + log.costUSD;
+    return acc;
+  }, {} as Record<string, number>);
   
-  const successCount = logs.filter(l => l.status === 'SUCCESS').length;
-  const errorCount = logs.filter(l => l.status === 'ERROR').length;
+  const successCount = allLogs.filter(l => l.status === 'SUCCESS').length;
+  const errorCount = allLogs.filter(l => l.status === 'ERROR').length;
 
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
@@ -34,9 +59,7 @@ export default async function AIDashboardPage() {
           <p className="text-muted-foreground mt-2 text-lg">Monitorea el consumo, gasto de tokens y estado de tus modelos (Gemini, OpenAI, Claude).</p>
         </div>
         <div className="flex gap-3">
-          <Link href="/admin/ajustes" className="px-5 py-2.5 bg-muted text-muted-foreground font-semibold rounded-2xl hover:bg-muted/80 transition-colors">
-            Ajustes de API
-          </Link>
+          <AiSettingsPanel initialSettings={settingsMap} />
           <button className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-2xl hover:bg-primary/90 flex items-center gap-2 shadow-sm">
             <RefreshCw className="w-4 h-4" /> Recargar
           </button>
@@ -53,7 +76,7 @@ export default async function AIDashboardPage() {
             <div>
               <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Presupuesto Mensual</p>
               <h2 className="text-4xl font-black text-foreground mt-1">
-                ${totalCost.toFixed(3)} <span className="text-xl text-muted-foreground font-semibold">/ $${monthlyBudget.toFixed(2)}</span>
+                ${totalCost.toFixed(5)} <span className="text-xl text-muted-foreground font-semibold">/ $${monthlyBudget.toFixed(2)}</span>
               </h2>
             </div>
             <div className="bg-primary/10 p-3 rounded-2xl">
@@ -111,6 +134,27 @@ export default async function AIDashboardPage() {
           </div>
         </div>
 
+      </div>
+
+      {/* Breakdown by Operation */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Object.entries(costByOp).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([opName, opCost]) => (
+          <div key={opName} className="bg-card border border-border rounded-2xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-all group">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+                <PieChart className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-bold text-foreground text-sm">{opName}</p>
+                <p className="text-xs text-muted-foreground">Operación</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="font-black text-foreground">${opCost.toFixed(5)}</p>
+              <p className="text-xs font-semibold text-primary">{((opCost / (totalCost || 1)) * 100).toFixed(1)}%</p>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Logs Table */}

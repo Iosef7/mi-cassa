@@ -2,20 +2,22 @@
 
 import React, { useState, useEffect } from 'react';
 import { Cloud } from 'lucide-react';
+import { toast } from 'sonner';
 
 const API_KEY = 'AIzaSyClWJYKu31hWb1QgYvNNIqOie42H7B-bes';
 const CLIENT_ID = '933782187633-566u375t27lm2f2ajos1906lq5rp8n5j.apps.googleusercontent.com';
-const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
+const SCOPES = 'https://www.googleapis.com/auth/drive';
 const APP_ID = '933782187633'; // App ID is the first part of Client ID
 
 interface Props {
-  onFileSelect: (url: string, thumbnail?: string) => void;
+  onFileSelect: (url: string, thumbnail?: string, fileId?: string) => void;
   className?: string;
   mimeTypes?: string;
   onToken?: (token: string) => void;
+  children?: React.ReactNode;
 }
 
-export function GoogleDrivePicker({ onFileSelect, className = "", mimeTypes, onToken }: Props) {
+export function GoogleDrivePicker({ onFileSelect, className = "", mimeTypes, onToken, children }: Props) {
   const [tokenClient, setTokenClient] = useState<any>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
@@ -88,7 +90,7 @@ export function GoogleDrivePicker({ onFileSelect, className = "", mimeTypes, onT
           createPicker(token);
         }});
       } else {
-        alert("El sistema de Google Drive aún no ha terminado de cargar. Por favor, intenta de nuevo en unos segundos.");
+        toast.error("El sistema de Google Drive aún no ha terminado de cargar. Por favor, intenta de nuevo en unos segundos.");
       }
       return;
     }
@@ -96,6 +98,7 @@ export function GoogleDrivePicker({ onFileSelect, className = "", mimeTypes, onT
     if (token) {
       const view = new google.picker.DocsView(google.picker.ViewId.DOCS);
       view.setIncludeFolders(true);
+      view.setSelectFolderEnabled(true);
       
       if (mimeTypes) {
         view.setMimeTypes(mimeTypes);
@@ -114,7 +117,7 @@ export function GoogleDrivePicker({ onFileSelect, className = "", mimeTypes, onT
               const thumbnailUrl = doc.thumbnails && doc.thumbnails.length > 0 ? doc.thumbnails[0].url : undefined;
               
               let url = `https://drive.google.com/file/d/${fileId}/preview`;
-              onFileSelect(url, thumbnailUrl);
+              onFileSelect(url, thumbnailUrl, fileId);
             }
           }
         })
@@ -163,7 +166,7 @@ export function GoogleDrivePicker({ onFileSelect, className = "", mimeTypes, onT
         script2.src = 'https://accounts.google.com/gsi/client';
         document.body.appendChild(script2);
         
-        alert("Parece que hubo un problema de conexión con Google. Estamos intentando reconectar. Por favor, espera 3 segundos y haz clic nuevamente.");
+        toast.error("Parece que hubo un problema de conexión con Google. Estamos intentando reconectar. Por favor, espera 3 segundos y haz clic nuevamente.");
       }
     }
   };
@@ -174,7 +177,7 @@ export function GoogleDrivePicker({ onFileSelect, className = "", mimeTypes, onT
         onClick={(e) => { e.preventDefault(); handleOpenPicker(false); }}
         className={`text-sm font-semibold text-primary flex items-center gap-1 hover:underline ${className}`}
       >
-        <Cloud className="w-4 h-4" /> Desde Drive
+        {children ? children : <><Cloud className="w-4 h-4" /> Desde Drive</>}
       </button>
       {accessToken && (
         <button

@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
 import { prisma } from '@/lib/prisma';
-
-// Initialize the Google Gen AI SDK
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+import { generateAiContent } from '@/lib/ai-service';
 
 export async function POST(req: NextRequest) {
   try {
@@ -54,8 +51,8 @@ export async function POST(req: NextRequest) {
     `;
 
     // 3. Call Gemini API
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const response = await generateAiContent({
+      operationType: 'PropertyMatch',
       contents: [
         { role: 'user', parts: [{ text: query }] }
       ],

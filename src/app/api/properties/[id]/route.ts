@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-
+import { revalidatePath } from 'next/cache';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -81,22 +81,41 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (body.nearbyPlaces !== undefined) updateData.nearbyPlaces = body.nearbyPlaces ? JSON.stringify(body.nearbyPlaces) : null;
     if (body.dynamicFeatures !== undefined) updateData.dynamicFeatures = body.dynamicFeatures ? JSON.stringify(body.dynamicFeatures) : null;
     if (body.independentUnit !== undefined) updateData.independentUnit = body.independentUnit;
+    if (body.driveFolderId !== undefined) updateData.driveFolderId = body.driveFolderId;
+    if (body.commissions !== undefined) updateData.commissions = body.commissions ? JSON.stringify(body.commissions) : null;
+    // Fix: fetch existing property to merge presentations safely
+    const existingProperty = await prisma.property.findUnique({ where: { id } });
+    if (!existingProperty) {
+      return NextResponse.json({ error: "Property not found" }, { status: 404 });
+    }
+
     if (body.presentations !== undefined || body.plans !== undefined || body.videos !== undefined || body.legalDocs !== undefined || body.posters !== undefined) {
+      let existingPresentations: any = { docs: [], plans: [], videos: [], legalDocs: [], posters: [] };
+      if (existingProperty.presentations) {
+        try {
+          const parsed = JSON.parse(existingProperty.presentations);
+          if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+            existingPresentations = { ...existingPresentations, ...parsed };
+          }
+        } catch(e) {}
+      }
+
       updateData.presentations = JSON.stringify({
-        docs: body.presentations || [],
-        plans: body.plans || [],
-        videos: body.videos || [],
-        legalDocs: body.legalDocs || [],
-        posters: body.posters || []
+        docs: body.presentations !== undefined ? body.presentations : existingPresentations.docs,
+        plans: body.plans !== undefined ? body.plans : existingPresentations.plans,
+        videos: body.videos !== undefined ? body.videos : existingPresentations.videos,
+        legalDocs: body.legalDocs !== undefined ? body.legalDocs : existingPresentations.legalDocs,
+        posters: body.posters !== undefined ? body.posters : existingPresentations.posters
       });
     }
 
     const property = await prisma.property.update({
       where: { id },
-      data: updateData,
-      select: { id: true }
+      data: updateData
     });
 
+    revalidatePath('/admin/propiedades');
+    revalidatePath('/api/properties');
     return NextResponse.json(property);
   } catch (error) {
     console.error("Error updating property:", error);
@@ -111,6 +130,8 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       where: { id },
       select: { id: true }
     });
+    revalidatePath('/admin/propiedades');
+    revalidatePath('/api/properties');
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting property:", error);

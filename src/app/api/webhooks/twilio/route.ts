@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { GoogleGenAI } from '@google/genai';
+import { generateAiContent, ai } from '@/lib/ai-service';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -51,8 +51,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "API Key missing" }, { status: 500 });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
-
     // 3. Upload file to Gemini
     console.log("Uploading to Gemini...");
     const uploadResult = await ai.files.upload({
@@ -76,15 +74,26 @@ Estructura del JSON requerida:
   "mainTopic": "El motivo principal de la llamada en una oración.",
   "keyPoints": ["punto 1", "punto 2"],
   "commitments": ["acción 1", "acción 2"],
-  "sentiment": "Positivo|Neutro|Negativo"
+  "sentiment": "Positivo|Neutro|Negativo",
+  "extractedFields": {
+    "type": "CLIENTE|PROPIETARIO",
+    "budget": "numero (float) o null",
+    "urgency": "Alta|Media|Baja o null",
+    "propertyTypeOfInterest": "string o null",
+    "targetLocations": "string o null",
+    "reasonForSelling": "string o null",
+    "hasPropertyToSell": "boolean o null",
+    "requiresMortgage": "boolean o null",
+    "isLegalClear": "boolean o null"
+  }
 }
 
 Asegúrate de devolver ÚNICAMENTE el objeto JSON sin markdown adicional.
 `;
 
     console.log("Analyzing with Gemini...");
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const response = await generateAiContent({
+      operationType: 'TwilioCallBot',
       contents: [
         {
           fileData: {
@@ -134,15 +143,37 @@ Asegúrate de devolver ÚNICAMENTE el objeto JSON sin markdown adicional.
       });
     }
 
+    // Auto-update or create Lead with AI extracted fields
+    const extracted = analysis.extractedFields || {};
+    const leadDataToUpdate: any = {};
+    if (extracted.type && ["CLIENTE", "PROPIETARIO"].includes(extracted.type)) leadDataToUpdate.type = extracted.type;
+    if (extracted.budget !== null && extracted.budget !== undefined) leadDataToUpdate.budget = extracted.budget;
+    if (extracted.urgency) leadDataToUpdate.urgency = extracted.urgency;
+    if (extracted.propertyTypeOfInterest) leadDataToUpdate.propertyTypeOfInterest = extracted.propertyTypeOfInterest;
+    if (extracted.targetLocations) leadDataToUpdate.targetLocations = extracted.targetLocations;
+    if (extracted.reasonForSelling) leadDataToUpdate.reasonForSelling = extracted.reasonForSelling;
+    if (typeof extracted.hasPropertyToSell === 'boolean') leadDataToUpdate.hasPropertyToSell = extracted.hasPropertyToSell;
+    if (typeof extracted.requiresMortgage === 'boolean') leadDataToUpdate.requiresMortgage = extracted.requiresMortgage;
+    if (typeof extracted.isLegalClear === 'boolean') leadDataToUpdate.isLegalClear = extracted.isLegalClear;
+
     if (!lead) {
       lead = await prisma.lead.create({
         data: {
           name: "Nuevo Prospecto (Llamada)",
           phone: fromNumber || "Desconocido",
           status: "NUEVO",
-          notes: "Creado automáticamente desde una llamada entrante."
+          notes: "Creado automáticamente desde una llamada entrante.",
+          ...leadDataToUpdate
         }
       });
+    } else {
+      // Update existing lead if any fields were found
+      if (Object.keys(leadDataToUpdate).length > 0) {
+        lead = await prisma.lead.update({
+          where: { id: lead.id },
+          data: leadDataToUpdate
+        });
+      }
     }
 
     const savedCall = await prisma.call.create({

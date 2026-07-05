@@ -114,6 +114,45 @@ export async function uploadFile(buffer: Buffer, filename: string, mimeType: str
 }
 
 /**
+ * Sube un archivo usando el token del usuario (para usar su cuota de almacenamiento).
+ */
+export async function uploadFileWithUserToken(buffer: Buffer, filename: string, mimeType: string, parentId: string, userToken: string) {
+  const authClient = new google.auth.OAuth2();
+  authClient.setCredentials({ access_token: userToken });
+  const driveClient = google.drive({ version: 'v3', auth: authClient });
+
+  const fileMetadata = {
+    name: filename,
+    parents: parentId ? [parentId] : undefined
+  };
+
+  const media = {
+    mimeType: mimeType,
+    body: require('stream').Readable.from(buffer),
+  };
+
+  const file = await driveClient.files.create({
+    requestBody: fileMetadata,
+    media: media,
+    fields: 'id, name, webViewLink, webContentLink',
+  });
+
+  try {
+    await driveClient.permissions.create({
+      fileId: file.data.id!,
+      requestBody: {
+        role: 'reader',
+        type: 'anyone',
+      }
+    });
+  } catch (e) {
+    console.error("Error setting permissions with user token:", e);
+  }
+
+  return file.data;
+}
+
+/**
  * Lista los archivos de una carpeta.
  */
 export async function listFilesInFolder(folderId: string) {
@@ -143,4 +182,31 @@ export async function uploadBase64(base64Data: string, filename: string, parentI
   const buffer = Buffer.from(matches[2], 'base64');
   
   return uploadFile(buffer, filename, mimeType, parentId);
+}
+
+/**
+ * Mueve una carpeta a un nuevo destino (parentId) usando el token del usuario.
+ */
+export async function moveFolderWithUserToken(folderId: string, newParentId: string, userToken: string) {
+  const authClient = new google.auth.OAuth2();
+  authClient.setCredentials({ access_token: userToken });
+  const driveClient = google.drive({ version: 'v3', auth: authClient });
+
+  // 1. Obtener el archivo para saber cuáles son sus padres actuales
+  const file = await driveClient.files.get({
+    fileId: folderId,
+    fields: 'parents',
+  });
+
+  const previousParents = file.data.parents?.join(',') || '';
+
+  // 2. Mover la carpeta quitando los padres anteriores y añadiendo el nuevo
+  const res = await driveClient.files.update({
+    fileId: folderId,
+    addParents: newParentId,
+    removeParents: previousParents,
+    fields: 'id, parents, webViewLink'
+  });
+
+  return res.data;
 }

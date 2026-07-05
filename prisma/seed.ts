@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const bcrypt = require('bcryptjs');
 
 async function main() {
   console.log("Limpiando base de datos...");
@@ -13,8 +14,9 @@ async function main() {
   await prisma.user.deleteMany({});
 
   console.log("Creando Usuarios (Equipo)...");
+  const adminPassword = await bcrypt.hash("admin123", 10);
   const user1 = await prisma.user.create({
-    data: { name: "Iosef (Admin)", email: "iosef@micassa.com", role: "ADMIN" }
+    data: { name: "Iosef (Admin)", email: "hidalgoiosef@gmail.com", role: "ADMIN", password: adminPassword }
   });
   const user2 = await prisma.user.create({
     data: { name: "Ana Martínez", email: "ana@micassa.com", role: "AGENT" }
