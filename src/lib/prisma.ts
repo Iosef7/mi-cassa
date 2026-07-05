@@ -5,6 +5,9 @@ const prismaClientSingleton = () => {
   // Ensure connection limit is safe to prevent pool exhaustion both locally and on Render
   if (url) {
     url = url.replace(/connection_limit=\d+/, 'connection_limit=5');
+    if (!url.includes('pgbouncer=true')) {
+      url += (url.includes('?') ? '&' : '?') + 'pgbouncer=true';
+    }
   }
 
   console.log("PRISMA DATABASE URL IN USE:", url?.replace(/:[^:@]{1,}@/, ':***@'));
