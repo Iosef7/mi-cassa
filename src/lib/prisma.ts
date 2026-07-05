@@ -2,9 +2,9 @@ import { PrismaClient } from '../../prisma/generated/client';
 
 const prismaClientSingleton = () => {
   let url = process.env.DATABASE_URL;
-  // Reduce connection limit in development to prevent Supabase pool exhaustion
-  if (process.env.NODE_ENV !== 'production' && url) {
-    url = url.replace(/connection_limit=\d+/, 'connection_limit=1');
+  // Ensure connection limit is safe to prevent pool exhaustion both locally and on Render
+  if (url) {
+    url = url.replace(/connection_limit=\d+/, 'connection_limit=5');
   }
 
   console.log("PRISMA DATABASE URL IN USE:", url?.replace(/:[^:@]{1,}@/, ':***@'));
