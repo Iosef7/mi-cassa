@@ -10,7 +10,7 @@ const SCOPES = 'https://www.googleapis.com/auth/drive';
 const APP_ID = '933782187633'; // App ID is the first part of Client ID
 
 interface Props {
-  onFileSelect: (url: string, thumbnail?: string, fileId?: string) => void;
+  onFileSelect: (url: string, thumbnail?: string, fileId?: string, name?: string) => void;
   className?: string;
   mimeTypes?: string;
   onToken?: (token: string) => void;
@@ -27,6 +27,7 @@ export function GoogleDrivePicker({ onFileSelect, className = "", mimeTypes, onT
     const tokenExpiry = localStorage.getItem('google_drive_token_expiry');
     if (storedToken && tokenExpiry && new Date().getTime() < parseInt(tokenExpiry)) {
       setAccessToken(storedToken);
+      if (onToken) onToken(storedToken);
     }
 
     const loadScript = (src: string, onLoad: () => void) => {
@@ -117,7 +118,7 @@ export function GoogleDrivePicker({ onFileSelect, className = "", mimeTypes, onT
               const thumbnailUrl = doc.thumbnails && doc.thumbnails.length > 0 ? doc.thumbnails[0].url : undefined;
               
               let url = `https://drive.google.com/file/d/${fileId}/preview`;
-              onFileSelect(url, thumbnailUrl, fileId);
+              onFileSelect(url, thumbnailUrl, fileId, doc.name);
             }
           }
         })

@@ -5,10 +5,14 @@ import NotificationsDropdown from '@/components/NotificationsDropdown';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { DriveImagePreview } from '@/components/DriveImagePreview';
+import { auth } from '@/auth';
 
 export const dynamic = 'force-dynamic'; // Ensure dashboard always fetches fresh data
 
 export default async function Dashboard() {
+  const session = await auth();
+  const userName = session?.user?.name || 'Equipo';
+
   // Fetch real data in parallel
   const [
     activePropertiesCount,
@@ -87,7 +91,7 @@ export default async function Dashboard() {
         
         <div className="flex items-end justify-between mb-8">
           <div>
-            <h2 className="text-3xl font-bold">Hola, Equipo 👋</h2>
+            <h2 className="text-3xl font-bold">Hola, {userName} 👋</h2>
             <p className="text-foreground/60 mt-1">Aquí está el resumen de la inmobilaria para hoy.</p>
           </div>
           <div className="text-sm px-3 py-1 rounded-full bg-card border border-border capitalize">

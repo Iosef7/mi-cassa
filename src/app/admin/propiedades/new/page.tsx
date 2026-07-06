@@ -3,39 +3,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Edit, Save, Trash2, MapPin, Building, Image as ImageIcon, FileText, Plus, X, BedDouble, Bath, Maximize, Car, Calendar, Users, Phone, Mail, FolderLock, Globe, Shield, Dumbbell, Waves, Trees, Link as LinkIcon, BadgePercent, BadgeCheck, Upload, GripVertical, Loader2, Activity, CheckCircle2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Edit, Save, Trash2, MapPin, Building, Image as ImageIcon, FileText, Plus, X, BedDouble, Bath, Maximize, Car, Calendar, Users, Phone, Mail, Briefcase, FolderLock, MessageCircle, ChevronDown, ChevronUp, ListTodo, Activity, CheckCircle2, Clock, Banknote, MessageSquare, BarChart3, Globe, Shield, Dumbbell, Waves, Trees, Link as LinkIcon, Copy, TrendingUp, BadgePercent, BadgeCheck , Info, Upload, Paperclip, GripVertical, Loader2, Cloud, Sparkles, Send, Lock, Unlock, Sun, Layers } from 'lucide-react';
 import Link from 'next/link';
 import { GoogleDrivePicker } from '@/components/GoogleDrivePicker';
-import { DriveFolderManager } from '@/components/DriveFolderManager';
 import { createProject, generatePropertyDescription } from '../actions';
 import { showAlert } from '@/lib/alerts';
 
-const getDisplayUrl = (url: string, driveThumbnails?: Record<string, string>) => {
-  if (driveThumbnails && driveThumbnails[url]) return driveThumbnails[url];
-  if (url && typeof url === 'string' && url.includes('drive.google.com') && url.includes('/preview')) {
-    const fileId = url.match(/\/file\/d\/(.+?)\/preview/)?.[1];
-    if (fileId) {
-      // Use the direct lh3 endpoint which is the most reliable for public images
-      return `https://lh3.googleusercontent.com/d/${fileId}=w1000`;
-    }
-  }
-  return url;
-};
-
-const DriveImagePreview = ({ url, thumbnails, alt, className }: { url: string, thumbnails?: Record<string, string>, alt: string, className?: string }) => {
-  const displayUrl = getDisplayUrl(url, thumbnails);
-  const [imgError, setImgError] = useState(false);
-
-  if (imgError && url.includes('drive.google.com') && url.includes('/preview')) {
-    return (
-      <div className={`relative overflow-hidden ${className}`}>
-         <iframe src={url} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] h-[200%] scale-50 border-0 pointer-events-none" title={alt} />
-      </div>
-    );
-  }
-
-  return <img src={displayUrl} alt={alt} className={className} onError={() => setImgError(true)} />;
-};
+import { DriveImagePreview } from '@/components/DriveImagePreview';
 
 const AVAILABLE_AMENITIES = [
   { name: 'Piscina', icon: Waves, color: 'text-blue-500' },
@@ -87,68 +61,72 @@ const MortgageCalculator = ({ price }: { price: number }) => {
         <div className="w-4 h-4 bg-red-600 rotate-45 rounded-sm"></div>
         <h3 className="text-2xl font-bold text-foreground">Primer paso hacia tu nuevo hogar</h3>
       </div>
-      
-      <div className="space-y-6">
-        <div>
-          <div className="flex justify-between mb-2">
-            <span className="font-bold text-lg">{formatPrice(downPayment)}</span>
-            <span className="text-muted-foreground font-medium text-sm">¿Cuál es tu capital inicial?</span>
+      <div className="space-y-8">
+        <div className="space-y-8 p-5 md:p-7 bg-muted/20 rounded-3xl border border-border/60">
+          <div>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-4 gap-4">
+              <div>
+                <span className="text-muted-foreground font-medium text-sm block mb-1">¿Cuál es tu capital inicial?</span>
+                <span className="font-bold text-2xl md:text-3xl">{formatPrice(downPayment)}</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button 
+                  onClick={(e) => { e.preventDefault(); setDownPayment(price * 0.25); }}
+                  className="px-3 py-1.5 bg-background hover:bg-muted text-foreground font-medium rounded-full text-xs transition-colors border border-border shadow-sm"
+                >
+                  25% ({formatPrice(price * 0.25)})
+                </button>
+                <button 
+                  onClick={(e) => { e.preventDefault(); setDownPayment(price * 0.50); }}
+                  className="px-3 py-1.5 bg-background hover:bg-muted text-foreground font-medium rounded-full text-xs transition-colors border border-border shadow-sm"
+                >
+                  50% ({formatPrice(price * 0.50)})
+                </button>
+              </div>
+            </div>
+            <input 
+              type="range" 
+              min={0} max={price} step={10000} 
+              value={downPayment} 
+              onChange={(e) => setDownPayment(Number(e.target.value))}
+              className="w-full accent-red-600 h-2.5 bg-muted rounded-lg appearance-none cursor-pointer" 
+            />
           </div>
-          <input 
-            type="range" 
-            min={0} max={price} step={10000} 
-            value={downPayment} 
-            onChange={(e) => setDownPayment(Number(e.target.value))}
-            className="w-full accent-red-600 h-2 bg-muted rounded-lg appearance-none cursor-pointer" 
-          />
-        </div>
 
-        <div>
-          <div className="flex justify-between mb-2">
-            <span className="font-bold text-lg">{years} Años</span>
-            <span className="text-muted-foreground font-medium text-sm">¿A cuántos años quieres pagarlo?</span>
-          </div>
-          <input 
-            type="range" 
-            min={5} max={30} step={1} 
-            value={years} 
-            onChange={(e) => setYears(Number(e.target.value))}
-            className="w-full accent-red-600 h-2 bg-muted rounded-lg appearance-none cursor-pointer" 
-          />
-        </div>
-
-        <div className="flex gap-3 justify-start items-center mb-4">
-          <button 
-            onClick={(e) => { e.preventDefault(); setDownPayment(price * 0.25); }}
-            className="px-4 py-1.5 bg-muted hover:bg-muted/80 text-foreground font-medium rounded-full text-xs transition-colors border border-border"
-          >
-            25% Enganche ({formatPrice(price * 0.25)})
-          </button>
-          <button 
-            onClick={(e) => { e.preventDefault(); setDownPayment(price * 0.50); }}
-            className="px-4 py-1.5 bg-muted hover:bg-muted/80 text-foreground font-medium rounded-full text-xs transition-colors border border-border"
-          >
-            50% Enganche ({formatPrice(price * 0.50)})
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-muted/30 p-4 rounded-2xl border border-border">
-          <div className="text-center border-b md:border-b-0 md:border-r border-border pb-4 md:pb-0">
-            <p className="text-muted-foreground text-sm font-medium mb-1">Pago mensual estimado</p>
-            <p className="text-3xl font-black text-red-600">{formatPrice(monthlyPayment)}</p>
-          </div>
-          <div className="text-center border-b md:border-b-0 md:border-r border-border pb-4 md:pb-0">
-            <p className="text-muted-foreground text-sm font-medium mb-1">Tasa de interés promedio</p>
-            <p className="text-3xl font-black text-foreground">{interestRate}%</p>
-          </div>
-          <div className="text-center">
-            <p className="text-muted-foreground text-sm font-medium mb-1">Préstamo total</p>
-            <p className="text-3xl font-black text-foreground">{formatPrice(principal)}</p>
+          <div>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-4 gap-4">
+              <div>
+                <span className="text-muted-foreground font-medium text-sm block mb-1">¿A cuántos años quieres pagarlo?</span>
+                <span className="font-bold text-2xl md:text-3xl">{years} Años</span>
+              </div>
+            </div>
+            <input 
+              type="range" 
+              min={5} max={30} step={1} 
+              value={years} 
+              onChange={(e) => setYears(Number(e.target.value))}
+              className="w-full accent-red-600 h-2.5 bg-muted rounded-lg appearance-none cursor-pointer" 
+            />
           </div>
         </div>
 
-        <div className="flex justify-center mt-6">
-          <button onClick={(e) => e.preventDefault()} className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full text-base font-bold transition-colors shadow-lg shadow-red-600/20">
+        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border bg-muted/10 rounded-3xl border border-border overflow-hidden shadow-sm">
+          <div className="text-center p-6 flex flex-col justify-center">
+            <p className="text-muted-foreground text-xs md:text-sm font-semibold mb-2 uppercase tracking-wider">Pago mensual</p>
+            <p className="text-3xl md:text-4xl font-black text-red-600 truncate">{formatPrice(monthlyPayment)}</p>
+          </div>
+          <div className="text-center p-6 flex flex-col justify-center">
+            <p className="text-muted-foreground text-xs md:text-sm font-semibold mb-2 uppercase tracking-wider">Tasa de interés</p>
+            <p className="text-3xl md:text-4xl font-black text-foreground truncate">{interestRate}%</p>
+          </div>
+          <div className="text-center p-6 flex flex-col justify-center bg-muted/20">
+            <p className="text-muted-foreground text-xs md:text-sm font-semibold mb-2 uppercase tracking-wider">Préstamo total</p>
+            <p className="text-2xl md:text-3xl font-black text-foreground truncate">{formatPrice(principal)}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center mt-8 space-y-4">
+          <button onClick={(e) => e.preventDefault()} className="bg-red-600 hover:bg-red-700 text-white px-10 py-4 rounded-full text-lg font-bold transition-all hover:scale-105 active:scale-95 shadow-xl shadow-red-600/20 w-full md:w-auto">
             Obtener Propuesta
           </button>
         </div>
@@ -200,6 +178,7 @@ export default function NewProjectPage() {
   const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
   
   const [selectedFolder, setSelectedFolder] = useState<string>('');
+  const [selectedFolderName, setSelectedFolderName] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   
@@ -266,11 +245,8 @@ export default function NewProjectPage() {
       const form = new FormData();
       
       let textToSend = aiText;
-      if (aiDriveUrls.length > 0) {
-        textToSend += '\n\nArchivos de Google Drive adjuntos (URLs):\n' + aiDriveUrls.join('\n');
-      }
-      
-      if (aiDriveToken) form.append('driveToken', aiDriveToken);
+      let tokenToUse = aiDriveToken || localStorage.getItem('google_drive_token');
+      if (tokenToUse) form.append('driveToken', tokenToUse);
       aiDriveUrls.forEach(url => form.append('driveUrls', url));
       
       if (textToSend) form.append('text', textToSend);
@@ -286,6 +262,7 @@ export default function NewProjectPage() {
       setAiStatusText("¡Extracción completada!");
       
       const result = await res.json();
+      console.log("AI Extraction Result:", result);
       
       if (result.success && result.data) {
         const d = result.data;
@@ -310,27 +287,43 @@ export default function NewProjectPage() {
           keysUpdated++;
         }
         
-        if (d.fileCategorization && result.filesData) {
+        if (d.fileCategorization && result.filesData && result.fileNames) {
             const filesData = result.filesData; 
+            const fileNames = result.fileNames; // Array of originalNames in order
             
-            if (d.fileCategorization.images) {
-                const imgUrls = d.fileCategorization.images.map((name: string) => filesData[name] || (name.startsWith('http') ? name : null)).filter(Boolean);
+            if (d.fileCategorization.images && Array.isArray(d.fileCategorization.images)) {
+                const imgUrls = d.fileCategorization.images.map((index: number) => {
+                   const name = fileNames[index];
+                   return name ? (filesData[name] || (name.startsWith('http') ? name : null)) : null;
+                }).filter(Boolean);
                 if (imgUrls.length > 0) { setImagesList(prev => [...prev, ...imgUrls]); keysUpdated++; }
             }
-            if (d.fileCategorization.presentations) {
-                const presUrls = d.fileCategorization.presentations.map((name: string) => filesData[name] || (name.startsWith('http') ? name : null)).filter(Boolean);
+            if (d.fileCategorization.presentations && Array.isArray(d.fileCategorization.presentations)) {
+                const presUrls = d.fileCategorization.presentations.map((index: number) => {
+                   const name = fileNames[index];
+                   return name ? (filesData[name] || (name.startsWith('http') ? name : null)) : null;
+                }).filter(Boolean);
                 if (presUrls.length > 0) { setPresentationsList(prev => [...prev, ...presUrls]); keysUpdated++; }
             }
-            if (d.fileCategorization.videos) {
-                const vidUrls = d.fileCategorization.videos.map((name: string) => filesData[name] || (name.startsWith('http') ? name : null)).filter(Boolean);
+            if (d.fileCategorization.videos && Array.isArray(d.fileCategorization.videos)) {
+                const vidUrls = d.fileCategorization.videos.map((index: number) => {
+                   const name = fileNames[index];
+                   return name ? (filesData[name] || (name.startsWith('http') ? name : null)) : null;
+                }).filter(Boolean);
                 if (vidUrls.length > 0) { setVideosList(prev => [...prev, ...vidUrls]); keysUpdated++; }
             }
-            if (d.fileCategorization.posters) {
-                const postUrls = d.fileCategorization.posters.map((name: string) => filesData[name] || (name.startsWith('http') ? name : null)).filter(Boolean);
+            if (d.fileCategorization.posters && Array.isArray(d.fileCategorization.posters)) {
+                const postUrls = d.fileCategorization.posters.map((index: number) => {
+                   const name = fileNames[index];
+                   return name ? (filesData[name] || (name.startsWith('http') ? name : null)) : null;
+                }).filter(Boolean);
                 if (postUrls.length > 0) { setPostersList(prev => [...prev, ...postUrls]); keysUpdated++; }
             }
-            if (d.fileCategorization.legalDocs) {
-                const docUrls = d.fileCategorization.legalDocs.map((name: string) => filesData[name] || (name.startsWith('http') ? name : null)).filter(Boolean);
+            if (d.fileCategorization.legalDocs && Array.isArray(d.fileCategorization.legalDocs)) {
+                const docUrls = d.fileCategorization.legalDocs.map((index: number) => {
+                   const name = fileNames[index];
+                   return name ? (filesData[name] || (name.startsWith('http') ? name : null)) : null;
+                }).filter(Boolean);
                 if (docUrls.length > 0) { setLegalDocsList(prev => [...prev, ...docUrls]); keysUpdated++; }
             }
         }
@@ -636,9 +629,7 @@ export default function NewProjectPage() {
                       );
                     })}
                     {aiDriveUrls.map((url, i) => {
-                      // Attempt to render as image if it looks like a thumbnail or general drive link
-                      const isLikelyImage = url.includes('=s') || url.includes('uc?id');
-                      const isPreview = url.includes('/preview');
+                      const hasThumbnail = driveThumbnails && driveThumbnails[url];
                       return (
                         <div key={`drive-${i}`} className="bg-white dark:bg-background border-2 border-blue-100 dark:border-blue-900 rounded-xl overflow-hidden relative group shadow-sm flex flex-col h-24">
                           <button onClick={() => setAiDriveUrls(aiDriveUrls.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 z-10 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-3 h-3" /></button>
@@ -646,12 +637,8 @@ export default function NewProjectPage() {
                             className="flex-1 flex items-center justify-center bg-blue-50/50 dark:bg-blue-950/20 relative w-full h-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
                             onClick={() => setAiLightboxUrl(url)}
                           >
-                            {isLikelyImage ? (
+                            {hasThumbnail ? (
                               <DriveImagePreview url={url} thumbnails={driveThumbnails} alt="Google Drive Preview" className="absolute inset-0 w-full h-full object-cover" />
-                            ) : isPreview ? (
-                              <div className="absolute inset-0 w-full h-full overflow-hidden flex items-center justify-center bg-black/5">
-                                <iframe src={url} className="w-[150%] h-[150%] border-0 pointer-events-none scale-75 origin-center" title="Google Drive Preview" />
-                              </div>
                             ) : (
                               <FileText className="w-8 h-8 text-blue-300" />
                             )}
@@ -682,20 +669,42 @@ export default function NewProjectPage() {
         </div>
         
         {/* Drive Config - Only visible in Create Mode */}
-        <div className="bg-card border-2 border-primary/30 rounded-3xl p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-              <FolderLock className="w-5 h-5 text-primary" />
+        <div className="bg-card border-2 border-primary/30 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+              <FolderLock className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h3 className="font-bold text-lg text-foreground">Configuración Inicial: Google Drive <span className="text-red-500">*</span></h3>
-              <p className="text-sm text-muted-foreground">Selecciona la carpeta raíz donde se creará el directorio para este nuevo proyecto.</p>
+              <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
+                Carpeta en Google Drive <span className="text-red-500">*</span>
+              </h3>
+              <p className="text-sm text-muted-foreground">Selecciona la carpeta donde se crearán los archivos de este proyecto.</p>
             </div>
           </div>
-          <DriveFolderManager 
-            selectedFolderId={selectedFolder} 
-            onSelectFolder={setSelectedFolder} 
-          />
+          
+          <div className="flex items-center gap-4 bg-muted/30 p-3 rounded-2xl border border-border flex-1 md:flex-none justify-between md:justify-start">
+             {selectedFolder ? (
+               <div className="flex items-center gap-2 px-2">
+                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                 <span className="font-medium text-sm max-w-[150px] truncate" title={selectedFolderName}>{selectedFolderName || 'Carpeta Seleccionada'}</span>
+               </div>
+             ) : (
+               <span className="text-sm text-muted-foreground font-medium px-2">Ninguna seleccionada</span>
+             )}
+             
+             <GoogleDrivePicker 
+                mimeTypes="application/vnd.google-apps.folder" 
+                onFileSelect={(url, thumb, id, name) => {
+                  if (id) {
+                    setSelectedFolder(id);
+                    setSelectedFolderName(name || '');
+                  }
+                }}
+                className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm hover:opacity-90 transition-opacity no-underline flex items-center justify-center min-w-[140px]"
+             >
+                {selectedFolder ? 'Cambiar Carpeta' : 'Seleccionar Carpeta'}
+             </GoogleDrivePicker>
+          </div>
         </div>
 
         {activeTab === 'resumen' && (
@@ -913,6 +922,42 @@ export default function NewProjectPage() {
                               <label className="text-xs font-semibold text-muted-foreground mb-1 block">Antigüedad</label>
                               <input type="text" placeholder="Ej: A estrenar" value={dynamicFeatures.antiquity || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, antiquity: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
                             </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Piscina</label>
+                              <input type="text" placeholder="Ej: Sí, privada" value={dynamicFeatures.pool || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, pool: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Balcón / Terraza</label>
+                              <input type="text" placeholder="Ej: Balcón al frente" value={dynamicFeatures.balcony || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, balcony: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Patio / Jardín</label>
+                              <input type="text" placeholder="Ej: Jardín trasero" value={dynamicFeatures.patio || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, patio: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Búnker / Mamad</label>
+                              <input type="text" placeholder="Ej: Sí, de 10m²" value={dynamicFeatures.bunker || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, bunker: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Orientación</label>
+                              <input type="text" placeholder="Ej: Norte / Sur / Este / Oeste" value={dynamicFeatures.orientation || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, orientation: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Estado</label>
+                              <input type="text" placeholder="Ej: Excelente, A Remodelar" value={dynamicFeatures.condition || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, condition: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Mascotas Permitidas</label>
+                              <input type="text" placeholder="Ej: Sí / No" value={dynamicFeatures.petFriendly || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, petFriendly: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Gastos Comunes / Expensas</label>
+                              <input type="text" placeholder="Ej: ₪ 500 / mes" value={dynamicFeatures.hoaFees || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, hoaFees: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Niveles / Plantas</label>
+                              <input type="text" placeholder="Ej: 2 plantas" value={dynamicFeatures.floors || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, floors: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
                             <div className="md:col-span-2">
                               <label className="text-xs font-semibold text-muted-foreground mb-1 block">Unidad Independiente (Anexo)</label>
                               <input type="text" placeholder="Ej: Incluye una unidad de 2 ambientes..." value={formData.independentUnit || ''} onChange={e=>setFormData({...formData, independentUnit: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
@@ -1012,6 +1057,114 @@ export default function NewProjectPage() {
                               <p className="font-bold text-rose-950 text-base md:text-lg truncate">{dynamicFeatures.antiquity || '-'}</p>
                             </div>
                           </div>
+
+                          {dynamicFeatures.pool && (
+                            <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-sky-200/60 bg-sky-50/50">
+                              <div className="w-10 h-10 md:w-12 md:h-12 bg-sky-100 rounded-xl flex items-center justify-center shrink-0">
+                                <Waves className="w-5 h-5 md:w-6 md:h-6 text-sky-600" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs md:text-sm text-sky-900/60 font-medium truncate">Piscina</p>
+                                <p className="font-bold text-sky-950 text-base md:text-lg truncate">{dynamicFeatures.pool}</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {dynamicFeatures.balcony && (
+                            <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-orange-200/60 bg-orange-50/50">
+                              <div className="w-10 h-10 md:w-12 md:h-12 bg-orange-100 rounded-xl flex items-center justify-center shrink-0">
+                                <Sun className="w-5 h-5 md:w-6 md:h-6 text-orange-600" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs md:text-sm text-orange-900/60 font-medium truncate">Balcón / Terraza</p>
+                                <p className="font-bold text-orange-950 text-base md:text-lg truncate">{dynamicFeatures.balcony}</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {dynamicFeatures.patio && (
+                            <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-green-200/60 bg-green-50/50">
+                              <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
+                                <Trees className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs md:text-sm text-green-900/60 font-medium truncate">Patio / Jardín</p>
+                                <p className="font-bold text-green-950 text-base md:text-lg truncate">{dynamicFeatures.patio}</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {dynamicFeatures.bunker && (
+                            <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-zinc-200/60 bg-zinc-50/50">
+                              <div className="w-10 h-10 md:w-12 md:h-12 bg-zinc-100 rounded-xl flex items-center justify-center shrink-0">
+                                <Shield className="w-5 h-5 md:w-6 md:h-6 text-zinc-600" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs md:text-sm text-zinc-900/60 font-medium truncate">Búnker / Mamad</p>
+                                <p className="font-bold text-zinc-950 text-base md:text-lg truncate">{dynamicFeatures.bunker}</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {dynamicFeatures.orientation && (
+                            <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-teal-200/60 bg-teal-50/50">
+                              <div className="w-10 h-10 md:w-12 md:h-12 bg-teal-100 rounded-xl flex items-center justify-center shrink-0">
+                                <Compass className="w-5 h-5 md:w-6 md:h-6 text-teal-600" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs md:text-sm text-teal-900/60 font-medium truncate">Orientación</p>
+                                <p className="font-bold text-teal-950 text-base md:text-lg truncate">{dynamicFeatures.orientation}</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {dynamicFeatures.condition && (
+                            <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-fuchsia-200/60 bg-fuchsia-50/50">
+                              <div className="w-10 h-10 md:w-12 md:h-12 bg-fuchsia-100 rounded-xl flex items-center justify-center shrink-0">
+                                <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-fuchsia-600" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs md:text-sm text-fuchsia-900/60 font-medium truncate">Estado</p>
+                                <p className="font-bold text-fuchsia-950 text-base md:text-lg truncate">{dynamicFeatures.condition}</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {dynamicFeatures.petFriendly && (
+                            <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-yellow-200/60 bg-yellow-50/50">
+                              <div className="w-10 h-10 md:w-12 md:h-12 bg-yellow-100 rounded-xl flex items-center justify-center shrink-0">
+                                <PawPrint className="w-5 h-5 md:w-6 md:h-6 text-yellow-600" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs md:text-sm text-yellow-900/60 font-medium truncate">Mascotas</p>
+                                <p className="font-bold text-yellow-950 text-base md:text-lg truncate">{dynamicFeatures.petFriendly}</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {dynamicFeatures.hoaFees && (
+                            <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-emerald-200/60 bg-emerald-50/50">
+                              <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
+                                <Coins className="w-5 h-5 md:w-6 md:h-6 text-emerald-600" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs md:text-sm text-emerald-900/60 font-medium truncate">Expensas</p>
+                                <p className="font-bold text-emerald-950 text-base md:text-lg truncate">{dynamicFeatures.hoaFees}</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {dynamicFeatures.floors && (
+                            <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-indigo-200/60 bg-indigo-50/50">
+                              <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-100 rounded-xl flex items-center justify-center shrink-0">
+                                <Layers className="w-5 h-5 md:w-6 md:h-6 text-indigo-600" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs md:text-sm text-indigo-900/60 font-medium truncate">Niveles</p>
+                                <p className="font-bold text-indigo-950 text-base md:text-lg truncate">{dynamicFeatures.floors}</p>
+                              </div>
+                            </div>
+                          )}
                           
                           {property.independentUnit && (
                             <div className="mt-6 flex items-start gap-4 p-4 rounded-2xl border border-violet-200/60 bg-violet-50/50 col-span-2 md:col-span-3">
@@ -1321,9 +1474,13 @@ export default function NewProjectPage() {
                   <div className="grid grid-cols-1 gap-4">
                         {videosList.map((url, i) => {
                           let embedUrl = url;
-                          if (url.includes('youtube.com/watch?v=')) embedUrl = url.replace('watch?v=', 'embed/');
-                          else if (url.includes('youtu.be/')) embedUrl = url.replace('youtu.be/', 'www.youtube.com/embed/');
-                          else if (url.includes('drive.google.com/file/d/')) embedUrl = url.replace(/\/view.*$/, '/preview');
+                          if (url.includes('youtube.com/watch?v=')) {
+                            embedUrl = url.replace('watch?v=', 'embed/');
+                          } else if (url.includes('youtu.be/')) {
+                            embedUrl = url.replace('youtu.be/', 'www.youtube.com/embed/');
+                          } else if (url.includes('drive.google.com/file/d/')) {
+                            embedUrl = url.replace(/\/view.*$/, '/preview');
+                          }
                           
                           const isVideoFile = url.startsWith('data:video/') || url.match(/\.(mp4|webm|ogg)$/i);
 
@@ -1418,7 +1575,7 @@ export default function NewProjectPage() {
                     {presentationsList.map((url, i) => {
                       let embedUrl = url;
                       if (url.includes('drive.google.com/file/d/')) {
-                        embedUrl = url.replace('/view', '/preview');
+                        embedUrl = url.replace(/\/view.*$/, '/preview');
                       } else if (url.includes('dropbox.com')) {
                         embedUrl = url.replace('dl=0', 'raw=1');
                       }
@@ -1528,12 +1685,12 @@ export default function NewProjectPage() {
                 {postersList.length > 0 ? (
                   <div className="grid grid-cols-2 gap-4">
                     {postersList.map((url, i) => (
-                      <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="relative group rounded-xl overflow-hidden border border-border aspect-[3/4] block shadow-sm">
+                      <div key={i} onClick={() => window.open(url, '_blank')} className="relative group rounded-xl overflow-hidden border border-border aspect-[3/4] block shadow-sm cursor-pointer">
                         <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Afiche ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                           <Maximize className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
-                      </a>
+                      </div>
                     ))}
                   </div>
                 ) : (
@@ -1736,12 +1893,11 @@ export default function NewProjectPage() {
           </button>
 
           <div className="w-full max-w-6xl max-h-[90vh] p-4 flex items-center justify-center relative" onClick={() => setIsLightboxOpen(false)}>
-            <Image 
-              src={imagesList[currentImageIndex]} 
+            <DriveImagePreview 
+              url={imagesList[currentImageIndex]} 
+              thumbnails={driveThumbnails}
               alt={`Imagen ${currentImageIndex + 1}`} 
-              fill
-              className="object-contain rounded-lg shadow-2xl p-4" 
-              sizes="100vw"
+              className="w-full h-[80vh] object-contain rounded-lg shadow-2xl p-4" 
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
             />
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-sm font-medium backdrop-blur-md">
@@ -1771,8 +1927,39 @@ export default function NewProjectPage() {
           </button>
           
           <div className="w-full h-full max-w-6xl max-h-[90vh] p-4 md:p-12 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-            {aiLightboxUrl.includes('/preview') ? (
-              <iframe src={aiLightboxUrl} className="w-full h-full border-0 rounded-xl shadow-2xl bg-white" title="Google Drive Preview" />
+            {aiLightboxUrl.includes('/preview') || aiLightboxUrl.includes('drive.google.com') ? (
+              <div className="relative w-full h-full max-w-4xl max-h-[80vh] flex flex-col items-center justify-center bg-white dark:bg-slate-900 rounded-xl shadow-2xl overflow-hidden">
+                <div className="flex-1 w-full relative bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  {driveThumbnails[aiLightboxUrl] ? (
+                    <Image 
+                      src={driveThumbnails[aiLightboxUrl].replace(/s\d+/, 's1920')} 
+                      alt="Google Drive Preview" 
+                      fill
+                      className="object-contain p-4" 
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center text-slate-400">
+                      <FileText className="w-16 h-16 mb-4" />
+                      <p>Vista previa no disponible</p>
+                    </div>
+                  )}
+                </div>
+                <div className="p-6 bg-white dark:bg-slate-900 w-full flex justify-between items-center border-t border-slate-100 dark:border-slate-800">
+                  <div>
+                    <h3 className="font-semibold text-slate-800 dark:text-slate-200">Archivo de Google Drive</h3>
+                    <p className="text-sm text-slate-500">Haz clic en el botón para ver el archivo completo de forma segura en Google Drive.</p>
+                  </div>
+                  <a 
+                    href={aiLightboxUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm"
+                  >
+                    Abrir en Google Drive
+                  </a>
+                </div>
+              </div>
             ) : (
               <div className="relative w-full h-full">
                 <Image 

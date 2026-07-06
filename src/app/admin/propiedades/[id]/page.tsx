@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { createProject, generatePropertyDescription } from '../actions';
+import { createProject, generatePropertyDescription, getDisabledPropertyTabs, togglePropertyTabVisibility } from '../actions';
+import { useSession } from 'next-auth/react';
 
 const AVAILABLE_AMENITIES = [
   { name: 'Piscina', icon: Waves, color: 'text-blue-500' },
@@ -13,7 +14,7 @@ const AVAILABLE_AMENITIES = [
   { name: 'Juegos Infantiles', icon: Activity, color: 'text-pink-500' },
 ];
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Edit, Save, Trash2, MapPin, Building, Image as ImageIcon, FileText, Plus, X, BedDouble, Bath, Maximize, Car, Calendar, Users, Phone, Mail, Briefcase, FolderLock, MessageCircle, ChevronDown, ChevronUp, ListTodo, Activity, CheckCircle2, Clock, Banknote, MessageSquare, BarChart3, Globe, Shield, Dumbbell, Waves, Trees, Link as LinkIcon, Copy, TrendingUp, BadgePercent, BadgeCheck , Info, Upload, Paperclip, GripVertical, Loader2, Cloud, Sparkles, Send } from 'lucide-react';
+import { ArrowLeft, Edit, Save, Trash2, MapPin, Building, Image as ImageIcon, FileText, Plus, X, BedDouble, Bath, Maximize, Car, Calendar, Users, Phone, Mail, Briefcase, FolderLock, MessageCircle, ChevronDown, ChevronUp, ListTodo, Activity, CheckCircle2, Clock, Banknote, MessageSquare, BarChart3, Globe, Shield, Dumbbell, Waves, Trees, Link as LinkIcon, Copy, TrendingUp, BadgePercent, BadgeCheck , Info, Upload, Paperclip, GripVertical, Loader2, Cloud, Sparkles, Send, Lock, Unlock, Sun, Compass, PawPrint, Coins, Layers, Home } from 'lucide-react';
 import Link from 'next/link';
 import { GoogleDrivePicker } from '@/components/GoogleDrivePicker';
 import { PresentationRenderer } from '@/components/presentations/PresentationRenderer';
@@ -104,67 +105,72 @@ const MortgageCalculator = React.memo(({ price }: { price: number }) => {
         <h3 className="text-2xl font-bold text-foreground">Primer paso hacia tu nuevo hogar</h3>
       </div>
       
-      <div className="space-y-6">
-        <div>
-          <div className="flex justify-between mb-2">
-            <span className="font-bold text-lg">{formatPrice(downPayment)}</span>
-            <span className="text-muted-foreground font-medium text-sm">¿Cuál es tu capital inicial?</span>
+      <div className="space-y-8">
+        <div className="space-y-8 p-5 md:p-7 bg-muted/20 rounded-3xl border border-border/60">
+          <div>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-4 gap-4">
+              <div>
+                <span className="text-muted-foreground font-medium text-sm block mb-1">¿Cuál es tu capital inicial?</span>
+                <span className="font-bold text-2xl md:text-3xl">{formatPrice(downPayment)}</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button 
+                  onClick={(e) => { e.preventDefault(); setDownPayment(price * 0.25); }}
+                  className="px-3 py-1.5 bg-background hover:bg-muted text-foreground font-medium rounded-full text-xs transition-colors border border-border shadow-sm"
+                >
+                  25% ({formatPrice(price * 0.25)})
+                </button>
+                <button 
+                  onClick={(e) => { e.preventDefault(); setDownPayment(price * 0.50); }}
+                  className="px-3 py-1.5 bg-background hover:bg-muted text-foreground font-medium rounded-full text-xs transition-colors border border-border shadow-sm"
+                >
+                  50% ({formatPrice(price * 0.50)})
+                </button>
+              </div>
+            </div>
+            <input 
+              type="range" 
+              min={0} max={price} step={10000} 
+              value={downPayment} 
+              onChange={(e) => setDownPayment(Number(e.target.value))}
+              className="w-full accent-red-600 h-2.5 bg-muted rounded-lg appearance-none cursor-pointer" 
+            />
           </div>
-          <input 
-            type="range" 
-            min={0} max={price} step={10000} 
-            value={downPayment} 
-            onChange={(e) => setDownPayment(Number(e.target.value))}
-            className="w-full accent-red-600 h-2 bg-muted rounded-lg appearance-none cursor-pointer" 
-          />
-        </div>
 
-        <div>
-          <div className="flex justify-between mb-2">
-            <span className="font-bold text-lg">{years} Años</span>
-            <span className="text-muted-foreground font-medium text-sm">¿A cuántos años quieres pagarlo?</span>
-          </div>
-          <input 
-            type="range" 
-            min={5} max={30} step={1} 
-            value={years} 
-            onChange={(e) => setYears(Number(e.target.value))}
-            className="w-full accent-red-600 h-2 bg-muted rounded-lg appearance-none cursor-pointer" 
-          />
-        </div>
-
-        <div className="flex gap-3 justify-start items-center mb-4">
-          <button 
-            onClick={(e) => { e.preventDefault(); setDownPayment(price * 0.25); }}
-            className="px-4 py-1.5 bg-muted hover:bg-muted/80 text-foreground font-medium rounded-full text-xs transition-colors border border-border"
-          >
-            25% Enganche ({formatPrice(price * 0.25)})
-          </button>
-          <button 
-            onClick={(e) => { e.preventDefault(); setDownPayment(price * 0.50); }}
-            className="px-4 py-1.5 bg-muted hover:bg-muted/80 text-foreground font-medium rounded-full text-xs transition-colors border border-border"
-          >
-            50% Enganche ({formatPrice(price * 0.50)})
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-muted/30 p-4 rounded-2xl border border-border">
-          <div className="text-center border-b md:border-b-0 md:border-r border-border pb-4 md:pb-0">
-            <p className="text-muted-foreground text-sm font-medium mb-1">Pago mensual estimado</p>
-            <p className="text-3xl font-black text-red-600">{formatPrice(monthlyPayment)}</p>
-          </div>
-          <div className="text-center border-b md:border-b-0 md:border-r border-border pb-4 md:pb-0">
-            <p className="text-muted-foreground text-sm font-medium mb-1">Tasa de interés promedio</p>
-            <p className="text-3xl font-black text-foreground">{interestRate}%</p>
-          </div>
-          <div className="text-center">
-            <p className="text-muted-foreground text-sm font-medium mb-1">Préstamo total</p>
-            <p className="text-3xl font-black text-foreground">{formatPrice(principal)}</p>
+          <div>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-4 gap-4">
+              <div>
+                <span className="text-muted-foreground font-medium text-sm block mb-1">¿A cuántos años quieres pagarlo?</span>
+                <span className="font-bold text-2xl md:text-3xl">{years} Años</span>
+              </div>
+            </div>
+            <input 
+              type="range" 
+              min={5} max={30} step={1} 
+              value={years} 
+              onChange={(e) => setYears(Number(e.target.value))}
+              className="w-full accent-red-600 h-2.5 bg-muted rounded-lg appearance-none cursor-pointer" 
+            />
           </div>
         </div>
 
-        <div className="flex justify-center mt-6">
-          <button onClick={(e) => e.preventDefault()} className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full text-base font-bold transition-colors shadow-lg shadow-red-600/20">
+        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border bg-muted/10 rounded-3xl border border-border overflow-hidden shadow-sm">
+          <div className="text-center p-6 flex flex-col justify-center">
+            <p className="text-muted-foreground text-xs md:text-sm font-semibold mb-2 uppercase tracking-wider">Pago mensual</p>
+            <p className="text-3xl md:text-4xl font-black text-red-600 truncate">{formatPrice(monthlyPayment)}</p>
+          </div>
+          <div className="text-center p-6 flex flex-col justify-center">
+            <p className="text-muted-foreground text-xs md:text-sm font-semibold mb-2 uppercase tracking-wider">Tasa de interés</p>
+            <p className="text-3xl md:text-4xl font-black text-foreground truncate">{interestRate}%</p>
+          </div>
+          <div className="text-center p-6 flex flex-col justify-center bg-muted/20">
+            <p className="text-muted-foreground text-xs md:text-sm font-semibold mb-2 uppercase tracking-wider">Préstamo total</p>
+            <p className="text-2xl md:text-3xl font-black text-foreground truncate">{formatPrice(principal)}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center mt-8 space-y-4">
+          <button onClick={(e) => e.preventDefault()} className="bg-red-600 hover:bg-red-700 text-white px-10 py-4 rounded-full text-lg font-bold transition-all hover:scale-105 active:scale-95 shadow-xl shadow-red-600/20 w-full md:w-auto">
             Obtener Propuesta
           </button>
         </div>
@@ -233,6 +239,10 @@ import { DriveImagePreview } from '@/components/DriveImagePreview';
 export default function PropertyDetailsPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'ADMIN';
+  const [disabledTabs, setDisabledTabs] = useState<string[]>([]);
+
   const [property, setProperty] = useState<Property | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [editingSection, setEditingSection] = useState<string | null>(null);
@@ -302,11 +312,46 @@ export default function PropertyDetailsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [agentsList, setAgentsList] = useState<any[]>([]);
 
+  const handleToggleTab = async (tabId: string) => {
+    const isCurrentlyDisabled = disabledTabs.includes(tabId);
+    setDisabledTabs(prev => isCurrentlyDisabled ? prev.filter(t => t !== tabId) : [...prev, tabId]);
+    toast.success(isCurrentlyDisabled ? `Sección habilitada` : `Sección bloqueada por mantenimiento`);
+    await togglePropertyTabVisibility(tabId, !isCurrentlyDisabled);
+  };
+
+  const renderTab = (id: string, label: React.ReactNode, activeClass: string) => {
+    const isDisabled = disabledTabs.includes(id);
+    
+    if (isDisabled && !isAdmin) return null;
+
+    return (
+      <div className="relative group/tab" key={id}>
+        <button 
+          onClick={() => setActiveTab(id as any)} 
+          className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === id ? activeClass : 'text-muted-foreground hover:text-foreground'}`}
+        >
+          {label}
+          {isDisabled && <Lock className="w-4 h-4 text-red-500 ml-1" />}
+        </button>
+        {isAdmin && (
+          <button
+            onClick={() => handleToggleTab(id)}
+            className={`absolute -top-2 -right-2 p-1 rounded-full bg-background border border-border shadow-sm opacity-0 group-hover/tab:opacity-100 transition-opacity hover:bg-muted z-10`}
+            title={isDisabled ? "Habilitar sección para todos" : "Bloquear por mantenimiento"}
+          >
+            {isDisabled ? <Unlock className="w-3 h-3 text-green-600" /> : <Lock className="w-3 h-3 text-red-500" />}
+          </button>
+        )}
+      </div>
+    );
+  };
+
   useEffect(() => {
     fetchProperty();
     fetch('/api/users').then(res => res.json()).then(data => {
       if (Array.isArray(data)) setAgentsList(data.filter((u: any) => u.role !== 'ADMIN'));
     }).catch(console.error);
+    getDisabledPropertyTabs().then(tabs => setDisabledTabs(tabs));
   }, [id]);
 
   const fetchProperty = async () => {
@@ -889,11 +934,11 @@ export default function PropertyDetailsPage() {
         {/* Tabs Row */}
         <div className="px-8 mt-2 flex gap-2 border-t border-border/50 pt-3 pb-3 overflow-x-auto">
           <div className="flex gap-2 bg-muted p-1 rounded-2xl w-max">
-            <button onClick={() => setActiveTab('resumen')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'resumen' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Resumen</button>
-            <button onClick={() => setActiveTab('multimedia')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'multimedia' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Multimedia y Planos</button>
-            <button onClick={() => setActiveTab('comercial')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'comercial' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Comercial (CRM)</button>
-            <button onClick={() => setActiveTab('presentacion')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'presentacion' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}>✨ Presentación IA</button>
-            <button onClick={() => setActiveTab('comisiones')} className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'comisiones' ? 'bg-background shadow-sm text-amber-600' : 'text-muted-foreground hover:text-foreground'}`}>💰 Comisiones</button>
+            {renderTab('resumen', 'Resumen', 'bg-background shadow-sm text-foreground')}
+            {renderTab('multimedia', 'Multimedia y Planos', 'bg-background shadow-sm text-foreground')}
+            {renderTab('comercial', 'Comercial (CRM)', 'bg-background shadow-sm text-foreground')}
+            {renderTab('presentacion', '✨ Presentación IA', 'bg-background shadow-sm text-primary')}
+            {renderTab('comisiones', '💰 Comisiones', 'bg-background shadow-sm text-amber-600')}
           </div>
         </div>
         </>
@@ -1144,6 +1189,42 @@ export default function PropertyDetailsPage() {
                               <label className="text-xs font-semibold text-muted-foreground mb-1 block">Antigüedad</label>
                               <input type="text" placeholder="Ej: A estrenar" value={dynamicFeatures.antiquity || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, antiquity: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
                             </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Piscina</label>
+                              <input type="text" placeholder="Ej: Sí, privada" value={dynamicFeatures.pool || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, pool: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Balcón / Terraza</label>
+                              <input type="text" placeholder="Ej: Balcón al frente" value={dynamicFeatures.balcony || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, balcony: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Patio / Jardín</label>
+                              <input type="text" placeholder="Ej: Jardín trasero" value={dynamicFeatures.patio || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, patio: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Búnker / Mamad</label>
+                              <input type="text" placeholder="Ej: Sí, de 10m²" value={dynamicFeatures.bunker || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, bunker: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Orientación</label>
+                              <input type="text" placeholder="Ej: Norte / Sur / Este / Oeste" value={dynamicFeatures.orientation || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, orientation: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Estado</label>
+                              <input type="text" placeholder="Ej: Excelente, A Remodelar" value={dynamicFeatures.condition || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, condition: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Mascotas Permitidas</label>
+                              <input type="text" placeholder="Ej: Sí / No" value={dynamicFeatures.petFriendly || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, petFriendly: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Gastos Comunes / Expensas</label>
+                              <input type="text" placeholder="Ej: ₪ 500 / mes" value={dynamicFeatures.hoaFees || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, hoaFees: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Niveles / Plantas</label>
+                              <input type="text" placeholder="Ej: 2 plantas" value={dynamicFeatures.floors || ''} onChange={e=>setDynamicFeatures({...dynamicFeatures, floors: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
+                            </div>
                             <div className="md:col-span-2">
                               <label className="text-xs font-semibold text-muted-foreground mb-1 block">Unidad Independiente (Anexo)</label>
                               <input type="text" placeholder="Ej: Incluye una unidad de 2 ambientes..." value={formData.independentUnit || ''} onChange={e=>setFormData({...formData, independentUnit: e.target.value})} className="w-full p-2 rounded-lg border border-border bg-background outline-none" />
@@ -1186,7 +1267,7 @@ export default function PropertyDetailsPage() {
                         let parsedDf: any = {};
                         try { parsedDf = property.dynamicFeatures ? JSON.parse(property.dynamicFeatures) : {}; } catch(e) {}
                         return (
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 group cursor-pointer" onClick={() => setEditingSection('specs')}>
                         <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-blue-200/60 bg-blue-50/50">
                           <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
                             <Building className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
@@ -1246,6 +1327,114 @@ export default function PropertyDetailsPage() {
                             <p className="font-bold text-rose-950 text-base md:text-lg truncate" title={parsedDf.antiquity || '-'}>{parsedDf.antiquity || '-'}</p>
                           </div>
                         </div>
+
+                        {parsedDf.pool && (
+                          <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-sky-200/60 bg-sky-50/50">
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-sky-100 rounded-xl flex items-center justify-center shrink-0">
+                              <Waves className="w-5 h-5 md:w-6 md:h-6 text-sky-600" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs md:text-sm text-sky-900/60 font-medium truncate" title="Piscina">Piscina</p>
+                              <p className="font-bold text-sky-950 text-base md:text-lg truncate" title={parsedDf.pool}>{parsedDf.pool}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {parsedDf.balcony && (
+                          <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-orange-200/60 bg-orange-50/50">
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-orange-100 rounded-xl flex items-center justify-center shrink-0">
+                              <Sun className="w-5 h-5 md:w-6 md:h-6 text-orange-600" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs md:text-sm text-orange-900/60 font-medium truncate" title="Balcón / Terraza">Balcón / Terraza</p>
+                              <p className="font-bold text-orange-950 text-base md:text-lg truncate" title={parsedDf.balcony}>{parsedDf.balcony}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {parsedDf.patio && (
+                          <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-green-200/60 bg-green-50/50">
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
+                              <Trees className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs md:text-sm text-green-900/60 font-medium truncate" title="Patio / Jardín">Patio / Jardín</p>
+                              <p className="font-bold text-green-950 text-base md:text-lg truncate" title={parsedDf.patio}>{parsedDf.patio}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {parsedDf.bunker && (
+                          <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-zinc-200/60 bg-zinc-50/50">
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-zinc-100 rounded-xl flex items-center justify-center shrink-0">
+                              <Shield className="w-5 h-5 md:w-6 md:h-6 text-zinc-600" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs md:text-sm text-zinc-900/60 font-medium truncate" title="Búnker / Mamad">Búnker / Mamad</p>
+                              <p className="font-bold text-zinc-950 text-base md:text-lg truncate" title={parsedDf.bunker}>{parsedDf.bunker}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {parsedDf.orientation && (
+                          <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-teal-200/60 bg-teal-50/50">
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-teal-100 rounded-xl flex items-center justify-center shrink-0">
+                              <Compass className="w-5 h-5 md:w-6 md:h-6 text-teal-600" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs md:text-sm text-teal-900/60 font-medium truncate" title="Orientación">Orientación</p>
+                              <p className="font-bold text-teal-950 text-base md:text-lg truncate" title={parsedDf.orientation}>{parsedDf.orientation}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {parsedDf.condition && (
+                          <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-fuchsia-200/60 bg-fuchsia-50/50">
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-fuchsia-100 rounded-xl flex items-center justify-center shrink-0">
+                              <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-fuchsia-600" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs md:text-sm text-fuchsia-900/60 font-medium truncate" title="Estado">Estado</p>
+                              <p className="font-bold text-fuchsia-950 text-base md:text-lg truncate" title={parsedDf.condition}>{parsedDf.condition}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {parsedDf.petFriendly && (
+                          <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-yellow-200/60 bg-yellow-50/50">
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-yellow-100 rounded-xl flex items-center justify-center shrink-0">
+                              <PawPrint className="w-5 h-5 md:w-6 md:h-6 text-yellow-600" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs md:text-sm text-yellow-900/60 font-medium truncate" title="Mascotas">Mascotas</p>
+                              <p className="font-bold text-yellow-950 text-base md:text-lg truncate" title={parsedDf.petFriendly}>{parsedDf.petFriendly}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {parsedDf.hoaFees && (
+                          <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-emerald-200/60 bg-emerald-50/50">
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
+                              <Coins className="w-5 h-5 md:w-6 md:h-6 text-emerald-600" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs md:text-sm text-emerald-900/60 font-medium truncate" title="Expensas">Expensas</p>
+                              <p className="font-bold text-emerald-950 text-base md:text-lg truncate" title={parsedDf.hoaFees}>{parsedDf.hoaFees}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {parsedDf.floors && (
+                          <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-indigo-200/60 bg-indigo-50/50">
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-100 rounded-xl flex items-center justify-center shrink-0">
+                              <Layers className="w-5 h-5 md:w-6 md:h-6 text-indigo-600" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs md:text-sm text-indigo-900/60 font-medium truncate" title="Niveles">Niveles</p>
+                              <p className="font-bold text-indigo-950 text-base md:text-lg truncate" title={parsedDf.floors}>{parsedDf.floors}</p>
+                            </div>
+                          </div>
+                        )}
                         
                         {property.independentUnit && (
                           <div className="mt-6 flex items-start gap-4 p-4 rounded-2xl border border-violet-200/60 bg-violet-50/50">
@@ -1933,12 +2122,12 @@ export default function PropertyDetailsPage() {
 {postersList.length > 0 ? (
                       <div className="grid grid-cols-2 gap-4">
                         {postersList.map((url, i) => (
-                          <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="w-full aspect-[3/4] rounded-2xl overflow-hidden border border-border shadow-sm block group relative">
+                          <div key={i} onClick={() => window.open(url, '_blank')} className="w-full aspect-[3/4] rounded-2xl overflow-hidden border border-border shadow-sm block group relative cursor-pointer">
                             <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Afiche ${i+1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                               <span className="text-white font-bold text-xs px-3 py-1.5 bg-black/50 rounded-xl backdrop-blur-sm">Ampliar</span>
                             </div>
-                          </a>
+                          </div>
                         ))}
                       </div>
                     ) : (

@@ -100,3 +100,39 @@ Escribe la descripción en español, resaltando los beneficios y creando un tono
     return { success: false, error: 'Failed to generate description' };
   }
 }
+
+export async function getDisabledPropertyTabs() {
+  try {
+    const setting = await prisma.siteSettings.findUnique({
+      where: { key: 'disabled_property_tabs' }
+    });
+    return setting?.value ? JSON.parse(setting.value) : [];
+  } catch (error) {
+    console.error("Error fetching disabled tabs:", error);
+    return [];
+  }
+}
+
+export async function togglePropertyTabVisibility(tabId: string, disabled: boolean) {
+  try {
+    const currentTabs = await getDisabledPropertyTabs();
+    let newTabs = [...currentTabs];
+    
+    if (disabled && !newTabs.includes(tabId)) {
+      newTabs.push(tabId);
+    } else if (!disabled) {
+      newTabs = newTabs.filter((t: string) => t !== tabId);
+    }
+
+    await prisma.siteSettings.upsert({
+      where: { key: 'disabled_property_tabs' },
+      update: { value: JSON.stringify(newTabs) },
+      create: { key: 'disabled_property_tabs', value: JSON.stringify(newTabs) }
+    });
+
+    return { success: true, disabledTabs: newTabs };
+  } catch (error) {
+    console.error("Error toggling property tab:", error);
+    return { success: false, error: "Failed to toggle tab visibility" };
+  }
+}

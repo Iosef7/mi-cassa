@@ -92,7 +92,18 @@ export function MortgageCalculator() {
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm pointer-events-none">%</span>
               </div>
-              <span className="text-2xl font-extrabold text-gray-900 min-w-[140px] text-right tracking-tight">{formatCurrency(downPayment)}</span>
+              <div className="relative group">
+                <input 
+                  type="number" 
+                  value={Math.round(downPayment)}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    setDownPayment(Math.min(Math.max(0, val), propertyPrice));
+                  }}
+                  className="w-44 text-right text-xl font-extrabold text-gray-900 border border-gray-200 bg-white py-1.5 pr-8 pl-2 rounded-xl focus:ring-4 focus:ring-red-100 focus:border-red-500 outline-none transition-all duration-300 hover:border-gray-300 shadow-sm"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-extrabold text-lg pointer-events-none">₪</span>
+              </div>
             </div>
           </div>
           <div className="relative pt-2 pb-4">
@@ -100,7 +111,7 @@ export function MortgageCalculator() {
               type="range" 
               min="0" 
               max={propertyPrice} 
-              step="10000"
+              step="1"
               value={downPayment}
               onChange={(e) => setDownPayment(Number(e.target.value))}
               className="w-full h-2 rounded-lg appearance-none cursor-pointer range-slider"

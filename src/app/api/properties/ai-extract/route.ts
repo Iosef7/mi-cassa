@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
 
     const uploadedAiFiles = [];
     const tempFilePaths = [];
+    const debugDownloadErrors: any[] = [];
 
     // 1. Guardar archivos temporalmente y subirlos a Gemini
     if (files && files.length > 0) {
@@ -62,24 +63,57 @@ export async function POST(req: NextRequest) {
 
         if (fileId) {
           try {
-            const metaRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=name,mimeType`, {
+            const metaRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=name,mimeType&supportsAllDrives=true`, {
               headers: { Authorization: `Bearer ${driveToken}` }
             });
+            if (!metaRes.ok) {
+               const errText = await metaRes.text();
+               console.error(`Metadata fetch failed for ${fileId}:`, errText);
+               debugDownloadErrors.push({ url, stage: 'metadata', error: errText });
+               continue;
+            }
             const meta = await metaRes.json();
             
             if (meta.name) {
-              const contentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+              const isWorkspaceFile = meta.mimeType && meta.mimeType.startsWith('application/vnd.google-apps.');
+              
+              let downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`;
+              let fileMimeType = meta.mimeType;
+              let fileName = meta.name;
+              
+              if (isWorkspaceFile) {
+                 // Export workspace files to standard formats that Gemini can read
+                 if (meta.mimeType === 'application/vnd.google-apps.document') {
+                     fileMimeType = 'text/plain';
+                     fileName += '.txt';
+                 } else if (meta.mimeType === 'application/vnd.google-apps.spreadsheet') {
+                     fileMimeType = 'text/csv';
+                     fileName += '.csv';
+                 } else {
+                     fileMimeType = 'application/pdf';
+                     fileName += '.pdf';
+                 }
+                 downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=${encodeURIComponent(fileMimeType)}`;
+              }
+
+              const contentRes = await fetch(downloadUrl, {
                 headers: { Authorization: `Bearer ${driveToken}` }
               });
+              if (!contentRes.ok) {
+                const errText = await contentRes.text();
+                console.error("Error downloading file from Drive:", errText);
+                debugDownloadErrors.push({ url, stage: 'download', error: errText });
+                continue;
+              }
               const buffer = Buffer.from(await contentRes.arrayBuffer());
               
-              const tempPath = join(tmpdir(), `${Date.now()}_drive_${meta.name}`);
+              const tempPath = join(tmpdir(), `${Date.now()}_drive_${fileName}`);
               await writeFile(tempPath, buffer);
               tempFilePaths.push(tempPath);
               
               const uploadResult = await (ai.files.upload as any)({
                 file: tempPath,
-                mimeType: meta.mimeType || "application/octet-stream",
+                mimeType: fileMimeType || "application/octet-stream",
               });
               uploadedAiFiles.push({
                 fileUri: uploadResult.uri,
@@ -89,11 +123,14 @@ export async function POST(req: NextRequest) {
                 localTempPath: tempPath
               });
             }
-          } catch (e) {
+          } catch (e: any) {
             console.error("Error downloading Drive file for AI:", url, e);
+            debugDownloadErrors.push({ url, stage: 'exception', error: String(e) });
           }
         }
       }
+    } else if (driveUrls && driveUrls.length > 0) {
+      debugDownloadErrors.push({ stage: 'skipped', error: 'driveToken is missing or empty' });
     }
 
     // 2. Preparar los contenidos para el modelo
@@ -137,17 +174,30 @@ Extrae la información en un formato JSON estricto que cumpla EXACTAMENTE con es
   "area": "Number, área en metros cuadrados (solo el número)",
   "availableUnits": "Number",
   "deliveryDate": "String",
-  "dynamicFeatures": "Objeto JSON con características extra tipo clave-valor (ej: {'piscina': 'si'})",
+  "dynamicFeatures": {
+    "pool": "String, descripción de la piscina si la tiene (Ej: 'Sí, privada', 'Compartida'), o null si no",
+    "balcony": "String, descripción de balcón o terraza (Ej: 'Terraza de 20m2', 'Balcón al frente'), o null",
+    "patio": "String, descripción del patio o jardín, o null",
+    "bunker": "String, si tiene búnker o mamad (Ej: 'Sí, de 10m2'), o null",
+    "orientation": "String, orientación (Ej: 'Norte', 'Sur', 'Este', 'Oeste'), o null",
+    "condition": "String, estado de conservación (Ej: 'Excelente', 'A estrenar', 'A remodelar'), o null",
+    "petFriendly": "String, si se permiten mascotas ('Sí', 'No', 'Consultar'), o null",
+    "hoaFees": "String, gastos comunes / expensas / vaad bait (Ej: '₪ 500 / mes'), o null",
+    "floors": "String, niveles o plantas de la propiedad (Ej: '2 plantas', 'Piso 5'), o null",
+    "parking": "String, lugares de estacionamiento (Ej: '2 lugares cubiertos'), o null",
+    "antiquity": "String, antigüedad (Ej: 'A estrenar', '10 años'), o null"
+  },
   "fileCategorization": {
-    "images": ["String con los 'originalName' exactos de los archivos que son fotos de la propiedad"],
-    "presentations": ["String con los 'originalName' exactos que son PDFs, presentaciones o planos"],
-    "videos": ["String con los 'originalName' exactos que son videos"],
-    "posters": ["String con los 'originalName' exactos que sean afiches promocionales gráficos"],
-    "legalDocs": ["String con los 'originalName' exactos que parezcan documentos legales o contratos"]
+    "images": ["Array de números con los índices de los archivos que son exclusivamente fotos de la propiedad (ej: [0, 2])"],
+    "presentations": ["Array de números con los índices de archivos que son presentaciones en PDF, folletos informativos, planos o catálogos"],
+    "videos": ["Array de números con los índices de los archivos que son videos (ej: recorridos virtuales, formato mp4)"],
+    "posters": ["Array de números con los índices de los archivos que sean afiches gráficos publicitarios, flyers, banners o material promocional de marketing"],
+    "legalDocs": ["Array de números con los índices de los archivos que sean documentos legales, contratos, escrituras, tabu, etc."]
   }
 }
 
-Presta especial atención a mapear cada archivo subido (usando su nombre original provisto arriba) en la categoría correcta dentro de 'fileCategorization'.
+Presta especial atención a extraer toda la información posible para la Ficha Técnica (dynamicFeatures). 
+Presta especial atención a mapear CADA archivo subido (usando su índice basado en el orden provisto arriba) en la categoría CORRECTA dentro de 'fileCategorization'. Si es un afiche, mándalo a posters; si es presentación o plano, a presentations; si es video, a videos.
 Responde SOLO con el JSON válido.
 `;
 
@@ -191,7 +241,32 @@ Responde SOLO con el JSON válido.
     const aiData = JSON.parse((aiResultText || "").trim());
     
     // Inyectar los Data URIs en la respuesta mapeando originalName -> data URI
-    return NextResponse.json({ success: true, data: aiData, filesData: categorizedDataURIs });
+    const responseData = { 
+      success: true, 
+      data: aiData, 
+      filesData: categorizedDataURIs,
+      fileNames: uploadedAiFiles.map(f => f.originalName),
+      debug: {
+        textDataLength: textData ? textData.length : 0,
+        driveUrlsCount: driveUrls ? driveUrls.length : 0,
+        uploadedAiFilesCount: uploadedAiFiles.length,
+        downloadErrors: debugDownloadErrors,
+        files: uploadedAiFiles.map(f => ({
+          name: f.originalName,
+          mimeType: f.mimeType,
+          uri: f.fileUri
+        }))
+      }
+    };
+
+    // DEBUG: Escribir a un archivo local
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      fs.writeFileSync(path.join(process.cwd(), 'ai_debug.json'), JSON.stringify(responseData, null, 2));
+    } catch(e) {}
+
+    return NextResponse.json(responseData);
 
   } catch (error: any) {
     console.error("Error en AI Extract Endpoint:", error);
