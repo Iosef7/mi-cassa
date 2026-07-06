@@ -992,7 +992,7 @@ export default function PropertyDetailsPage() {
                           </span>
 
                           {img && (
-                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center relative">
                               <DriveImagePreview url={img} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
                             </div>
                           )}
@@ -1818,7 +1818,7 @@ export default function PropertyDetailsPage() {
                         return (
                         <div key={i} className="flex gap-2 items-center">
                           {url && (
-                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center relative">
                               {isVideoData ? (
                                 <video src={url} className="w-full h-full object-cover" />
                               ) : isImageData || url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
@@ -1936,7 +1936,7 @@ export default function PropertyDetailsPage() {
                       {presentationsList.map((url, i) => (
                         <div key={i} className="flex gap-2 items-center">
                           {url && (
-                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center relative">
                               <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
                             </div>
                           )}
@@ -2084,7 +2084,7 @@ export default function PropertyDetailsPage() {
                       {postersList.map((url, i) => (
                         <div key={i} className="flex gap-2 items-center">
                           {url && (
-                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center relative">
                               <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
                             </div>
                           )}
@@ -2155,7 +2155,7 @@ export default function PropertyDetailsPage() {
                       {plansList.map((url, i) => (
                         <div key={i} className="flex gap-2 items-center">
                           {url && (
-                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center relative">
                               <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
                             </div>
                           )}
@@ -2794,7 +2794,7 @@ export default function PropertyDetailsPage() {
                       {legalDocsList.map((url, i) => (
                         <div key={i} className="flex gap-2 items-center">
                           {url && (
-                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center relative">
                               <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
                             </div>
                           )}
