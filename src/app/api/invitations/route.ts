@@ -41,7 +41,12 @@ export async function POST(request: Request) {
         },
       });
 
-      const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/register?token=${token}`;
+      const origin = request.headers.get('origin');
+      const host = request.headers.get('host');
+      const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
+      const baseUrl = origin || (host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+      
+      const inviteUrl = `${baseUrl}/register?token=${token}`;
 
       const mailOptions = {
         from: `"Mi Cassa CRM" <${process.env.SMTP_EMAIL}>`,
