@@ -60,9 +60,6 @@ export async function GET(request: Request) {
             }
           });
           results.push({ id: status.id, success: true, data });
-        } else {
-          throw new Error(data.error || "Error de la API de Ultramsg");
-        }
       } catch (err: any) {
         console.error(`Error publicando estado ${status.id}:`, err);
         await prisma.whatsappStatus.update({
