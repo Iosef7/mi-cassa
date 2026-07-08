@@ -196,7 +196,9 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={async () => {
+              await import('@/actions/auth').then(m => m.logoutAction());
+            }}
             className={`p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full transition-colors ${isCollapsed ? '' : 'ml-auto'}`}
             title={dict.sidebar.logout}
           >
