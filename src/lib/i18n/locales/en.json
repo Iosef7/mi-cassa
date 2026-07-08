@@ -1,0 +1,98 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "loading": "Loading...",
+    "success": "Success",
+    "error": "Error",
+    "search": "Search...",
+    "allCities": "All cities"
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "properties": "Properties",
+    "prospects": "Prospects",
+    "projects": "Projects",
+    "tasks": "Tasks",
+    "team": "Team",
+    "settings": "Settings",
+    "ai": "Artificial Intelligence",
+    "aiMatch": "AI Match",
+    "whatsapp": "WhatsApp",
+    "tabulator": "Tabulator",
+    "logout": "Sign Out"
+  },
+  "dashboard": {
+    "searchPlaceholder": "Search clients, properties, phones...",
+    "newProperty": "New Property",
+    "greeting": "Hello, {name} 👋",
+    "subtitle": "Here is the real estate summary for today.",
+    "stats": {
+      "activeProperties": "Active Properties",
+      "inInventory": "In inventory",
+      "newLeads": "New Leads",
+      "uncontacted": "Uncontacted",
+      "pendingAppointments": "Pending Appointments",
+      "upcomingDays": "Upcoming days",
+      "closedSales": "Closed Sales",
+      "totalValue": "Historical total value"
+    },
+    "pipeline": {
+      "title": "Active Pipeline (CRM)",
+      "viewAll": "View all",
+      "noActive": "No active prospects."
+    },
+    "calls": {
+      "title": "Recent Calls",
+      "viewAll": "View all transcripts",
+      "noRecent": "No recent calls.",
+      "unknown": "Unknown",
+      "noSummary": "No summary",
+      "commitmentSaved": "Commitment Saved",
+      "summarySaved": "Summary Saved",
+      "minsAgo": "{mins} mins ago",
+      "hoursAgo": "{hours} hrs ago"
+    },
+    "properties": {
+      "title": "Recent Properties",
+      "viewCatalog": "View full catalog",
+      "noProperties": "No properties registered yet."
+    }
+  },
+  "propertiesPage": {
+    "title": "Property Catalog",
+    "subtitle": "Manage the exclusive properties inventory of Mi Cassa.",
+    "newProject": "Upload Project",
+    "tabs": {
+      "all": "All Properties",
+      "houses": "Houses",
+      "apartments": "Apartments",
+      "land": "Land",
+      "projects": "New Projects"
+    },
+    "emptyState": {
+      "title": "No properties in this section",
+      "desc": "There are no properties or projects registered here yet. Click the button below to start adding."
+    },
+    "details": "View Details",
+    "deleteProp": "Delete Property",
+    "confirmDelete": "Delete property?",
+    "confirmDeleteDesc": "This action cannot be undone.",
+    "yesDelete": "Yes, delete",
+    "deleted": "Property deleted"
+  },
+  "prospectsPage": {
+    "clients": "Clients",
+    "owners": "Owners",
+    "clientsDesc": "Manage your potential clients and sales pipeline.",
+    "ownersDesc": "Manage your clients' property acquisition pipeline.",
+    "newClient": "New Prospect",
+    "newOwner": "New Owner",
+    "totalProspects": "Total Prospects",
+    "new": "New",
+    "inNegotiation": "In Negotiation",
+    "pipelineValue": "Pipeline Value"
+  }
+}

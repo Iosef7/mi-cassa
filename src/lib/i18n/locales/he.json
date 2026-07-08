@@ -1,0 +1,98 @@
+{
+  "common": {
+    "save": "שמור",
+    "cancel": "ביטול",
+    "edit": "ערוך",
+    "delete": "מחק",
+    "loading": "טוען...",
+    "success": "הצלחה",
+    "error": "שגיאה",
+    "search": "חפש...",
+    "allCities": "כל הערים"
+  },
+  "sidebar": {
+    "dashboard": "לוח בקרה",
+    "properties": "נכסים",
+    "prospects": "לקוחות פוטנציאליים",
+    "projects": "פרויקטים",
+    "tasks": "משימות",
+    "team": "צוות",
+    "settings": "הגדרות",
+    "ai": "בינה מלאכותית",
+    "aiMatch": "התאמת בינה מלאכותית",
+    "whatsapp": "וואטסאפ",
+    "tabulator": "מחירון",
+    "logout": "התנתק"
+  },
+  "dashboard": {
+    "searchPlaceholder": "חפש לקוחות, נכסים, טלפונים...",
+    "newProperty": "נכס חדש",
+    "greeting": "שלום, {name} 👋",
+    "subtitle": "הנה תקציר הנדל\"ן להיום.",
+    "stats": {
+      "activeProperties": "נכסים פעילים",
+      "inInventory": "במלאי",
+      "newLeads": "לידים חדשים",
+      "uncontacted": "טרם נוצר קשר",
+      "pendingAppointments": "פגישות בהמתנה",
+      "upcomingDays": "בימים הקרובים",
+      "closedSales": "מכירות שנסגרו",
+      "totalValue": "ערך היסטורי כולל"
+    },
+    "pipeline": {
+      "title": "פייפליין פעיל (CRM)",
+      "viewAll": "הצג הכל",
+      "noActive": "אין לקוחות פוטנציאליים פעילים."
+    },
+    "calls": {
+      "title": "שיחות אחרונות",
+      "viewAll": "הצג את כל התמלולים",
+      "noRecent": "אין שיחות אחרונות.",
+      "unknown": "לא ידוע",
+      "noSummary": "אין תקציר",
+      "commitmentSaved": "התחייבות נשמרה",
+      "summarySaved": "תקציר נשמר",
+      "minsAgo": "לפני {mins} דקות",
+      "hoursAgo": "לפני {hours} שעות"
+    },
+    "properties": {
+      "title": "נכסים אחרונים",
+      "viewCatalog": "הצג קטלוג מלא",
+      "noProperties": "טרם נרשמו נכסים."
+    }
+  },
+  "propertiesPage": {
+    "title": "קטלוג נכסים",
+    "subtitle": "נהל את מלאי הנכסים הבלעדי של Mi Cassa.",
+    "newProject": "העלה פרויקט",
+    "tabs": {
+      "all": "כל הנכסים",
+      "houses": "בתים",
+      "apartments": "דירות",
+      "land": "קרקעות",
+      "projects": "פרויקטים חדשים"
+    },
+    "emptyState": {
+      "title": "אין נכסים בסעיף זה",
+      "desc": "טרם נרשמו כאן נכסים או פרויקטים. לחץ על הכפתור למטה כדי להתחיל להוסיף."
+    },
+    "details": "הצג פרטים",
+    "deleteProp": "מחק נכס",
+    "confirmDelete": "האם למחוק נכס?",
+    "confirmDeleteDesc": "פעולה זו לא ניתנת לביטול.",
+    "yesDelete": "כן, מחק",
+    "deleted": "הנכס נמחק"
+  },
+  "prospectsPage": {
+    "clients": "לקוחות",
+    "owners": "בעלים",
+    "clientsDesc": "נהל את הלקוחות הפוטנציאליים ואת פייפליין המכירות שלך.",
+    "ownersDesc": "נהל את פייפליין גיוס הנכסים והנכסים של הלקוחות שלך.",
+    "newClient": "לקוח פוטנציאלי חדש",
+    "newOwner": "בעלים חדש",
+    "totalProspects": "סך הכל לקוחות פוטנציאליים",
+    "new": "חדשים",
+    "inNegotiation": "במשא ומתן",
+    "pipelineValue": "ערך הפייפליין"
+  }
+}

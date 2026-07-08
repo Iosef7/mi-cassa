@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { Plus, Users, Target, CheckSquare, Inbox, Loader2 } from 'lucide-react';
 import ProspectControls from './ProspectControls';
 import ProspectosContent from './ProspectosContent';
+import { cookies } from 'next/headers';
+import { getDictionary } from '@/lib/i18n/dictionaries';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,18 +42,22 @@ export default async function ProspectosPage({
   const view = typeof sp.view === 'string' ? sp.view : 'list';
   const tab = typeof sp.tab === 'string' ? sp.tab : 'clientes'; // 'clientes' o 'propietarios'
 
+  const cookieStore = await cookies();
+  const locale = cookieStore.get("NEXT_LOCALE")?.value;
+  const dict = getDictionary(locale);
+
   return (
     <div className="p-8 overflow-auto">
       {/* Header (Instantly visible) */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-            {tab === 'propietarios' ? 'Propietarios' : 'Clientes'}
+            {tab === 'propietarios' ? dict.prospectsPage.owners : dict.prospectsPage.clients}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
             {tab === 'propietarios' 
-              ? 'Gestiona el pipeline de captación y propiedades de tus clientes.' 
-              : 'Gestiona tus clientes potenciales y pipeline de ventas.'}
+              ? dict.prospectsPage.ownersDesc 
+              : dict.prospectsPage.clientsDesc}
           </p>
         </div>
         <Link 
@@ -59,7 +65,7 @@ export default async function ProspectosPage({
           className="flex items-center gap-2 bg-slate-900 dark:bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-slate-800 dark:hover:bg-blue-700 transition-colors shadow-sm"
         >
           <Plus size={18} />
-          <span>{tab === 'propietarios' ? 'Nuevo Propietario' : 'Nuevo Prospecto'}</span>
+          <span>{tab === 'propietarios' ? dict.prospectsPage.newOwner : dict.prospectsPage.newClient}</span>
         </Link>
       </div>
 
@@ -73,7 +79,7 @@ export default async function ProspectosPage({
               : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
           }`}
         >
-          Clientes
+          {dict.prospectsPage.clients}
         </Link>
         <Link
           href={`/admin/prospectos?tab=propietarios&view=${view}`}
@@ -83,7 +89,7 @@ export default async function ProspectosPage({
               : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
           }`}
         >
-          Propietarios
+          {dict.prospectsPage.owners}
         </Link>
       </div>
 

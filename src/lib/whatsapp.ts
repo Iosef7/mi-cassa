@@ -1,3 +1,7 @@
+const ULTRAMSG_INSTANCE = "instance184166";
+const ULTRAMSG_TOKEN = "uk1wn7uyxmt325mp";
+const ULTRAMSG_URL = `https://api.ultramsg.com/${ULTRAMSG_INSTANCE}`;
+
 export async function sendWhatsAppMessage(to: string, text: string) {
   const token = process.env.WHATSAPP_TOKEN;
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
@@ -43,3 +47,91 @@ export async function sendWhatsAppMessage(to: string, text: string) {
     return false;
   }
 }
+
+/**
+ * Sends multiple media items or text to WhatsApp Status via Baileys Bot.
+ * @param mediaUrls Array of public URLs for the images/videos.
+ * @param caption Optional text caption for the first image, or text-only status.
+ * @param baseUrl Base URL for relative images (e.g. http://localhost:3000)
+ */
+export async function sendUltramsgStatuses(mediaUrls: string[], caption: string, baseUrl: string) {
+  const results = [];
+  const BOT_URL = process.env.WHATSAPP_BOT_URL || "http://localhost:3001";
+  
+  if (mediaUrls.length === 0) {
+    // Texto solamente
+    try {
+      const payload = { caption: caption || "" };
+      
+      const response = await fetch(`${BOT_URL}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (data.error) throw new Error(typeof data.error === "object" ? JSON.stringify(data.error) : data.error);
+      results.push(data);
+    } catch (e) {
+      console.error("Bot error text:", e);
+      throw e;
+    }
+  } else {
+    // Múltiples imágenes
+    for (let i = 0; i < mediaUrls.length; i++) {
+      let url = mediaUrls[i];
+      let imagePayload = url;
+      
+      // Convertimos a base64 porque el bot necesita el buffer de la imagen
+      if (url.startsWith("/uploads/")) {
+        const fs = require('fs');
+        const path = require('path');
+        try {
+          const localPath = path.join(process.cwd(), 'public', url);
+          const bitmap = fs.readFileSync(localPath);
+          const ext = path.extname(localPath).toLowerCase().substring(1) || 'jpeg';
+          imagePayload = `data:image/${ext};base64,` + bitmap.toString('base64');
+        } catch (e) {
+          console.error("No se pudo leer el archivo local:", e);
+        }
+      } else {
+        // Si es una URL pública en producción, la descargamos y convertimos a base64
+        try {
+          const res = await fetch(url.startsWith("http") ? url : `${baseUrl}${url}`);
+          const arrayBuffer = await res.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          imagePayload = `data:image/jpeg;base64,` + buffer.toString('base64');
+        } catch (e) {
+          console.error("Error descargando imagen remota:", e);
+        }
+      }
+
+      try {
+        const payload: any = {
+          imageBase64: imagePayload
+        };
+        // Agregar caption solo a la primera imagen
+        if (i === 0 && caption) {
+          payload.caption = caption;
+        }
+
+        const response = await fetch(`${BOT_URL}/status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (data.error) throw new Error(typeof data.error === "object" ? JSON.stringify(data.error) : data.error);
+        results.push(data);
+        
+        // Pequeño delay entre envíos para asegurar el orden
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (e) {
+        console.error("Bot error image:", e);
+        throw e;
+      }
+    }
+  }
+  
+  return results;
+}
+

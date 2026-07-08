@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma';
 import { Users, Target, CheckSquare, Inbox } from 'lucide-react';
 import ProspectKanbanBoard from './ProspectKanbanBoard';
 import ProspectTableView from './ProspectTableView';
+import { cookies } from 'next/headers';
+import { getDictionary } from '@/lib/i18n/dictionaries';
 
 export default async function ProspectosContent({
   query,
@@ -72,6 +74,10 @@ export default async function ProspectosContent({
     budget: lead.budget ? Number(lead.budget) : null
   }));
 
+  const cookieStore = await cookies();
+  const locale = cookieStore.get("NEXT_LOCALE")?.value;
+  const dict = getDictionary(locale);
+
   return (
     <>
       {/* KPI Cards */}
@@ -81,7 +87,7 @@ export default async function ProspectosContent({
             <Users size={24} />
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Total Prospectos</p>
+            <p className="text-sm font-medium text-muted-foreground">{dict.prospectsPage.totalProspects}</p>
             <h3 className="text-2xl font-bold text-foreground">{totalActivos}</h3>
           </div>
         </div>
@@ -90,7 +96,7 @@ export default async function ProspectosContent({
             <Inbox size={24} />
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Nuevos</p>
+            <p className="text-sm font-medium text-muted-foreground">{dict.prospectsPage.new}</p>
             <h3 className="text-2xl font-bold text-foreground">{totalNuevos}</h3>
           </div>
         </div>
@@ -99,7 +105,7 @@ export default async function ProspectosContent({
             <Target size={24} />
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground">En Negociación</p>
+            <p className="text-sm font-medium text-muted-foreground">{dict.prospectsPage.inNegotiation}</p>
             <h3 className="text-2xl font-bold text-foreground">{enNegociacion}</h3>
           </div>
         </div>
@@ -108,7 +114,7 @@ export default async function ProspectosContent({
             <CheckSquare size={24} />
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Valor Pipeline</p>
+            <p className="text-sm font-medium text-muted-foreground">{dict.prospectsPage.pipelineValue}</p>
             <h3 className="text-2xl font-bold text-foreground">${pipelineValue.toLocaleString()}</h3>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { Building, Plus, Search, MapPin, Edit, Trash2, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { showConfirm, showToast } from '@/lib/alerts';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 interface Property {
   id: string;
@@ -59,6 +60,7 @@ const DriveImagePreview = ({ url, alt, className, priority }: { url: string, alt
 };
 
 export default function PropiedadesClient({ initialProperties }: { initialProperties: Property[] }) {
+  const { dict } = useLanguage();
   const [properties, setProperties] = useState<Property[]>(initialProperties);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -148,11 +150,11 @@ export default function PropiedadesClient({ initialProperties }: { initialProper
   };
 
   const handleDelete = async (id: string) => {
-    if(!(await showConfirm('¿Eliminar propiedad?', 'Esta acción no se puede deshacer.', 'Sí, eliminar'))) return;
+    if(!(await showConfirm(dict.propertiesPage.confirmDelete, dict.propertiesPage.confirmDeleteDesc, dict.propertiesPage.yesDelete))) return;
     try {
       await fetch(`/api/properties/${id}`, { method: 'DELETE' });
       fetchProperties();
-      showToast('Propiedad eliminada');
+      showToast(dict.propertiesPage.deleted);
     } catch (e) {
       console.error(e);
     }
@@ -195,16 +197,16 @@ export default function PropiedadesClient({ initialProperties }: { initialProper
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 animate-in">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-gradient flex items-center gap-2">
-            Catálogo de Inmuebles
+            {dict.propertiesPage.title}
           </h1>
-          <p className="text-muted-foreground mt-1">Gestiona el inventario de propiedades exclusivas de Mi Cassa.</p>
+          <p className="text-muted-foreground mt-1">{dict.propertiesPage.subtitle}</p>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto mt-4 md:mt-0">
           <div className="relative group w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
             <input 
               type="text" 
-              placeholder="Buscar..." 
+              placeholder={dict.common.search} 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2.5 rounded-xl bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-sm w-full sm:w-[220px]"
@@ -218,7 +220,7 @@ export default function PropiedadesClient({ initialProperties }: { initialProper
               onChange={(e) => setFilterLocation(e.target.value)}
               className="pl-9 pr-8 py-2.5 rounded-xl bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-sm cursor-pointer appearance-none w-full sm:w-[180px] font-medium text-foreground"
             >
-              <option value="TODAS">Todas las ciudades</option>
+              <option value="TODAS">{dict.common.allCities}</option>
               {uniqueLocations.map(loc => (
                 <option key={loc} value={loc}>{loc}</option>
               ))}
@@ -232,7 +234,7 @@ export default function PropiedadesClient({ initialProperties }: { initialProper
             href="/admin/propiedades/new"
             className="w-full sm:w-auto bg-primary text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg shadow-primary/20 whitespace-nowrap"
           >
-            <Plus className="w-4 h-4" /> Subir Proyecto
+            <Plus className="w-4 h-4" /> {dict.propertiesPage.newProject}
           </Link>
         </div>
       </div>
@@ -245,7 +247,7 @@ export default function PropiedadesClient({ initialProperties }: { initialProper
             onClick={() => setFilterType(cat)}
             className={`pb-3 text-sm font-bold whitespace-nowrap border-b-2 transition-colors ${filterType === cat ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}`}
           >
-            {cat === 'TODOS' ? 'Todos los Inmuebles' : cat === 'CASA' ? 'Casas' : cat === 'DEPARTAMENTO' ? 'Departamentos' : cat === 'TERRENO' ? 'Terrenos' : 'Nuevos Proyectos'}
+            {cat === 'TODOS' ? dict.propertiesPage.tabs.all : cat === 'CASA' ? dict.propertiesPage.tabs.houses : cat === 'DEPARTAMENTO' ? dict.propertiesPage.tabs.apartments : cat === 'TERRENO' ? dict.propertiesPage.tabs.land : dict.propertiesPage.tabs.projects}
           </button>
         ))}
       </div>
@@ -260,15 +262,15 @@ export default function PropiedadesClient({ initialProperties }: { initialProper
           <div className="bg-primary/10 p-4 rounded-full mb-4">
             <Building className="w-8 h-8 text-primary" />
           </div>
-          <h3 className="text-xl font-bold mb-2">No hay propiedades en esta sección</h3>
+          <h3 className="text-xl font-bold mb-2">{dict.propertiesPage.emptyState.title}</h3>
           <p className="text-muted-foreground mb-6 max-w-md">
-            Actualmente no hay inmuebles o proyectos registrados aquí. Haz clic en el botón de abajo para empezar a agregar.
+            {dict.propertiesPage.emptyState.desc}
           </p>
           <Link 
             href="/admin/propiedades/new"
             className="bg-primary text-primary-foreground px-6 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5"
           >
-            <Plus className="w-4 h-4" /> Agregar Proyecto
+            <Plus className="w-4 h-4" /> {dict.propertiesPage.newProject}
           </Link>
         </div>
       ) : (
@@ -316,10 +318,10 @@ export default function PropiedadesClient({ initialProperties }: { initialProper
                   
                   {/* Actions */}
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 absolute bottom-6 right-6 bg-background/90 backdrop-blur-md p-1.5 rounded-xl border border-border shadow-lg z-20">
-                    <div className="p-2 text-primary hover:bg-primary/20 rounded-lg transition-colors" title="Ver Detalles">
+                    <div className="p-2 text-primary hover:bg-primary/20 rounded-lg transition-colors" title={dict.propertiesPage.details}>
                       <Edit className="w-4 h-4" />
                     </div>
-                    <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(p.id); }} className="p-2 text-destructive hover:bg-destructive/20 rounded-lg transition-colors" title="Eliminar Propiedad">
+                    <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(p.id); }} className="p-2 text-destructive hover:bg-destructive/20 rounded-lg transition-colors" title={dict.propertiesPage.deleteProp}>
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>

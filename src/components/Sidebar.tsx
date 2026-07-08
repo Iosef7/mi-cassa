@@ -11,6 +11,8 @@ import { useSession, signOut } from 'next-auth/react';
 import { toast } from 'sonner';
 import NotificationsDropdown from './NotificationsDropdown';
 import ProfileModal from './ProfileModal';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import LanguageSwitcher from './LanguageSwitcher';
 
 interface SidebarProps {
   className?: string;
@@ -30,6 +32,7 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
   const [currentLogo, setCurrentLogo] = useState<string | null>(initialSiteLogo || null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const { dict } = useLanguage();
 
   const [logoError, setLogoError] = useState(false);
 
@@ -63,7 +66,7 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Por favor, sube una imagen válida');
+      toast.error(dict.common?.error || 'Error');
       return;
     }
 
@@ -76,14 +79,14 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
       if (res.success) {
         setCurrentLogo(base64);
         setLogoError(false); // Reset error state on new upload
-        toast.success("Logo actualizado correctamente");
+        toast.success(dict.common?.success || "Logo actualizado");
       } else {
-        toast.error("Error al actualizar el logo");
+        toast.error(dict.common?.error || "Error");
       }
       setIsUploadingLogo(false);
     };
     reader.onerror = () => {
-      toast.error("Error al procesar la imagen");
+      toast.error(dict.common?.error || "Error");
       setIsUploadingLogo(false);
     };
     reader.readAsDataURL(file);
@@ -131,7 +134,7 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
                   disabled={isUploadingLogo}
                   className="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg text-sm font-semibold backdrop-blur-sm z-10"
                 >
-                  {isUploadingLogo ? 'Actualizando...' : 'Cambiar Logo'}
+                  {isUploadingLogo ? (dict.common?.loading || 'Cargando...') : (dict.common?.edit || 'Cambiar')}
                 </button>
                 <input 
                   type="file" 
@@ -155,33 +158,34 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
         )}
       </div>
       <nav className="flex-1 px-3 space-y-2 mt-2 overflow-y-auto overflow-x-hidden custom-scrollbar pb-4">
-        <NavItem isCollapsed={isCollapsed} href="/admin" icon={<Home />} label="Dashboard" active={pathname === "/admin"} />
-        <NavItem isCollapsed={isCollapsed} href="/admin/propiedades" icon={<Building />} label="Proyectos" active={pathname?.startsWith("/admin/propiedades")} status={getStatus("/admin/propiedades")} isLocked={isLocked("/admin/propiedades")} userRole={getRole()} />
-        <NavItem isCollapsed={isCollapsed} href="/admin/prospectos" icon={<Users />} label="Clientes" active={pathname?.startsWith("/admin/prospectos")} status={getStatus("/admin/prospectos")} isLocked={isLocked("/admin/prospectos")} userRole={getRole()} />
-        <NavItem isCollapsed={isCollapsed} href="/admin/tareas" icon={<CheckSquare />} label="Tareas" active={pathname?.startsWith("/admin/tareas")} status={getStatus("/admin/tareas")} isLocked={isLocked("/admin/tareas")} userRole={getRole()} />
-        <NavItem isCollapsed={isCollapsed} href="/admin/ai-match" icon={<Sparkles />} label="Matchmaker" active={pathname === "/admin/ai-match"} status={getStatus("/admin/ai-match")} isLocked={isLocked("/admin/ai-match")} userRole={getRole()} />
-        <NavItem isCollapsed={isCollapsed} href="/admin/tabulador" icon={<Calculator />} label="Tabulador" active={pathname?.startsWith("/admin/tabulador")} status={getStatus("/admin/tabulador")} isLocked={isLocked("/admin/tabulador")} userRole={getRole()} />
-        <NavItem isCollapsed={isCollapsed} href="#" icon={<Calendar />} label="Agenda" active={pathname === "/admin/agenda"} status={getStatus("/admin/agenda")} isLocked={isLocked("/admin/agenda")} userRole={getRole()} />
-        <NavItem isCollapsed={isCollapsed} href="#" icon={<Phone />} label="Llamadas" active={pathname === "/admin/llamadas"} status={getStatus("/admin/llamadas")} isLocked={isLocked("/admin/llamadas")} userRole={getRole()} />
-        <NavItem isCollapsed={isCollapsed} href="#" icon={<TrendingUp />} label="Marketing" active={pathname === "/admin/marketing"} status={getStatus("/admin/marketing")} isLocked={isLocked("/admin/marketing")} userRole={getRole()} />
+        <NavItem isCollapsed={isCollapsed} href="/admin" icon={<Home />} label={dict.sidebar.dashboard} active={pathname === "/admin"} />
+        <NavItem isCollapsed={isCollapsed} href="/admin/proyectos" icon={<Building />} label={dict.sidebar.projects} active={pathname?.startsWith("/admin/proyectos")} status={getStatus("/admin/proyectos")} isLocked={isLocked("/admin/proyectos")} userRole={getRole()} />
+        <NavItem isCollapsed={isCollapsed} href="/admin/propiedades" icon={<Building />} label={dict.sidebar.properties} active={pathname?.startsWith("/admin/propiedades")} status={getStatus("/admin/propiedades")} isLocked={isLocked("/admin/propiedades")} userRole={getRole()} />
+        <NavItem isCollapsed={isCollapsed} href="/admin/prospectos" icon={<Users />} label={dict.sidebar.prospects} active={pathname?.startsWith("/admin/prospectos")} status={getStatus("/admin/prospectos")} isLocked={isLocked("/admin/prospectos")} userRole={getRole()} />
+        <NavItem isCollapsed={isCollapsed} href="/admin/tareas" icon={<CheckSquare />} label={dict.sidebar.tasks} active={pathname?.startsWith("/admin/tareas")} status={getStatus("/admin/tareas")} isLocked={isLocked("/admin/tareas")} userRole={getRole()} />
+        <NavItem isCollapsed={isCollapsed} href="/admin/ai-match" icon={<Sparkles />} label={dict.sidebar.aiMatch} active={pathname === "/admin/ai-match"} status={getStatus("/admin/ai-match")} isLocked={isLocked("/admin/ai-match")} userRole={getRole()} />
+        <NavItem isCollapsed={isCollapsed} href="/admin/tabulador" icon={<Calculator />} label={dict.sidebar.tabulator} active={pathname?.startsWith("/admin/tabulador")} status={getStatus("/admin/tabulador")} isLocked={isLocked("/admin/tabulador")} userRole={getRole()} />
+        <NavItem isCollapsed={isCollapsed} href="/admin/whatsapp" icon={<Phone />} label="WhatsApp" active={pathname?.startsWith("/admin/whatsapp")} />
         
         {getRole() === 'ADMIN' && (
           <div className="pt-4 pb-2">
             {!isCollapsed ? (
-              <p className="px-4 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">Administración</p>
+              <p className="px-4 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">{dict.sidebar.settings}</p>
             ) : (
               <div className="h-px bg-border w-10 mx-auto my-3" />
             )}
-            <NavItem isCollapsed={isCollapsed} href="/admin/ia" icon={<Sparkles />} label="Control IA" active={pathname?.startsWith("/admin/ia")} status={getStatus("/admin/ia")} isLocked={isLocked("/admin/ia")} userRole={getRole()} />
-            <NavItem isCollapsed={isCollapsed} href="/admin/equipo" icon={<Shield />} label="Equipo" active={pathname?.startsWith("/admin/equipo")} />
-            <NavItem isCollapsed={isCollapsed} href="/admin/configuracion" icon={<Settings />} label="Configuración" active={pathname?.startsWith("/admin/configuracion")} />
+            <NavItem isCollapsed={isCollapsed} href="/admin/ia" icon={<Sparkles />} label={dict.sidebar.ai} active={pathname?.startsWith("/admin/ia")} status={getStatus("/admin/ia")} isLocked={isLocked("/admin/ia")} userRole={getRole()} />
+            <NavItem isCollapsed={isCollapsed} href="/admin/equipo" icon={<Shield />} label={dict.sidebar.team} active={pathname?.startsWith("/admin/equipo")} />
+            <NavItem isCollapsed={isCollapsed} href="/admin/configuracion" icon={<Settings />} label={dict.sidebar.settings} active={pathname?.startsWith("/admin/configuracion")} />
           </div>
         )}
       </nav>
-      <div className="p-4 border-t border-border mt-auto">
+      <div className="p-4 border-t border-border mt-auto flex flex-col gap-4">
         {mounted && <ProfileModalWrapper session={session} isCollapsed={isCollapsed} />}
         
-        <div className={`flex items-center ${isCollapsed ? 'flex-col gap-4 mt-6' : 'justify-between gap-1 mt-4 px-2'}`}>
+        {!isCollapsed && <LanguageSwitcher />}
+
+        <div className={`flex items-center ${isCollapsed ? 'flex-col gap-4 mt-2' : 'justify-between gap-1 px-2'}`}>
           <NotificationsDropdown align="left" direction="up" />
           <button
             title={isCollapsed ? "Cambiar Tema" : undefined}
@@ -194,7 +198,7 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
             className={`p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full transition-colors ${isCollapsed ? '' : 'ml-auto'}`}
-            title="Cerrar Sesión"
+            title={dict.sidebar.logout}
           >
             <LogOut size={18} />
           </button>

@@ -6,12 +6,18 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { DriveImagePreview } from '@/components/DriveImagePreview';
 import { auth } from '@/auth';
+import { cookies } from 'next/headers';
+import { getDictionary } from '@/lib/i18n/dictionaries';
 
 export const dynamic = 'force-dynamic'; // Ensure dashboard always fetches fresh data
 
 export default async function Dashboard() {
   const session = await auth();
   const userName = session?.user?.name || 'Equipo';
+
+  const cookieStore = await cookies();
+  const locale = cookieStore.get("NEXT_LOCALE")?.value;
+  const dict = getDictionary(locale);
 
   // Fetch real data in parallel
   const [
@@ -64,7 +70,8 @@ export default async function Dashboard() {
     }
   };
 
-  const todayStr = new Intl.DateTimeFormat('es-MX', { dateStyle: 'long' }).format(new Date());
+  const localeForDate = locale === 'he' ? 'he-IL' : locale === 'fr' ? 'fr-FR' : locale === 'en' ? 'en-US' : 'es-MX';
+  const todayStr = new Intl.DateTimeFormat(localeForDate, { dateStyle: 'long' }).format(new Date());
 
   return (
     <>
@@ -74,14 +81,14 @@ export default async function Dashboard() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/50" />
           <input 
             type="text" 
-            placeholder="Buscar clientes, propiedades, teléfonos..." 
+            placeholder={dict.dashboard.searchPlaceholder} 
             className="w-full pl-10 pr-4 py-2 rounded-full bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
           />
         </div>
         <div className="flex items-center gap-4">
           <NotificationsDropdown />
           <Link href="/admin/propiedades/new" className="bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2 hover-lift">
-            <Plus className="w-4 h-4" /> Nueva Propiedad
+            <Plus className="w-4 h-4" /> {dict.dashboard.newProperty}
           </Link>
         </div>
       </header>
@@ -91,8 +98,8 @@ export default async function Dashboard() {
         
         <div className="flex items-end justify-between mb-8">
           <div>
-            <h2 className="text-3xl font-bold">Hola, {userName} 👋</h2>
-            <p className="text-foreground/60 mt-1">Aquí está el resumen de la inmobilaria para hoy.</p>
+            <h2 className="text-3xl font-bold">{dict.dashboard.greeting.replace('{name}', userName)}</h2>
+            <p className="text-foreground/60 mt-1">{dict.dashboard.subtitle}</p>
           </div>
           <div className="text-sm px-3 py-1 rounded-full bg-card border border-border capitalize">
             {todayStr}
@@ -101,10 +108,10 @@ export default async function Dashboard() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatCard title="Propiedades Activas" value={activePropertiesCount.toString()} trend="En inventario" />
-          <StatCard title="Nuevos Leads" value={newLeadsCount.toString()} trend="Sin contactar" />
-          <StatCard title="Citas Pendientes" value={scheduledAppointmentsCount.toString()} trend="Próximos días" />
-          <StatCard title="Ventas Cerradas" value={formatCurrency(closedSalesAmount)} trend="Valor total histórico" highlight />
+          <StatCard title={dict.dashboard.stats.activeProperties} value={activePropertiesCount.toString()} trend={dict.dashboard.stats.inInventory} />
+          <StatCard title={dict.dashboard.stats.newLeads} value={newLeadsCount.toString()} trend={dict.dashboard.stats.uncontacted} />
+          <StatCard title={dict.dashboard.stats.pendingAppointments} value={scheduledAppointmentsCount.toString()} trend={dict.dashboard.stats.upcomingDays} />
+          <StatCard title={dict.dashboard.stats.closedSales} value={formatCurrency(closedSalesAmount)} trend={dict.dashboard.stats.totalValue} highlight />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -112,8 +119,8 @@ export default async function Dashboard() {
           {/* Pipeline CRM Preview */}
           <div className="col-span-2 bg-card border border-border rounded-2xl p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold">Pipeline Activo (CRM)</h3>
-              <Link href="/admin/prospectos" className="text-primary text-sm font-medium hover:underline">Ver todo</Link>
+              <h3 className="text-xl font-bold">{dict.dashboard.pipeline.title}</h3>
+              <Link href="/admin/prospectos" className="text-primary text-sm font-medium hover:underline">{dict.dashboard.pipeline.viewAll}</Link>
             </div>
             <div className="space-y-4">
               {pipelineLeads.length > 0 ? pipelineLeads.map(lead => (
@@ -121,12 +128,12 @@ export default async function Dashboard() {
                   key={lead.id}
                   name={lead.name} 
                   status={lead.status} 
-                  property={lead.property?.title || 'Sin propiedad asignada'} 
+                  property={lead.property?.title || dict.dashboard.calls.unknown} 
                   amount={lead.budget ? formatCurrency(Number(lead.budget)) : 'TBD'} 
                   progress={getProgressByStatus(lead.status)} 
                 />
               )) : (
-                <p className="text-sm text-foreground/50 py-4 text-center border border-dashed border-border rounded-xl">No hay prospectos activos.</p>
+                <p className="text-sm text-foreground/50 py-4 text-center border border-dashed border-border rounded-xl">{dict.dashboard.pipeline.noActive}</p>
               )}
             </div>
           </div>
@@ -136,30 +143,32 @@ export default async function Dashboard() {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                Llamadas Recientes
+                {dict.dashboard.calls.title}
               </h3>
             </div>
             
             <div className="flex-1 space-y-4">
               {recentCalls.length > 0 ? recentCalls.map(call => {
                 const timeDiff = Math.floor((new Date().getTime() - new Date(call.createdAt).getTime()) / 1000 / 60);
-                const timeStr = timeDiff < 60 ? `Hace ${timeDiff} min` : `Hace ${Math.floor(timeDiff/60)} h`;
+                const timeStr = timeDiff < 60 
+                  ? dict.dashboard.calls.minsAgo.replace('{mins}', timeDiff.toString()) 
+                  : dict.dashboard.calls.hoursAgo.replace('{hours}', Math.floor(timeDiff/60).toString());
                 return (
                   <CallItem 
                     key={call.id}
-                    caller={call.lead?.name || 'Desconocido'} 
+                    caller={call.lead?.name || dict.dashboard.calls.unknown} 
                     time={timeStr} 
-                    summary={call.summary || 'Sin resumen'}
-                    aiAction={call.commitments ? "Compromiso Guardado" : "Resumen Guardado"}
+                    summary={call.summary || dict.dashboard.calls.noSummary}
+                    aiAction={call.commitments ? dict.dashboard.calls.commitmentSaved : dict.dashboard.calls.summarySaved}
                   />
                 )
               }) : (
-                <p className="text-sm text-foreground/50 py-4 text-center border border-dashed border-border rounded-xl">No hay llamadas recientes.</p>
+                <p className="text-sm text-foreground/50 py-4 text-center border border-dashed border-border rounded-xl">{dict.dashboard.calls.noRecent}</p>
               )}
             </div>
 
             <button className="w-full mt-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-background transition-colors">
-              Ver todas las transcripciones
+              {dict.dashboard.calls.viewAll}
             </button>
           </div>
           
@@ -168,8 +177,8 @@ export default async function Dashboard() {
         {/* Properties Showcase */}
         <div className="mt-8">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold">Propiedades Recientes</h3>
-            <Link href="/admin/propiedades" className="text-primary text-sm font-medium hover:underline">Ver catálogo completo</Link>
+            <h3 className="text-xl font-bold">{dict.dashboard.properties.title}</h3>
+            <Link href="/admin/propiedades" className="text-primary text-sm font-medium hover:underline">{dict.dashboard.properties.viewCatalog}</Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {featuredProperties.length > 0 ? featuredProperties.map(prop => {
@@ -190,7 +199,7 @@ export default async function Dashboard() {
               )
             }) : (
               <div className="col-span-3">
-                <p className="text-sm text-foreground/50 py-8 text-center border border-dashed border-border rounded-xl">No hay propiedades registradas aún.</p>
+                <p className="text-sm text-foreground/50 py-8 text-center border border-dashed border-border rounded-xl">{dict.dashboard.properties.noProperties}</p>
               </div>
             )}
           </div>

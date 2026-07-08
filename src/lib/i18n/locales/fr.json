@@ -1,0 +1,98 @@
+{
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "loading": "Chargement...",
+    "success": "Succès",
+    "error": "Erreur",
+    "search": "Rechercher...",
+    "allCities": "Toutes les villes"
+  },
+  "sidebar": {
+    "dashboard": "Tableau de bord",
+    "properties": "Propriétés",
+    "prospects": "Prospects",
+    "projects": "Projets",
+    "tasks": "Tâches",
+    "team": "Équipe",
+    "settings": "Paramètres",
+    "ai": "Intelligence Artificielle",
+    "aiMatch": "AI Match",
+    "whatsapp": "WhatsApp",
+    "tabulator": "Tabulateur",
+    "logout": "Se déconnecter"
+  },
+  "dashboard": {
+    "searchPlaceholder": "Rechercher des clients, propriétés, téléphones...",
+    "newProperty": "Nouvelle Propriété",
+    "greeting": "Bonjour, {name} 👋",
+    "subtitle": "Voici le résumé immobilier pour aujourd'hui.",
+    "stats": {
+      "activeProperties": "Propriétés Actives",
+      "inInventory": "En inventaire",
+      "newLeads": "Nouveaux Leads",
+      "uncontacted": "Non contactés",
+      "pendingAppointments": "Rendez-vous en attente",
+      "upcomingDays": "Prochains jours",
+      "closedSales": "Ventes Conclues",
+      "totalValue": "Valeur totale historique"
+    },
+    "pipeline": {
+      "title": "Pipeline Actif (CRM)",
+      "viewAll": "Voir tout",
+      "noActive": "Aucun prospect actif."
+    },
+    "calls": {
+      "title": "Appels Récents",
+      "viewAll": "Voir toutes les transcriptions",
+      "noRecent": "Aucun appel récent.",
+      "unknown": "Inconnu",
+      "noSummary": "Aucun résumé",
+      "commitmentSaved": "Engagement Enregistré",
+      "summarySaved": "Résumé Enregistré",
+      "minsAgo": "Il y a {mins} min",
+      "hoursAgo": "Il y a {hours} h"
+    },
+    "properties": {
+      "title": "Propriétés Récentes",
+      "viewCatalog": "Voir le catalogue complet",
+      "noProperties": "Aucune propriété enregistrée pour le moment."
+    }
+  },
+  "propertiesPage": {
+    "title": "Catalogue de Propriétés",
+    "subtitle": "Gérez l'inventaire des propriétés exclusives de Mi Cassa.",
+    "newProject": "Télécharger Projet",
+    "tabs": {
+      "all": "Toutes les Propriétés",
+      "houses": "Maisons",
+      "apartments": "Appartements",
+      "land": "Terrains",
+      "projects": "Nouveaux Projets"
+    },
+    "emptyState": {
+      "title": "Aucune propriété dans cette section",
+      "desc": "Il n'y a pas encore de propriétés ou de projets enregistrés ici. Cliquez sur le bouton ci-dessous pour commencer à ajouter."
+    },
+    "details": "Voir Détails",
+    "deleteProp": "Supprimer Propriété",
+    "confirmDelete": "Supprimer la propriété ?",
+    "confirmDeleteDesc": "Cette action est irréversible.",
+    "yesDelete": "Oui, supprimer",
+    "deleted": "Propriété supprimée"
+  },
+  "prospectsPage": {
+    "clients": "Clients",
+    "owners": "Propriétaires",
+    "clientsDesc": "Gérez vos clients potentiels et votre pipeline de ventes.",
+    "ownersDesc": "Gérez le pipeline d'acquisition et les propriétés de vos clients.",
+    "newClient": "Nouveau Prospect",
+    "newOwner": "Nouveau Propriétaire",
+    "totalProspects": "Total des Prospects",
+    "new": "Nouveaux",
+    "inNegotiation": "En Négociation",
+    "pipelineValue": "Valeur du Pipeline"
+  }
+}

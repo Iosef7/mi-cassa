@@ -60,6 +60,8 @@ model Property {
   independentUnit String?
   driveFolderId   String?
   commissions     String?
+  developmentProjectId String?
+  developmentProject   DevelopmentProject? @relation(fields: [developmentProjectId], references: [id])
   leads           Lead[]
   tasks           Task[]
 }
@@ -159,12 +161,14 @@ model Task {
   listId         String?
   order          Int?
   propertyId     String?
+  developmentProjectId String?
   recurrenceRule String?
   subtasks       Subtask[]
   agent          User?            @relation(fields: [assignedTo], references: [id])
   lead           Lead?            @relation(fields: [leadId], references: [id])
   list           TaskList?        @relation(fields: [listId], references: [id])
   property       Property?        @relation(fields: [propertyId], references: [id])
+  developmentProject DevelopmentProject? @relation(fields: [developmentProjectId], references: [id])
   attachments    TaskAttachment[]
   auditLogs      TaskAuditLog[]
   comments       TaskComment[]
@@ -305,4 +309,40 @@ model TaskAuditLog {
   createdAt DateTime @default(now())
   task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model DevelopmentProject {
+  id              String   @id @default(cuid())
+  name            String
+  location        String?
+  architect       String?
+  totalUnits      Int?
+  floors          Int?
+  description     String?
+  status          String   @default("EVALUACION")
+  dealType        String?
+  ownershipShare  Float?
+  estimatedCost   Decimal?
+  expectedRevenue Decimal?
+  driveFolderId   String?
+  attachments     String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  financialData   Json?
+  
+  properties      Property[]
+  tasks           Task[]
+}
+
+model WhatsappStatus {
+  id          String   @id @default(cuid())
+  mediaUrls   String   @default("[]") // JSON stringified array of URLs
+  caption     String?  // Text for the status
+  status      String   @default("SCHEDULED") // SCHEDULED, PUBLISHED, FAILED
+  publishAt   DateTime? // When it should be uploaded (null means immediate)
+  publishedAt DateTime? // When it was actually uploaded
+  errorMessage String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
