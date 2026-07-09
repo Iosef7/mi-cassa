@@ -1,6 +1,8 @@
 import type { NextAuthConfig } from "next-auth"
 
 export const authConfig = {
+  secret: process.env.AUTH_SECRET || "mi_cassa_super_secret_fallback_2026",
+  trustHost: true,
   session: { strategy: "jwt" },
   providers: [],
   pages: {
