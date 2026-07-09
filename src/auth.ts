@@ -8,6 +8,8 @@ import { authConfig } from "./auth.config"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  secret: process.env.AUTH_SECRET || "mi_cassa_super_secret_fallback_2026",
+  trustHost: true,
   adapter: PrismaAdapter(prisma as any),
   providers: [
     GoogleProvider({
