@@ -34,7 +34,9 @@ export async function POST(request: Request) {
     // Send email using Nodemailer
     if (process.env.SMTP_EMAIL && process.env.SMTP_PASSWORD) {
       const transporter = nodemailer.createTransport({
-        service: 'gmail', // or configured host
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
         auth: {
           user: process.env.SMTP_EMAIL,
           pass: process.env.SMTP_PASSWORD,
