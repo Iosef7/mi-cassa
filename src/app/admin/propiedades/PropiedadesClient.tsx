@@ -69,6 +69,7 @@ export default function PropiedadesClient({ initialProperties }: { initialProper
   const [filterLocation, setFilterLocation] = useState<string>('TODAS');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -160,6 +161,23 @@ export default function PropiedadesClient({ initialProperties }: { initialProper
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if(!(await showConfirm("Eliminar propiedades", `¿Estás seguro de que deseas eliminar las ${selectedIds.length} propiedades seleccionadas?`, "Sí, eliminar"))) return;
+    try {
+      await fetch('/api/properties', { 
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds })
+      });
+      setSelectedIds([]);
+      fetchProperties();
+      showToast(`${selectedIds.length} propiedades eliminadas`);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const openEdit = (p: Property) => {
     let imageStr = '';
     try {
@@ -230,12 +248,22 @@ export default function PropiedadesClient({ initialProperties }: { initialProper
             </div>
           </div>
 
-          <Link 
-            href="/admin/propiedades/new"
-            className="w-full sm:w-auto bg-primary text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg shadow-primary/20 whitespace-nowrap"
-          >
-            <Plus className="w-4 h-4" /> {dict.propertiesPage.newProject}
-          </Link>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {selectedIds.length > 0 && (
+              <button 
+                onClick={handleBulkDelete}
+                className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors border border-destructive/20 whitespace-nowrap"
+              >
+                <Trash2 className="w-4 h-4" /> Eliminar ({selectedIds.length})
+              </button>
+            )}
+            <Link 
+              href="/admin/propiedades/new"
+              className="w-full sm:w-auto bg-primary text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg shadow-primary/20 whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4" /> {dict.propertiesPage.newProject}
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -284,12 +312,28 @@ export default function PropiedadesClient({ initialProperties }: { initialProper
               } 
             } catch(e) {}
             
+            const isSelected = selectedIds.includes(p.id);
+            const toggleSelection = (e: React.MouseEvent) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setSelectedIds(prev => isSelected ? prev.filter(id => id !== p.id) : [...prev, p.id]);
+            };
+            
             return (
-              <Link href={`/admin/propiedades/${p.id}`} key={p.id} className="block rounded-2xl border border-border bg-card overflow-hidden group relative shadow-sm animate-in hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300 cursor-pointer" style={{animationDelay: `${index * 50}ms`}}>
+              <Link href={`/admin/propiedades/${p.id}`} key={p.id} className={`block rounded-2xl border ${isSelected ? 'border-primary ring-2 ring-primary/50' : 'border-border'} bg-card overflow-hidden group relative shadow-sm animate-in hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300 cursor-pointer`} style={{animationDelay: `${index * 50}ms`}}>
                 <div className="h-60 overflow-hidden relative">
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+                  
+                  <div 
+                    onClick={toggleSelection}
+                    className={`absolute top-3 left-3 z-30 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-primary border-primary text-primary-foreground' : 'bg-background/80 border-muted-foreground/50 text-transparent opacity-0 group-hover:opacity-100 backdrop-blur-sm hover:border-primary'}`}
+                  >
+                    {isSelected && <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>}
+                  </div>
+
                   <DriveImagePreview url={image} alt={p.title} priority={index < 6} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out" />
-                  <div className="absolute top-3 left-3 z-20 bg-background/80 backdrop-blur-md px-3 py-1 rounded-full text-sm font-bold text-primary shadow-sm border border-border/50">
+                  
+                  <div className={`absolute top-3 ${isSelected ? 'left-12' : 'left-3 group-hover:left-12'} z-20 bg-background/80 backdrop-blur-md px-3 py-1 rounded-full text-sm font-bold text-primary shadow-sm border border-border/50 transition-all`}>
                     {p.minPrice ? `Desde ${formatPrice(p.minPrice.toString())}` : formatPrice(p.price)}
                   </div>
                   <div className="absolute top-3 right-3 z-20 bg-background/80 backdrop-blur-md px-2 py-1 rounded-full text-xs font-semibold shadow-sm border border-border/50 uppercase tracking-wider">

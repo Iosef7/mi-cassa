@@ -63,7 +63,7 @@ export default function LoginPage() {
         <div className="text-center">
           <div className="mx-auto flex items-center justify-center mb-6">
             <Image 
-              src="/logo.png" 
+              src="/images/logo.jpg" 
               alt="Mi Cassa Logo" 
               width={100} 
               height={100} 
@@ -149,14 +149,6 @@ export default function LoginPage() {
           </div>
         </form>
 
-        <div className="text-center mt-6">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-            ¿No tienes cuenta?{" "}
-            <Link href="/register" className="font-bold text-primary hover:text-primary/80 transition-colors hover:underline">
-              Regístrate aquí
-            </Link>
-          </p>
-        </div>
       </div>
     </div>
   )
