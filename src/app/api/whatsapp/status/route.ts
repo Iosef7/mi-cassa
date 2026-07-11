@@ -26,6 +26,16 @@ export async function POST(req: NextRequest) {
     const files = formData.getAll("files") as File[];
     const caption = formData.get("caption") as string | null;
     const publishAtStr = formData.get("publishAt") as string | null;
+    const sessionIdsStr = formData.get("sessionIds") as string | null;
+
+    let sessionIds: string[] | undefined = undefined;
+    if (sessionIdsStr) {
+      try {
+        sessionIds = JSON.parse(sessionIdsStr);
+      } catch (e) {
+        console.error("Error parsing sessionIds", e);
+      }
+    }
 
     let publishAt: Date | null = null;
     if (publishAtStr && publishAtStr !== "now") {
@@ -63,7 +73,7 @@ export async function POST(req: NextRequest) {
     if (!publishAt) {
       try {
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-        await sendUltramsgStatuses(mediaUrls, caption || "", baseUrl);
+        await sendUltramsgStatuses(mediaUrls, caption || "", baseUrl, sessionIds);
         finalStatus = "PUBLISHED";
         publishedAt = new Date();
       } catch (err: any) {

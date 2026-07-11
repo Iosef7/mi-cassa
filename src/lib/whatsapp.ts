@@ -53,15 +53,19 @@ export async function sendWhatsAppMessage(to: string, text: string) {
  * @param mediaUrls Array of public URLs for the images/videos.
  * @param caption Optional text caption for the first image, or text-only status.
  * @param baseUrl Base URL for relative images (e.g. http://localhost:3000)
+ * @param sessionIds Optional array of session IDs to broadcast to. If empty/undefined, broadcasts to all connected sessions.
  */
-export async function sendUltramsgStatuses(mediaUrls: string[], caption: string, baseUrl: string) {
+export async function sendUltramsgStatuses(mediaUrls: string[], caption: string, baseUrl: string, sessionIds?: string[]) {
   const results = [];
   const BOT_URL = process.env.WHATSAPP_BOT_URL || "http://localhost:3001";
   
   if (mediaUrls.length === 0) {
     // Texto solamente
     try {
-      const payload = { caption: caption || "" };
+      const payload: any = { caption: caption || "" };
+      if (sessionIds && sessionIds.length > 0) {
+        payload.sessionIds = sessionIds;
+      }
       
       const response = await fetch(`${BOT_URL}/status`, {
         method: "POST",
@@ -109,6 +113,9 @@ export async function sendUltramsgStatuses(mediaUrls: string[], caption: string,
         const payload: any = {
           imageBase64: imagePayload
         };
+        if (sessionIds && sessionIds.length > 0) {
+          payload.sessionIds = sessionIds;
+        }
         // Agregar caption solo a la primera imagen
         if (i === 0 && caption) {
           payload.caption = caption;

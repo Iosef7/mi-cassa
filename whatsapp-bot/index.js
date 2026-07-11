@@ -6,45 +6,71 @@ const {
     DisconnectReason
 } = require('@whiskeysockets/baileys');
 const pino = require('pino');
-const qrcode = require('qrcode-terminal');
 const qrcodeLib = require('qrcode');
 const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3001;
 
-let globalContacts = [];
-
 app.use(cors());
-// Increase payload limit to handle base64 images
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-let sock;
-let isConnected = false;
-let currentQr = null;
+// Sessions management
+const sessions = new Map();
 
-async function connectToWhatsApp() {
-    const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
+// Helper to delete session folder
+const deleteSessionFolder = (sessionId) => {
+    const folderPath = path.join(__dirname, `auth_info_baileys_${sessionId}`);
+    if (fs.existsSync(folderPath)) {
+        try {
+            fs.rmSync(folderPath, { recursive: true, force: true });
+        } catch (err) {
+            console.error(`Error deleting folder ${folderPath}:`, err.message);
+        }
+    }
+};
 
-    sock = makeWASocket({
+async function connectToWhatsApp(sessionId) {
+    if (sessions.has(sessionId)) {
+        const existingSession = sessions.get(sessionId);
+        if (existingSession.isConnected) return existingSession;
+        sessions.delete(sessionId);
+    }
+
+    let sessionData = {
+        sock: null,
+        isConnected: false,
+        currentQr: null,
+        contacts: []
+    };
+    
+    sessions.set(sessionId, sessionData);
+
+    const folderPath = path.join(__dirname, `auth_info_baileys_${sessionId}`);
+    const { state, saveCreds } = await useMultiFileAuthState(folderPath);
+
+    const sock = makeWASocket({
         auth: state,
-        printQRInTerminal: true,
-        logger: pino({ level: 'silent' }) // set to 'info' for debugging
+        printQRInTerminal: false,
+        logger: pino({ level: 'silent' })
     });
+
+    sessionData.sock = sock;
 
     sock.ev.on('contacts.upsert', (contacts) => {
         for (const contact of contacts) {
-            if (contact.id && contact.id.endsWith('@s.whatsapp.net') && !globalContacts.includes(contact.id)) {
-                globalContacts.push(contact.id);
+            if (contact.id && contact.id.endsWith('@s.whatsapp.net') && !sessionData.contacts.includes(contact.id)) {
+                sessionData.contacts.push(contact.id);
             }
         }
     });
     
     sock.ev.on('contacts.update', (contacts) => {
         for (const contact of contacts) {
-            if (contact.id && contact.id.endsWith('@s.whatsapp.net') && !globalContacts.includes(contact.id)) {
-                globalContacts.push(contact.id);
+            if (contact.id && contact.id.endsWith('@s.whatsapp.net') && !sessionData.contacts.includes(contact.id)) {
+                sessionData.contacts.push(contact.id);
             }
         }
     });
@@ -53,110 +79,221 @@ async function connectToWhatsApp() {
         const { connection, lastDisconnect, qr } = update;
         
         if (qr) {
-            currentQr = qr;
-            console.log('SCAN THIS QR CODE WITH YOUR WHATSAPP (Linked Devices):');
-            qrcode.generate(qr, { small: true });
+            sessionData.currentQr = qr;
         }
 
         if (connection === 'close') {
             const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log('Connection closed due to ', lastDisconnect.error, ', reconnecting ', shouldReconnect);
-            isConnected = false;
+            console.log(`[${sessionId}] Connection closed, reconnecting: ${shouldReconnect}`);
+            sessionData.isConnected = false;
             
             if (shouldReconnect) {
-                connectToWhatsApp();
+                setTimeout(() => connectToWhatsApp(sessionId), 2000);
             } else {
-                console.log('You are logged out. Please delete the auth_info_baileys folder and scan again.');
-                try {
-                    fs.rmSync('auth_info_baileys', { recursive: true, force: true });
-                } catch (err) {
-                    console.error('Error deleting auth_info_baileys:', err.message);
-                }
-                setTimeout(() => connectToWhatsApp(), 2000); // Wait a bit before restarting flow
+                console.log(`[${sessionId}] Logged out. Deleting session folder.`);
+                sessions.delete(sessionId);
+                deleteSessionFolder(sessionId);
             }
         } else if (connection === 'open') {
-            console.log('✅ WhatsApp Bot Connected!');
-            isConnected = true;
-            currentQr = null;
+            console.log(`[${sessionId}] ✅ WhatsApp Bot Connected!`);
+            sessionData.isConnected = true;
+            sessionData.currentQr = null;
         }
     });
 
     sock.ev.on('creds.update', saveCreds);
+    return sessionData;
 }
 
-// Endpoint para ver el QR code en el navegador
-app.get('/qr', async (req, res) => {
-    if (isConnected) {
-        return res.send('<h2 style="text-align:center; margin-top:50px; font-family:sans-serif; color:green;">✅ El bot ya está conectado a WhatsApp.</h2>');
+// Endpoint: Initialize or get status of a session
+app.get('/session/:sessionId', async (req, res) => {
+    const { sessionId } = req.params;
+    
+    let session = sessions.get(sessionId);
+    
+    if (!session) {
+        // Start a new session
+        session = await connectToWhatsApp(sessionId);
     }
-    if (!currentQr) {
-        return res.send('<h2 style="text-align:center; margin-top:50px; font-family:sans-serif; color:gray;">⏳ Generando código QR, por favor recarga la página en unos segundos...</h2>');
+    
+    res.json({
+        sessionId,
+        isConnected: session.isConnected,
+        hasQr: !!session.currentQr
+    });
+});
+
+// Endpoint: Get QR Code image URL for a session
+app.get('/session/:sessionId/qr', async (req, res) => {
+    const { sessionId } = req.params;
+    const session = sessions.get(sessionId);
+    
+    if (!session) {
+        return res.status(404).json({ error: 'Session not found. Initialize it first.' });
     }
+    
+    if (session.isConnected) {
+        return res.json({ connected: true });
+    }
+    
+    if (!session.currentQr) {
+        return res.json({ waiting: true });
+    }
+    
     try {
-        const qrImage = await qrcodeLib.toDataURL(currentQr);
-        res.send(`
-            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; background-color:#f0f2f5;">
-                <h2 style="color:#333;">Escanea este código con WhatsApp</h2>
-                <div style="background:white; padding:20px; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
-                    <img src="${qrImage}" style="width:300px; height:300px;" alt="QR Code" />
-                </div>
-                <p style="color:#666; margin-top:20px;">Ve a WhatsApp > Dispositivos Vinculados > Vincular un dispositivo</p>
-                <button onclick="window.location.reload()" style="margin-top:20px; padding:10px 20px; background:#25D366; color:white; border:none; border-radius:5px; cursor:pointer; font-size:16px;">Recargar QR</button>
-            </div>
-        `);
+        const qrImage = await qrcodeLib.toDataURL(session.currentQr);
+        res.json({ qr: qrImage });
     } catch (e) {
-        res.status(500).send('Error generando QR');
+        res.status(500).json({ error: 'Error generating QR' });
     }
 });
 
-// Endpoint to send status
+// Endpoint: List all active sessions
+app.get('/sessions', (req, res) => {
+    const activeSessions = [];
+    sessions.forEach((data, id) => {
+        activeSessions.push({
+            id,
+            isConnected: data.isConnected
+        });
+    });
+    res.json({ sessions: activeSessions });
+});
+
+// Endpoint: Logout / Delete session
+app.delete('/session/:sessionId', (req, res) => {
+    const { sessionId } = req.params;
+    const session = sessions.get(sessionId);
+    
+    if (session) {
+        if (session.sock) {
+            session.sock.logout().catch(() => {});
+        }
+        sessions.delete(sessionId);
+    }
+    
+    deleteSessionFolder(sessionId);
+    res.json({ success: true, message: `Session ${sessionId} deleted.` });
+});
+
+// Endpoint: Rename a session
+app.put('/session/:sessionId/rename', async (req, res) => {
+    const { sessionId } = req.params;
+    const { newId } = req.body;
+    
+    console.log(`Rename request: ${sessionId} -> ${newId}`);
+    console.log(`Available sessions:`, Array.from(sessions.keys()));
+
+    if (!newId || newId === sessionId) {
+        return res.status(400).json({ error: 'Invalid new name' });
+    }
+
+    const session = sessions.get(sessionId);
+    if (!session) {
+        console.log(`Session ${sessionId} not found in map!`);
+        return res.status(404).json({ error: 'Session not found' });
+    }
+
+    // Disconnect temporarily if connected
+    if (session.sock) {
+        session.sock.end(undefined);
+    }
+    
+    sessions.delete(sessionId);
+    
+    const oldFolder = path.join(__dirname, `auth_info_baileys_${sessionId}`);
+    const newFolder = path.join(__dirname, `auth_info_baileys_${newId}`);
+    
+    if (fs.existsSync(oldFolder)) {
+        try {
+            fs.renameSync(oldFolder, newFolder);
+        } catch (err) {
+            console.error('Error renaming folder:', err);
+            return res.status(500).json({ error: 'Error renaming folder' });
+        }
+    }
+    
+    // Reconnect with new ID
+    await connectToWhatsApp(newId);
+    
+    res.json({ success: true, newId });
+});
+
+// Endpoint to send status to multiple sessions
 app.post('/status', async (req, res) => {
     try {
-        if (!isConnected) {
-            return res.status(500).json({ error: 'WhatsApp is not connected. Scan the QR code first.' });
-        }
-
-        const { caption, imageBase64 } = req.body;
-
-        const myJid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
+        const { caption, imageBase64, sessionIds } = req.body;
         
-        // Obtener todos los contactos para que puedan ver el estado
-        const contacts = [...globalContacts];
-            
-        if (!contacts.includes(myJid)) {
-            contacts.push(myJid);
-        }
+        let targetSessions = [];
         
-        if (imageBase64) {
-            // Remove the data:image/jpeg;base64, prefix to get the raw base64 string
-            const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-            const buffer = Buffer.from(base64Data, 'base64');
-            
-            // Send media status
-            await sock.sendMessage('status@broadcast', {
-                image: buffer,
-                caption: caption || ''
-            }, {
-                statusJidList: contacts,
-                broadcast: true,
-                backgroundColor: '#000000'
+        if (sessionIds && Array.isArray(sessionIds) && sessionIds.length > 0) {
+            sessionIds.forEach(id => {
+                const s = sessions.get(id);
+                if (s && s.isConnected) targetSessions.push(s);
             });
-            console.log('Media status uploaded successfully.');
-        } else if (caption) {
-            // Send text status
-            await sock.sendMessage('status@broadcast', {
-                text: caption,
-                backgroundColor: '#000000'
-            }, {
-                statusJidList: contacts,
-                broadcast: true
-            });
-            console.log('Text status uploaded successfully.');
         } else {
+            // Default: broadcast to all connected sessions
+            sessions.forEach((s) => {
+                if (s.isConnected) targetSessions.push(s);
+            });
+        }
+        
+        if (targetSessions.length === 0) {
+            return res.status(400).json({ error: 'No connected WhatsApp sessions available to send status.' });
+        }
+
+        if (!imageBase64 && !caption) {
             return res.status(400).json({ error: 'Either imageBase64 or caption must be provided.' });
         }
 
-        return res.status(200).json({ success: true, message: 'Status uploaded' });
+        let base64Data, buffer;
+        if (imageBase64) {
+            base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+            buffer = Buffer.from(base64Data, 'base64');
+        }
+
+        let successCount = 0;
+        let errors = [];
+
+        for (const session of targetSessions) {
+            try {
+                const myJid = session.sock.user.id.split(':')[0] + '@s.whatsapp.net';
+                const contacts = [...session.contacts];
+                if (!contacts.includes(myJid)) contacts.push(myJid);
+                
+                if (buffer) {
+                    await session.sock.sendMessage('status@broadcast', {
+                        image: buffer,
+                        caption: caption || ''
+                    }, {
+                        statusJidList: contacts,
+                        broadcast: true,
+                        backgroundColor: '#000000'
+                    });
+                } else {
+                    await session.sock.sendMessage('status@broadcast', {
+                        text: caption,
+                        backgroundColor: '#000000'
+                    }, {
+                        statusJidList: contacts,
+                        broadcast: true
+                    });
+                }
+                successCount++;
+            } catch (err) {
+                errors.push(err.message);
+            }
+        }
+
+        if (successCount === 0) {
+            return res.status(500).json({ error: 'Failed to send to any session', details: errors });
+        }
+
+        return res.status(200).json({ 
+            success: true, 
+            message: `Status uploaded to ${successCount} session(s).`,
+            errors: errors.length > 0 ? errors : undefined
+        });
 
     } catch (error) {
         console.error('Error sending status:', error);
@@ -164,8 +301,31 @@ app.post('/status', async (req, res) => {
     }
 });
 
+// Load existing sessions on startup
+const loadExistingSessions = () => {
+    try {
+        const files = fs.readdirSync(__dirname);
+        const sessionFolders = files.filter(f => f.startsWith('auth_info_baileys_'));
+        
+        sessionFolders.forEach(folder => {
+            const sessionId = folder.replace('auth_info_baileys_', '');
+            console.log(`Starting existing session: ${sessionId}`);
+            connectToWhatsApp(sessionId);
+        });
+        
+        // Also support old legacy auth_info_baileys folder for backwards compatibility
+        if (fs.existsSync(path.join(__dirname, 'auth_info_baileys'))) {
+            console.log(`Migrating legacy session to session_default`);
+            fs.renameSync(path.join(__dirname, 'auth_info_baileys'), path.join(__dirname, 'auth_info_baileys_default'));
+            connectToWhatsApp('default');
+        }
+    } catch (e) {
+        console.log('Error loading existing sessions:', e.message);
+    }
+};
+
 // Start Express and WhatsApp Connection
 app.listen(port, () => {
     console.log(`🚀 Bot API running on http://localhost:${port}`);
-    connectToWhatsApp();
+    loadExistingSessions();
 });
