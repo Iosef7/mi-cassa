@@ -69,24 +69,14 @@ export async function POST(request: Request) {
         `,
       };
 
-      // Enviar el correo en segundo plano para no demorar la respuesta en la interfaz
-      // Utilizando after() de next/server aseguramos que Vercel (o el entorno serverless) no mate el proceso antes de enviar
-      try {
-        const { after } = require('next/server');
-        if (typeof after === 'function') {
-          after(async () => {
-            try {
-              await transporter.sendMail(mailOptions);
-            } catch (err: any) {
-              console.error("Error sending invitation email:", err);
-            }
-          });
-        } else {
-          transporter.sendMail(mailOptions).catch((err: any) => console.error("Error sending invitation email:", err));
-        }
-      } catch (e) {
-        transporter.sendMail(mailOptions).catch((err: any) => console.error("Error sending invitation email:", err));
-      }
+      // Enviar el correo en segundo plano para no bloquear la interfaz
+      Promise.resolve().then(() => {
+        transporter.sendMail(mailOptions).catch((err: any) => {
+          console.error("Error sending invitation email:", err);
+        });
+      });
+    } else {
+      console.warn("ADVERTENCIA: Las variables de entorno SMTP_EMAIL o SMTP_PASSWORD no están configuradas. El correo no se enviará.");
     }
 
     return NextResponse.json({ token: invitation.token });
