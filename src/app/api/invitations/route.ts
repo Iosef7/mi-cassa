@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function POST(request: Request) {
   try {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       // Enviar el correo en segundo plano usando Resend
       Promise.resolve().then(async () => {
         try {
-          const { data, error } = await resend.emails.send({
+          const { data, error } = await resend!.emails.send({
             // Cambia este correo por uno de tu dominio verificado cuando pases a producción
             from: process.env.RESEND_FROM_EMAIL || 'Mi Cassa CRM <onboarding@resend.dev>',
             to: [email],
