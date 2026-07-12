@@ -24,28 +24,22 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const drive = await getDriveClient();
 
-    const response = await drive.files.get(
-      { fileId: id, alt: 'media' },
-      { responseType: 'stream' }
-    );
-
-    // Explicitly casting the node stream to any to bypass type issues with web stream conversion
-    const webStream = new ReadableStream({
-      start(controller) {
-        (response.data as any).on('data', (chunk: any) => controller.enqueue(chunk));
-        (response.data as any).on('end', () => controller.close());
-        (response.data as any).on('error', (err: any) => controller.error(err));
-      }
+    const response = await drive.files.get({
+      fileId: id,
+      fields: 'thumbnailLink, webContentLink',
     });
 
-    const contentType = response.headers['content-type'] || 'image/jpeg';
+    if (response.data.thumbnailLink) {
+      // Replace the size parameter to get a high-quality image (e.g., s2000 for 2000px)
+      const highResUrl = response.data.thumbnailLink.replace(/=s\d+$/, '=s2000');
+      return NextResponse.redirect(highResUrl);
+    }
 
-    return new NextResponse(webStream, {
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=86400, stale-while-revalidate=43200'
-      }
-    });
+    if (response.data.webContentLink) {
+      return NextResponse.redirect(response.data.webContentLink);
+    }
+
+    return new NextResponse(null, { status: 404 });
   } catch (error: any) {
     console.error("Error fetching image from Drive via API:", error.message);
     return new NextResponse(null, { status: 404 });
