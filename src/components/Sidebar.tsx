@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, memo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
-import { Home, Building, Users, Calendar, Phone, TrendingUp, Sparkles, Moon, Sun, CheckSquare, Shield, X, Calculator, LogOut, ChevronLeft, ChevronRight, Lock, Settings } from 'lucide-react';
+import { Home, Building, Users, Calendar, Phone, TrendingUp, Sparkles, Moon, Sun, CheckSquare, Shield, X, Calculator, LogOut, ChevronLeft, ChevronRight, Lock, Settings, Key, ChevronDown, ChevronUp } from 'lucide-react';
 import { SectionSettingsMap, updateSiteLogo } from '@/actions/settings';
 import { useSession, signOut } from 'next-auth/react';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 import NotificationsDropdown from './NotificationsDropdown';
 import ProfileModal from './ProfileModal';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
@@ -95,7 +96,12 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
   const validLogo = currentLogo && currentLogo !== "null" && !logoError ? currentLogo : null;
 
   return (
-    <aside className={`transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'} bg-card border-r border-border flex-col h-full shrink-0 glass relative z-30 ${!isMobile ? 'hidden md:flex' : 'flex'} ${className}`}>
+    <motion.aside 
+      initial={false}
+      animate={{ width: isCollapsed ? 80 : 256 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      className={`bg-card border-r border-border flex-col h-full shrink-0 glass relative z-30 ${!isMobile ? 'hidden md:flex' : 'flex'} ${className}`}
+    >
       
       {!isMobile && mounted && (
         <button 
@@ -159,8 +165,19 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
       </div>
       <nav className="flex-1 px-3 space-y-2 mt-2 overflow-y-auto overflow-x-hidden custom-scrollbar pb-4">
         <NavItem isCollapsed={isCollapsed} href="/admin" icon={<Home />} label={dict.sidebar.dashboard} active={pathname === "/admin"} />
-        <NavItem isCollapsed={isCollapsed} href="/admin/proyectos" icon={<Building />} label={dict.sidebar.projects} active={pathname?.startsWith("/admin/proyectos")} status={getStatus("/admin/proyectos")} isLocked={isLocked("/admin/proyectos")} userRole={getRole()} />
-        <NavItem isCollapsed={isCollapsed} href="/admin/propiedades" icon={<Building />} label={dict.sidebar.properties} active={pathname?.startsWith("/admin/propiedades")} status={getStatus("/admin/propiedades")} isLocked={isLocked("/admin/propiedades")} userRole={getRole()} />
+        
+        <NavGroup 
+          icon={<Building />} 
+          label={dict.sidebar.properties} 
+          isCollapsed={isCollapsed} 
+          active={pathname?.startsWith("/admin/propiedades") || pathname?.startsWith("/admin/proyectos") || pathname?.startsWith("/admin/rentas")}
+          onExpand={() => setIsCollapsed(false)}
+        >
+          <SubNavItem href="/admin/propiedades" label="Catálogo" active={pathname === "/admin/propiedades" || pathname?.startsWith("/admin/propiedades/")} />
+          <SubNavItem href="/admin/rentas" label={dict.sidebar.rentals || "Rentas"} active={pathname?.startsWith("/admin/rentas")} />
+          <SubNavItem href="/admin/proyectos" label={dict.sidebar.projects || "Proyectos"} active={pathname?.startsWith("/admin/proyectos")} />
+        </NavGroup>
+
         <NavItem isCollapsed={isCollapsed} href="/admin/prospectos" icon={<Users />} label={dict.sidebar.prospects} active={pathname?.startsWith("/admin/prospectos")} status={getStatus("/admin/prospectos")} isLocked={isLocked("/admin/prospectos")} userRole={getRole()} />
         <NavItem isCollapsed={isCollapsed} href="/admin/tareas" icon={<CheckSquare />} label={dict.sidebar.tasks} active={pathname?.startsWith("/admin/tareas")} status={getStatus("/admin/tareas")} isLocked={isLocked("/admin/tareas")} userRole={getRole()} />
         <NavItem isCollapsed={isCollapsed} href="/admin/ai-match" icon={<Sparkles />} label={dict.sidebar.aiMatch} active={pathname === "/admin/ai-match"} status={getStatus("/admin/ai-match")} isLocked={isLocked("/admin/ai-match")} userRole={getRole()} />
@@ -206,7 +223,7 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
           </button>
         </div>
       </div>
-    </aside>
+    </motion.aside>
   );
 }
 
@@ -247,7 +264,7 @@ function ProfileModalWrapper({ session, isCollapsed }: { session: any, isCollaps
   );
 }
 
-function NavItem({ 
+const NavItem = memo(function NavItem({ 
   href, 
   icon, 
   label, 
@@ -273,24 +290,132 @@ function NavItem({
       href={href} 
       title={isCollapsed ? label : undefined} 
       prefetch={true}
-      className={`w-full flex items-center ${isCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5'} rounded-lg text-sm font-medium transition-all duration-200 block relative group/navitem ${
+      className={`w-full flex items-center ${isCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5'} rounded-lg text-sm font-medium transition-colors block relative group/navitem z-10 ${
         active 
-          ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-[1.02]' 
-          : 'text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-[1.02]'
+          ? 'text-primary-foreground' 
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
       }`}
     >
-      {React.cloneElement(icon as React.ReactElement<any>, { className: isCollapsed ? "w-6 h-6 shrink-0" : "w-5 h-5 shrink-0" })}
-      {!isCollapsed && <span className="truncate">{label}</span>}
-      {isLocked && !isCollapsed && (
-         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 group-hover/navitem:text-foreground/70 transition-colors">
-           <Lock size={14} />
-         </span>
+      {active && (
+        <motion.div
+          layoutId="sidebar-active-indicator"
+          className="absolute inset-0 bg-primary rounded-lg -z-10 shadow-md shadow-primary/20"
+          initial={false}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        />
       )}
-      {isLocked && isCollapsed && (
-         <span className="absolute right-1 top-1 text-muted-foreground/60">
-           <Lock size={10} />
-         </span>
-      )}
+      <div className={`relative z-10 flex items-center w-full ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+        {React.cloneElement(icon as React.ReactElement<any>, { className: isCollapsed ? "w-6 h-6 shrink-0" : "w-5 h-5 shrink-0" })}
+        <AnimatePresence>
+          {!isCollapsed && (
+            <motion.span 
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: "auto" }}
+              exit={{ opacity: 0, width: 0 }}
+              className="truncate whitespace-nowrap"
+            >
+              {label}
+            </motion.span>
+          )}
+        </AnimatePresence>
+        {isLocked && !isCollapsed && (
+           <span className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground/50 group-hover/navitem:text-foreground/70 transition-colors">
+             <Lock size={14} />
+           </span>
+        )}
+        {isLocked && isCollapsed && (
+           <span className="absolute right-1 top-1 text-muted-foreground/60">
+             <Lock size={10} />
+           </span>
+        )}
+      </div>
+    </Link>
+  );
+});
+
+function NavGroup({ 
+  icon, 
+  label, 
+  active = false, 
+  isCollapsed = false, 
+  children,
+  onExpand
+}: { 
+  icon: React.ReactNode, 
+  label: string, 
+  active?: boolean, 
+  isCollapsed?: boolean,
+  children: React.ReactNode,
+  onExpand: () => void
+}) {
+  const [isOpen, setIsOpen] = useState(active);
+
+  useEffect(() => {
+    if (active && !isCollapsed) setIsOpen(true);
+  }, [active, isCollapsed]);
+
+  const handleClick = () => {
+    if (isCollapsed) {
+      onExpand();
+      setIsOpen(true);
+    } else {
+      setIsOpen(!isOpen);
+    }
+  };
+
+  return (
+    <div className="w-full">
+      <button 
+        onClick={handleClick}
+        title={isCollapsed ? label : undefined} 
+        className={`w-full flex items-center justify-between ${isCollapsed ? 'justify-center p-2.5' : 'px-3 py-2.5'} rounded-lg text-sm font-medium transition-colors relative group/navitem z-10 ${
+          active && isCollapsed 
+            ? 'text-primary-foreground bg-primary' 
+            : active 
+              ? 'text-foreground font-bold' 
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+        }`}
+      >
+        <div className={`flex items-center w-full ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+          {React.cloneElement(icon as React.ReactElement<any>, { className: isCollapsed ? "w-6 h-6 shrink-0" : "w-5 h-5 shrink-0" })}
+          {!isCollapsed && <span className="truncate whitespace-nowrap">{label}</span>}
+        </div>
+        {!isCollapsed && (
+          <div className="shrink-0 text-muted-foreground">
+            {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </div>
+        )}
+      </button>
+      <AnimatePresence>
+        {isOpen && !isCollapsed && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="pl-9 pr-3 py-1 flex flex-col gap-1 relative before:absolute before:left-5 before:top-2 before:bottom-2 before:w-px before:bg-border">
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function SubNavItem({ href, label, active }: { href: string, label: string, active: boolean }) {
+  return (
+    <Link 
+      href={href} 
+      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors relative ${
+        active 
+          ? 'text-primary bg-primary/10 font-bold' 
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+      }`}
+    >
+      <span className="truncate">{label}</span>
     </Link>
   );
 }
+

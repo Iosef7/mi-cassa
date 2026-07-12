@@ -5,7 +5,7 @@ import { Search, List, LayoutGrid, Download } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { showAlert } from '@/lib/alerts';
 
-export default function ProspectControls({ currentTab = 'clientes' }: { currentTab?: string }) {
+export default function ProspectControls({ currentTab = 'compradores' }: { currentTab?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

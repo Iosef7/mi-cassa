@@ -40,7 +40,7 @@ export default async function ProspectosPage({
   const status = typeof sp.status === 'string' ? sp.status : '';
   const page = typeof sp.page === 'string' ? Number(sp.page) : 1;
   const view = typeof sp.view === 'string' ? sp.view : 'list';
-  const tab = typeof sp.tab === 'string' ? sp.tab : 'clientes'; // 'clientes' o 'propietarios'
+  const tab = typeof sp.tab === 'string' ? sp.tab : 'compradores'; // 'compradores', 'inquilinos', 'propietarios'
 
   const cookieStore = await cookies();
   const locale = cookieStore.get("NEXT_LOCALE")?.value;
@@ -52,34 +52,46 @@ export default async function ProspectosPage({
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-            {tab === 'propietarios' ? dict.prospectsPage.owners : dict.prospectsPage.clients}
+            {tab === 'propietarios' ? 'Vendedores / Propietarios' : tab === 'inquilinos' ? 'Inquilinos' : 'Compradores'}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
             {tab === 'propietarios' 
-              ? dict.prospectsPage.ownersDesc 
-              : dict.prospectsPage.clientsDesc}
+              ? 'Gestiona a las personas que desean vender o rentar sus propiedades' 
+              : tab === 'inquilinos'
+              ? 'Gestiona a las personas que buscan una propiedad para rentar'
+              : 'Gestiona a las personas que buscan comprar una propiedad'}
           </p>
         </div>
         <Link 
-          href={`/admin/prospectos/nuevo?type=${tab === 'propietarios' ? 'PROPIETARIO' : 'CLIENTE'}`} 
+          href={`/admin/prospectos/nuevo?type=${tab === 'propietarios' ? 'PROPIETARIO' : tab === 'inquilinos' ? 'INQUILINO' : 'COMPRADOR'}`} 
           className="flex items-center gap-2 bg-slate-900 dark:bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-slate-800 dark:hover:bg-blue-700 transition-colors shadow-sm"
         >
           <Plus size={18} />
-          <span>{tab === 'propietarios' ? dict.prospectsPage.newOwner : dict.prospectsPage.newClient}</span>
+          <span>{tab === 'propietarios' ? 'Nuevo Propietario' : tab === 'inquilinos' ? 'Nuevo Inquilino' : 'Nuevo Cliente'}</span>
         </Link>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-border mb-6">
         <Link
-          href={`/admin/prospectos?tab=clientes&view=${view}`}
+          href={`/admin/prospectos?tab=compradores&view=${view}`}
           className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
-            tab === 'clientes'
+            tab === 'compradores'
               ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
           }`}
         >
-          {dict.prospectsPage.clients}
+          Compradores
+        </Link>
+        <Link
+          href={`/admin/prospectos?tab=inquilinos&view=${view}`}
+          className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+            tab === 'inquilinos'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+          }`}
+        >
+          Inquilinos
         </Link>
         <Link
           href={`/admin/prospectos?tab=propietarios&view=${view}`}
@@ -89,7 +101,7 @@ export default async function ProspectosPage({
               : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
           }`}
         >
-          {dict.prospectsPage.owners}
+          Vendedores / Propietarios
         </Link>
       </div>
 

@@ -13,9 +13,14 @@ export default async function EditarProspectoPage({ params }: { params: Promise<
     notFound();
   }
 
+  const plainLead = {
+    ...lead,
+    budget: lead.budget ? lead.budget.toNumber() : null,
+  };
+
   return (
     <div className="p-8 max-w-4xl mx-auto">
-      <EditarProspectoForm lead={lead} />
+      <EditarProspectoForm lead={plainLead} />
     </div>
   );
 }

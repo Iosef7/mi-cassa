@@ -3,6 +3,7 @@ import PropiedadesClient from './PropiedadesClient';
 
 export default async function PropiedadesFetcher() {
   const properties = await prisma.property.findMany({
+    where: { operationType: 'VENTA' },
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,

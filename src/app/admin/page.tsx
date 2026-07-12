@@ -1,5 +1,5 @@
-import React from 'react';
-import { Home, Building, Users, Calendar, Phone, TrendingUp, Search, Plus, MoreHorizontal, MapPin } from 'lucide-react';
+import React, { Suspense } from 'react';
+import { Home, Building, Users, Calendar, Phone, TrendingUp, Search, Plus, MoreHorizontal, MapPin, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import NotificationsDropdown from '@/components/NotificationsDropdown';
 import { prisma } from '@/lib/prisma';
@@ -9,7 +9,7 @@ import { auth } from '@/auth';
 import { cookies } from 'next/headers';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 
-export const dynamic = 'force-dynamic'; // Ensure dashboard always fetches fresh data
+export const dynamic = 'force-dynamic';
 
 export default async function Dashboard() {
   const session = await auth();
@@ -19,7 +19,68 @@ export default async function Dashboard() {
   const locale = cookieStore.get("NEXT_LOCALE")?.value;
   const dict = getDictionary(locale);
 
-  // Fetch real data in parallel
+  const localeForDate = locale === 'he' ? 'he-IL' : locale === 'fr' ? 'fr-FR' : locale === 'en' ? 'en-US' : 'es-MX';
+  const todayStr = new Intl.DateTimeFormat(localeForDate, { dateStyle: 'long' }).format(new Date());
+
+  return (
+    <>
+      {/* Top Navbar */}
+      <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-between px-8 z-10 sticky top-0 shrink-0">
+        <div className="relative w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/50" />
+          <input 
+            type="text" 
+            placeholder={dict.dashboard.searchPlaceholder} 
+            className="w-full pl-10 pr-4 py-2 rounded-full bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+          />
+        </div>
+        <div className="flex items-center gap-4">
+          <NotificationsDropdown />
+          <Link href="/admin/propiedades/new" className="bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2 hover-lift">
+            <Plus className="w-4 h-4" /> {dict.dashboard.newProperty}
+          </Link>
+        </div>
+      </header>
+
+      {/* Dashboard Content */}
+      <div className="flex-1 overflow-auto p-8">
+        
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <h2 className="text-3xl font-bold">{dict.dashboard.greeting.replace('{name}', userName)}</h2>
+            <p className="text-foreground/60 mt-1">{dict.dashboard.subtitle}</p>
+          </div>
+          <div className="text-sm px-3 py-1 rounded-full bg-card border border-border capitalize">
+            {todayStr}
+          </div>
+        </div>
+
+        <Suspense fallback={<DashboardSkeleton dict={dict} />}>
+          <DashboardData dict={dict} />
+        </Suspense>
+
+      </div>
+    </>
+  );
+}
+
+function DashboardSkeleton({ dict }: { dict: any }) {
+  return (
+    <div className="animate-pulse">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="p-6 rounded-2xl border border-border bg-card/50 h-32"></div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="col-span-2 bg-card/50 border border-border rounded-2xl p-6 h-96"></div>
+        <div className="col-span-1 bg-card/50 border border-border rounded-2xl p-6 h-96"></div>
+      </div>
+    </div>
+  );
+}
+
+async function DashboardData({ dict }: { dict: any }) {
   const [
     activePropertiesCount,
     newLeadsCount,
@@ -70,141 +131,105 @@ export default async function Dashboard() {
     }
   };
 
-  const localeForDate = locale === 'he' ? 'he-IL' : locale === 'fr' ? 'fr-FR' : locale === 'en' ? 'en-US' : 'es-MX';
-  const todayStr = new Intl.DateTimeFormat(localeForDate, { dateStyle: 'long' }).format(new Date());
-
   return (
     <>
-      {/* Top Navbar */}
-      <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-between px-8 z-10 sticky top-0 shrink-0">
-        <div className="relative w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/50" />
-          <input 
-            type="text" 
-            placeholder={dict.dashboard.searchPlaceholder} 
-            className="w-full pl-10 pr-4 py-2 rounded-full bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-          />
-        </div>
-        <div className="flex items-center gap-4">
-          <NotificationsDropdown />
-          <Link href="/admin/propiedades/new" className="bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2 hover-lift">
-            <Plus className="w-4 h-4" /> {dict.dashboard.newProperty}
-          </Link>
-        </div>
-      </header>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <StatCard title={dict.dashboard.stats.activeProperties} value={activePropertiesCount.toString()} trend={dict.dashboard.stats.inInventory} />
+        <StatCard title={dict.dashboard.stats.newLeads} value={newLeadsCount.toString()} trend={dict.dashboard.stats.uncontacted} />
+        <StatCard title={dict.dashboard.stats.pendingAppointments} value={scheduledAppointmentsCount.toString()} trend={dict.dashboard.stats.upcomingDays} />
+        <StatCard title={dict.dashboard.stats.closedSales} value={formatCurrency(closedSalesAmount)} trend={dict.dashboard.stats.totalValue} highlight />
+      </div>
 
-      {/* Dashboard Content */}
-      <div className="flex-1 overflow-auto p-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <h2 className="text-3xl font-bold">{dict.dashboard.greeting.replace('{name}', userName)}</h2>
-            <p className="text-foreground/60 mt-1">{dict.dashboard.subtitle}</p>
-          </div>
-          <div className="text-sm px-3 py-1 rounded-full bg-card border border-border capitalize">
-            {todayStr}
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatCard title={dict.dashboard.stats.activeProperties} value={activePropertiesCount.toString()} trend={dict.dashboard.stats.inInventory} />
-          <StatCard title={dict.dashboard.stats.newLeads} value={newLeadsCount.toString()} trend={dict.dashboard.stats.uncontacted} />
-          <StatCard title={dict.dashboard.stats.pendingAppointments} value={scheduledAppointmentsCount.toString()} trend={dict.dashboard.stats.upcomingDays} />
-          <StatCard title={dict.dashboard.stats.closedSales} value={formatCurrency(closedSalesAmount)} trend={dict.dashboard.stats.totalValue} highlight />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Pipeline CRM Preview */}
-          <div className="col-span-2 bg-card border border-border rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold">{dict.dashboard.pipeline.title}</h3>
-              <Link href="/admin/prospectos" className="text-primary text-sm font-medium hover:underline">{dict.dashboard.pipeline.viewAll}</Link>
-            </div>
-            <div className="space-y-4">
-              {pipelineLeads.length > 0 ? pipelineLeads.map(lead => (
-                <PipelineItem 
-                  key={lead.id}
-                  name={lead.name} 
-                  status={lead.status} 
-                  property={lead.property?.title || dict.dashboard.calls.unknown} 
-                  amount={lead.budget ? formatCurrency(Number(lead.budget)) : 'TBD'} 
-                  progress={getProgressByStatus(lead.status)} 
-                />
-              )) : (
-                <p className="text-sm text-foreground/50 py-4 text-center border border-dashed border-border rounded-xl">{dict.dashboard.pipeline.noActive}</p>
-              )}
-            </div>
-          </div>
-
-          {/* AI Calls Transcription preview */}
-          <div className="col-span-1 bg-card border border-border rounded-2xl p-6 flex flex-col">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                {dict.dashboard.calls.title}
-              </h3>
-            </div>
-            
-            <div className="flex-1 space-y-4">
-              {recentCalls.length > 0 ? recentCalls.map(call => {
-                const timeDiff = Math.floor((new Date().getTime() - new Date(call.createdAt).getTime()) / 1000 / 60);
-                const timeStr = timeDiff < 60 
-                  ? dict.dashboard.calls.minsAgo.replace('{mins}', timeDiff.toString()) 
-                  : dict.dashboard.calls.hoursAgo.replace('{hours}', Math.floor(timeDiff/60).toString());
-                return (
-                  <CallItem 
-                    key={call.id}
-                    caller={call.lead?.name || dict.dashboard.calls.unknown} 
-                    time={timeStr} 
-                    summary={call.summary || dict.dashboard.calls.noSummary}
-                    aiAction={call.commitments ? dict.dashboard.calls.commitmentSaved : dict.dashboard.calls.summarySaved}
-                  />
-                )
-              }) : (
-                <p className="text-sm text-foreground/50 py-4 text-center border border-dashed border-border rounded-xl">{dict.dashboard.calls.noRecent}</p>
-              )}
-            </div>
-
-            <button className="w-full mt-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-background transition-colors">
-              {dict.dashboard.calls.viewAll}
-            </button>
-          </div>
-          
-        </div>
-        
-        {/* Properties Showcase */}
-        <div className="mt-8">
+        {/* Pipeline CRM Preview */}
+        <div className="col-span-2 bg-card border border-border rounded-2xl p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold">{dict.dashboard.properties.title}</h3>
-            <Link href="/admin/propiedades" className="text-primary text-sm font-medium hover:underline">{dict.dashboard.properties.viewCatalog}</Link>
+            <h3 className="text-xl font-bold">{dict.dashboard.pipeline.title}</h3>
+            <Link href="/admin/prospectos" className="text-primary text-sm font-medium hover:underline">{dict.dashboard.pipeline.viewAll}</Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {featuredProperties.length > 0 ? featuredProperties.map(prop => {
-              let imageStr = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=600';
-              try {
-                const parsed = JSON.parse(prop.images || '[]');
-                if (parsed.length > 0) imageStr = parsed[0];
-              } catch(e) {}
-              
-              return (
-                <PropertyCard 
-                  key={prop.id}
-                  title={prop.title} 
-                  location={prop.location} 
-                  price={formatCurrency(Number(prop.price))}
-                  image={imageStr}
-                />
-              )
-            }) : (
-              <div className="col-span-3">
-                <p className="text-sm text-foreground/50 py-8 text-center border border-dashed border-border rounded-xl">{dict.dashboard.properties.noProperties}</p>
-              </div>
+          <div className="space-y-4">
+            {pipelineLeads.length > 0 ? pipelineLeads.map(lead => (
+              <PipelineItem 
+                key={lead.id}
+                name={lead.name} 
+                status={lead.status} 
+                property={lead.property?.title || dict.dashboard.calls.unknown} 
+                amount={lead.budget ? formatCurrency(Number(lead.budget)) : 'TBD'} 
+                progress={getProgressByStatus(lead.status)} 
+              />
+            )) : (
+              <p className="text-sm text-foreground/50 py-4 text-center border border-dashed border-border rounded-xl">{dict.dashboard.pipeline.noActive}</p>
             )}
           </div>
         </div>
 
+        {/* AI Calls Transcription preview */}
+        <div className="col-span-1 bg-card border border-border rounded-2xl p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              {dict.dashboard.calls.title}
+            </h3>
+          </div>
+          
+          <div className="flex-1 space-y-4">
+            {recentCalls.length > 0 ? recentCalls.map(call => {
+              const timeDiff = Math.floor((new Date().getTime() - new Date(call.createdAt).getTime()) / 1000 / 60);
+              const timeStr = timeDiff < 60 
+                ? dict.dashboard.calls.minsAgo.replace('{mins}', timeDiff.toString()) 
+                : dict.dashboard.calls.hoursAgo.replace('{hours}', Math.floor(timeDiff/60).toString());
+              return (
+                <CallItem 
+                  key={call.id}
+                  caller={call.lead?.name || dict.dashboard.calls.unknown} 
+                  time={timeStr} 
+                  summary={call.summary || dict.dashboard.calls.noSummary}
+                  aiAction={call.commitments ? dict.dashboard.calls.commitmentSaved : dict.dashboard.calls.summarySaved}
+                />
+              )
+            }) : (
+              <p className="text-sm text-foreground/50 py-4 text-center border border-dashed border-border rounded-xl">{dict.dashboard.calls.noRecent}</p>
+            )}
+          </div>
+
+          <button className="w-full mt-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-background transition-colors">
+            {dict.dashboard.calls.viewAll}
+          </button>
+        </div>
+        
+      </div>
+      
+      {/* Properties Showcase */}
+      <div className="mt-8 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold">{dict.dashboard.properties.title}</h3>
+          <Link href="/admin/propiedades" className="text-primary text-sm font-medium hover:underline">{dict.dashboard.properties.viewCatalog}</Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {featuredProperties.length > 0 ? featuredProperties.map(prop => {
+            let imageStr = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=600';
+            try {
+              const parsed = JSON.parse(prop.images || '[]');
+              if (parsed.length > 0) imageStr = parsed[0];
+            } catch(e) {}
+            
+            return (
+              <PropertyCard 
+                key={prop.id}
+                title={prop.title} 
+                location={prop.location} 
+                price={formatCurrency(Number(prop.price))}
+                image={imageStr}
+              />
+            )
+          }) : (
+            <div className="col-span-3">
+              <p className="text-sm text-foreground/50 py-8 text-center border border-dashed border-border rounded-xl">{dict.dashboard.properties.noProperties}</p>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );

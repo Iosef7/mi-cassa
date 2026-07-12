@@ -43,6 +43,7 @@ export async function createProject(formData: FormData) {
         title,
         location,
         type: type || "PROYECTO",
+        operationType: "VENTA",
         price: parseFloat(priceStr) || 0,
         minPrice: minPriceStr ? parseFloat(minPriceStr) : null,
         maxPrice: maxPriceStr ? parseFloat(maxPriceStr) : null,

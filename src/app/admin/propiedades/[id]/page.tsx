@@ -278,6 +278,7 @@ export default function PropertyDetailsPage() {
   const [newTaskData, setNewTaskData] = useState({ title: '', leadId: '', dueDate: '' });
   const [legalDocsList, setLegalDocsList] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLeadDropdownOpen, setIsLeadDropdownOpen] = useState(false);
   
   // Preview scaling state
   const [previewScale, setPreviewScale] = useState(1);
@@ -1821,8 +1822,8 @@ export default function PropertyDetailsPage() {
                             <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center relative">
                               {isVideoData ? (
                                 <video src={url} className="w-full h-full object-cover" />
-                              ) : isImageData || url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                                <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                              ) : isImageData || url.match(/\.(jpeg|jpg|gif|png)$/i) || url.includes('drive.google.com') ? (
+                                <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
                               ) : (
                                 <Building className="w-5 h-5 text-muted-foreground" />
                               )}
@@ -1877,29 +1878,34 @@ export default function PropertyDetailsPage() {
 
                           return (
                             <div key={i} className="flex flex-col gap-2">
-                              <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
-                                <div className="flex items-center justify-between gap-2 px-2">
+                              <details className="group/video border border-border rounded-2xl bg-card hover:bg-muted/30 transition-colors">
+                                <summary className="flex items-center justify-between p-4 cursor-pointer outline-none list-none [&::-webkit-details-marker]:hidden">
                                   <div className="flex items-center gap-2">
                                     <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center shrink-0">
                                       <div className="w-0 h-0 border-t-[3px] border-t-transparent border-l-[4px] border-l-white border-b-[3px] border-b-transparent ml-0.5"></div>
                                     </div>
                                     <span className="font-bold text-sm text-foreground">Video / Recorrido {i + 1}</span>
                                   </div>
-                                  <button 
-                                    onClick={() => window.open(url, '_blank')}
-                                    className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-xl transition-colors"
-                                  >
-                                    <Globe className="w-3 h-3" /> Abrir link
-                                  </button>
+                                  <div className="flex items-center gap-2">
+                                    <button 
+                                      onClick={(e) => { e.preventDefault(); window.open(url, '_blank'); }}
+                                      className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-xl transition-colors"
+                                    >
+                                      <Globe className="w-3 h-3" /> Abrir link
+                                    </button>
+                                    <ChevronDown className="w-4 h-4 text-muted-foreground group-open/video:rotate-180 transition-transform" />
+                                  </div>
+                                </summary>
+                                <div className="p-4 pt-0">
+                                  <div className="w-full aspect-video rounded-xl overflow-hidden border border-border shadow-sm bg-muted relative">
+                                    {isVideoFile ? (
+                                      <video src={url} controls className="w-full h-full bg-black" />
+                                    ) : (
+                                      <iframe src={embedUrl} className="w-full h-full" allowFullScreen></iframe>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="w-full aspect-video rounded-2xl overflow-hidden border border-border shadow-sm bg-muted relative">
-                                  {isVideoFile ? (
-                                    <video src={url} controls className="w-full h-full bg-black" />
-                                  ) : (
-                                    <iframe src={embedUrl} className="w-full h-full" allowFullScreen></iframe>
-                                  )}
-                                </div>
-                              </div>
+                              </details>
                             </div>
                           );
                         })}
@@ -1912,7 +1918,163 @@ export default function PropertyDetailsPage() {
                     </>
                   )}
                   </div>
-
+                  </div>
+                  <div className='space-y-8'>
+                  {/* Afiches Promocionales */}
+                  <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
+                    <div className="flex justify-between items-center mb-4 group">
+                      <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                        <ImageIcon className="text-primary w-5 h-5" /> Afiches Promocionales
+                      </h3>
+                      {editingSection !== 'posters' && (
+                        <button onClick={() => setEditingSection('posters')} className="opacity-0 group-hover:opacity-100 p-2 hover:bg-muted rounded-full transition-opacity"><Edit className="w-4 h-4 text-muted-foreground"/></button>
+                      )}
+                    </div>
+                    {editingSection === 'posters' ? (
+                    <div className="space-y-4">
+                      {postersList.map((url, i) => (
+                        <div key={i} className="flex gap-2 items-center">
+                          {url && (
+                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center relative">
+                              <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
+                            </div>
+                          )}
+                          <input value={url} onChange={(e) => {
+                            const newList = [...postersList]; newList[i] = e.target.value; setPostersList(newList);
+                          }} placeholder="https://..." className="flex-1 p-3 rounded-xl border border-border outline-none" />
+                          <button onClick={() => setPostersList(postersList.filter((_, idx) => idx !== i))} className="p-3 bg-destructive/10 text-destructive rounded-xl"><Trash2 className="w-5 h-5"/></button>
+                        </div>
+                      ))}
+                      <div className="flex gap-4">
+                        <button onClick={() => setPostersList([...postersList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
+                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                          setPostersList(prev => [...prev, url]);
+                          if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
+                        }} />
+                        <label className={`text-sm font-semibold flex items-center gap-1 cursor-pointer ${isUploading ? 'text-gray-400' : 'text-primary hover:underline'}`}>
+                          {isUploading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Upload className="w-4 h-4"/>} 
+                          {isUploading ? 'Subiendo...' : 'Subir Archivo'}
+                          <input 
+                            type="file" 
+                            accept="image/*,application/pdf" 
+                            multiple
+                            className="hidden" 
+                            onChange={(e) => { handleFileUpload(e.target.files, setPostersList); e.target.value = ''; }} 
+                          />
+                        </label>
+                      </div>
+                      <div className="flex justify-end gap-2 pt-4">
+                        <button onClick={() => setEditingSection(null)} className="px-4 py-2 text-sm font-semibold hover:bg-muted rounded-xl transition-colors">Cancelar</button>
+                        <button onClick={() => handleSaveSection(['postersList'])} disabled={isSaving} className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-xl">Guardar</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+{postersList.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        {postersList.map((url, i) => (
+                          <div key={i} onClick={() => window.open(url, '_blank')} className="w-full aspect-[3/4] rounded-2xl overflow-hidden border border-border shadow-sm block group relative cursor-pointer">
+                            <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Afiche ${i+1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="text-white font-bold text-xs px-3 py-1.5 bg-black/50 rounded-xl backdrop-blur-sm">Ampliar</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-6 bg-muted rounded-2xl border border-dashed border-border flex items-center justify-center text-muted-foreground text-sm text-center">
+                        <p>No se han subido afiches.</p>
+                      </div>
+                    )}
+                    </>
+                  )}
+                  </div>
+                </div>
+                </div>
+                {/* Planos Arquitectónicos */}
+                <div className={`bg-card border border-border rounded-3xl shadow-sm h-fit max-h-min overflow-hidden ${plansList.length > 0 || editingSection === 'plans' ? 'p-8' : 'px-8 pt-8 pb-6'}`}>
+                  <div className="flex justify-between items-center mb-6 group">
+                    <h3 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                      <MapPin className="text-primary w-6 h-6" /> Planos Arquitectónicos
+                    </h3>
+                    {editingSection !== 'plans' && (
+                      <button onClick={() => setEditingSection('plans')} className="opacity-0 group-hover:opacity-100 p-2 hover:bg-muted rounded-full transition-opacity"><Edit className="w-4 h-4 text-muted-foreground"/></button>
+                    )}
+                  </div>
+                  {editingSection === 'plans' ? (
+                    <div className="space-y-4">
+                      {plansList.map((url, i) => (
+                        <div key={i} className="flex gap-2 items-center">
+                          {url && (
+                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center relative">
+                              <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
+                            </div>
+                          )}
+                          <input value={url} onChange={(e) => {
+                            const newList = [...plansList]; newList[i] = e.target.value; setPlansList(newList);
+                          }} placeholder="https://..." className="flex-1 p-3 rounded-xl border border-border outline-none" />
+                          <button onClick={() => setPlansList(plansList.filter((_, idx) => idx !== i))} className="p-3 bg-destructive/10 text-destructive rounded-xl"><Trash2 className="w-5 h-5"/></button>
+                        </div>
+                      ))}
+                      <div className="flex gap-4">
+                        <button onClick={() => setPlansList([...plansList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
+                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                          setPlansList(prev => [...prev, url]);
+                          if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
+                        }} />
+                        <label className={`text-sm font-semibold flex items-center gap-1 cursor-pointer ${isUploading ? 'text-gray-400' : 'text-primary hover:underline'}`}>
+                          {isUploading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Upload className="w-4 h-4"/>} 
+                          {isUploading ? 'Subiendo...' : 'Subir Archivo'}
+                          <input 
+                            type="file" 
+                            accept="image/*,application/pdf" 
+                            multiple
+                            className="hidden" 
+                            onChange={(e) => { handleFileUpload(e.target.files, setPlansList); e.target.value = ''; }} 
+                          />
+                        </label>
+                      </div>
+                      <div className="flex justify-end gap-2 pt-4">
+                        <button onClick={() => setEditingSection(null)} className="px-4 py-2 text-sm font-semibold hover:bg-muted rounded-xl transition-colors">Cancelar</button>
+                        <button onClick={() => handleSaveSection(['plansList'])} disabled={isSaving} className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-xl">Guardar</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+{plansList.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-6">
+                      {plansList.map((url, i) => {
+                        const isImage = url.match(/\.(jpeg|jpg|gif|png)$/i) || url.includes('unsplash');
+                        return (
+                          <div key={i} className="flex flex-col gap-3">
+                            {isImage ? (
+                              <a href={url} target="_blank" rel="noopener noreferrer" className="w-full aspect-[4/3] rounded-2xl overflow-hidden border border-border shadow-sm block group relative">
+                                <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Plano ${i+1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <span className="text-white font-bold px-4 py-2 bg-black/50 rounded-xl backdrop-blur-sm">Ampliar Plano</span>
+                                </div>
+                              </a>
+                            ) : (
+                              <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-4 bg-muted rounded-2xl hover:bg-primary/5 transition-colors group h-full">
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                  <MapPin className="w-5 h-5 text-primary shrink-0" />
+                                  <span className="text-base font-medium truncate group-hover:text-primary transition-colors">Descargar Plano {i + 1}</span>
+                                </div>
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-8 bg-muted rounded-2xl border border-dashed border-border flex items-center justify-center text-muted-foreground text-center">
+                      <p>No se han subido planos arquitectónicos.</p>
+                    </div>
+                  )}
+                  </>
+                )}
+                </div>
+                
                   {/* Presentations Card */}
                   <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
                     <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
@@ -2069,161 +2231,7 @@ export default function PropertyDetailsPage() {
                   )}
                   </div>
 
-                  {/* Afiches Promocionales */}
-                  <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
-                    <div className="flex justify-between items-center mb-4 group">
-                      <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-                        <ImageIcon className="text-primary w-5 h-5" /> Afiches Promocionales
-                      </h3>
-                      {editingSection !== 'posters' && (
-                        <button onClick={() => setEditingSection('posters')} className="opacity-0 group-hover:opacity-100 p-2 hover:bg-muted rounded-full transition-opacity"><Edit className="w-4 h-4 text-muted-foreground"/></button>
-                      )}
-                    </div>
-                    {editingSection === 'posters' ? (
-                    <div className="space-y-4">
-                      {postersList.map((url, i) => (
-                        <div key={i} className="flex gap-2 items-center">
-                          {url && (
-                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center relative">
-                              <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
-                            </div>
-                          )}
-                          <input value={url} onChange={(e) => {
-                            const newList = [...postersList]; newList[i] = e.target.value; setPostersList(newList);
-                          }} placeholder="https://..." className="flex-1 p-3 rounded-xl border border-border outline-none" />
-                          <button onClick={() => setPostersList(postersList.filter((_, idx) => idx !== i))} className="p-3 bg-destructive/10 text-destructive rounded-xl"><Trash2 className="w-5 h-5"/></button>
-                        </div>
-                      ))}
-                      <div className="flex gap-4">
-                        <button onClick={() => setPostersList([...postersList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
-                          setPostersList(prev => [...prev, url]);
-                          if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
-                        }} />
-                        <label className={`text-sm font-semibold flex items-center gap-1 cursor-pointer ${isUploading ? 'text-gray-400' : 'text-primary hover:underline'}`}>
-                          {isUploading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Upload className="w-4 h-4"/>} 
-                          {isUploading ? 'Subiendo...' : 'Subir Archivo'}
-                          <input 
-                            type="file" 
-                            accept="image/*,application/pdf" 
-                            multiple
-                            className="hidden" 
-                            onChange={(e) => { handleFileUpload(e.target.files, setPostersList); e.target.value = ''; }} 
-                          />
-                        </label>
-                      </div>
-                      <div className="flex justify-end gap-2 pt-4">
-                        <button onClick={() => setEditingSection(null)} className="px-4 py-2 text-sm font-semibold hover:bg-muted rounded-xl transition-colors">Cancelar</button>
-                        <button onClick={() => handleSaveSection(['postersList'])} disabled={isSaving} className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-xl">Guardar</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-{postersList.length > 0 ? (
-                      <div className="grid grid-cols-2 gap-4">
-                        {postersList.map((url, i) => (
-                          <div key={i} onClick={() => window.open(url, '_blank')} className="w-full aspect-[3/4] rounded-2xl overflow-hidden border border-border shadow-sm block group relative cursor-pointer">
-                            <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Afiche ${i+1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <span className="text-white font-bold text-xs px-3 py-1.5 bg-black/50 rounded-xl backdrop-blur-sm">Ampliar</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="p-6 bg-muted rounded-2xl border border-dashed border-border flex items-center justify-center text-muted-foreground text-sm text-center">
-                        <p>No se han subido afiches.</p>
-                      </div>
-                    )}
-                    </>
-                  )}
-                  </div>
-                </div>
 
-                {/* Planos Arquitectónicos */}
-                <div className={`bg-card border border-border rounded-3xl shadow-sm h-fit max-h-min overflow-hidden ${plansList.length > 0 || editingSection === 'plans' ? 'p-8' : 'px-8 pt-8 pb-6'}`}>
-                  <div className="flex justify-between items-center mb-6 group">
-                    <h3 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                      <MapPin className="text-primary w-6 h-6" /> Planos Arquitectónicos
-                    </h3>
-                    {editingSection !== 'plans' && (
-                      <button onClick={() => setEditingSection('plans')} className="opacity-0 group-hover:opacity-100 p-2 hover:bg-muted rounded-full transition-opacity"><Edit className="w-4 h-4 text-muted-foreground"/></button>
-                    )}
-                  </div>
-                  {editingSection === 'plans' ? (
-                    <div className="space-y-4">
-                      {plansList.map((url, i) => (
-                        <div key={i} className="flex gap-2 items-center">
-                          {url && (
-                            <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center relative">
-                              <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
-                            </div>
-                          )}
-                          <input value={url} onChange={(e) => {
-                            const newList = [...plansList]; newList[i] = e.target.value; setPlansList(newList);
-                          }} placeholder="https://..." className="flex-1 p-3 rounded-xl border border-border outline-none" />
-                          <button onClick={() => setPlansList(plansList.filter((_, idx) => idx !== i))} className="p-3 bg-destructive/10 text-destructive rounded-xl"><Trash2 className="w-5 h-5"/></button>
-                        </div>
-                      ))}
-                      <div className="flex gap-4">
-                        <button onClick={() => setPlansList([...plansList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
-                          setPlansList(prev => [...prev, url]);
-                          if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
-                        }} />
-                        <label className={`text-sm font-semibold flex items-center gap-1 cursor-pointer ${isUploading ? 'text-gray-400' : 'text-primary hover:underline'}`}>
-                          {isUploading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Upload className="w-4 h-4"/>} 
-                          {isUploading ? 'Subiendo...' : 'Subir Archivo'}
-                          <input 
-                            type="file" 
-                            accept="image/*,application/pdf" 
-                            multiple
-                            className="hidden" 
-                            onChange={(e) => { handleFileUpload(e.target.files, setPlansList); e.target.value = ''; }} 
-                          />
-                        </label>
-                      </div>
-                      <div className="flex justify-end gap-2 pt-4">
-                        <button onClick={() => setEditingSection(null)} className="px-4 py-2 text-sm font-semibold hover:bg-muted rounded-xl transition-colors">Cancelar</button>
-                        <button onClick={() => handleSaveSection(['plansList'])} disabled={isSaving} className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-xl">Guardar</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-{plansList.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-6">
-                      {plansList.map((url, i) => {
-                        const isImage = url.match(/\.(jpeg|jpg|gif|png)$/i) || url.includes('unsplash');
-                        return (
-                          <div key={i} className="flex flex-col gap-3">
-                            {isImage ? (
-                              <a href={url} target="_blank" rel="noopener noreferrer" className="w-full aspect-[4/3] rounded-2xl overflow-hidden border border-border shadow-sm block group relative">
-                                <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Plano ${i+1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                  <span className="text-white font-bold px-4 py-2 bg-black/50 rounded-xl backdrop-blur-sm">Ampliar Plano</span>
-                                </div>
-                              </a>
-                            ) : (
-                              <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-4 bg-muted rounded-2xl hover:bg-primary/5 transition-colors group h-full">
-                                <div className="flex items-center gap-3 overflow-hidden">
-                                  <MapPin className="w-5 h-5 text-primary shrink-0" />
-                                  <span className="text-base font-medium truncate group-hover:text-primary transition-colors">Descargar Plano {i + 1}</span>
-                                </div>
-                              </a>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="p-8 bg-muted rounded-2xl border border-dashed border-border flex items-center justify-center text-muted-foreground text-center">
-                      <p>No se han subido planos arquitectónicos.</p>
-                    </div>
-                  )}
-                  </>
-                )}
-                </div>
-                
                 {/* Enlaces Públicos Card */}
                 <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
                   <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
@@ -2243,7 +2251,6 @@ export default function PropertyDetailsPage() {
                   </div>
                 </div>
               </div>
-             </div>
             )}
 
             {activeTab === 'comercial' && (
@@ -2715,6 +2722,83 @@ export default function PropertyDetailsPage() {
                       
                       {editingSection === 'owner' ? (
                         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                          <div className="bg-muted/30 p-3 rounded-xl border border-border mb-2">
+                            <label className="text-xs font-semibold text-muted-foreground block mb-2">Vincular desde Prospectos</label>
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (allLeads.length === 0) {
+                                    try {
+                                      const res = await fetch('/api/leads');
+                                      if (res.ok) setAllLeads(await res.json());
+                                    } catch (error) {}
+                                  }
+                                  setIsLeadDropdownOpen(!isLeadDropdownOpen);
+                                }}
+                                className="w-full flex items-center justify-between bg-background border border-border rounded-xl px-3 py-2 text-sm text-left focus:outline-none focus:ring-2 focus:ring-primary/20"
+                              >
+                                <span className="text-muted-foreground">Seleccionar un prospecto...</span>
+                                <ChevronDown className={`w-4 h-4 transition-transform ${isLeadDropdownOpen ? 'rotate-180' : ''}`} />
+                              </button>
+                              
+                              {isLeadDropdownOpen && (
+                                <div className="absolute z-50 w-full mt-2 bg-background border border-border rounded-xl shadow-lg max-h-64 overflow-y-auto overflow-x-auto">
+                                  <table className="w-full text-sm min-w-[300px]">
+                                    <thead className="bg-muted/50 text-muted-foreground text-xs sticky top-0 z-10">
+                                      <tr>
+                                        <th className="px-3 py-2 text-left font-medium">Nombre y Contacto</th>
+                                        <th className="px-3 py-2 text-left font-medium">Estado</th>
+                                        <th className="px-3 py-2 text-left font-medium">Presupuesto</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border">
+                                      {allLeads.length === 0 ? (
+                                        <tr>
+                                          <td colSpan={3} className="px-3 py-4 text-center text-muted-foreground">Cargando prospectos...</td>
+                                        </tr>
+                                      ) : allLeads.map(lead => (
+                                        <tr 
+                                          key={lead.id} 
+                                          className="hover:bg-muted/50 cursor-pointer transition-colors"
+                                          onClick={() => {
+                                            setFormData(prev => ({
+                                              ...prev,
+                                              ownerName: lead.name || '',
+                                              ownerPhone: lead.phone || '',
+                                              ownerEmail: lead.email || '',
+                                              ownerNotes: lead.notes || ''
+                                            }));
+                                            setIsLeadDropdownOpen(false);
+                                          }}
+                                        >
+                                          <td className="px-3 py-3">
+                                            <div className="flex items-center gap-3">
+                                              <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                                                {lead.name ? lead.name.charAt(0).toUpperCase() : '?'}
+                                              </div>
+                                              <div>
+                                                <p className="font-semibold text-foreground leading-tight">{lead.name}</p>
+                                                {lead.phone && <p className="text-xs text-muted-foreground mt-0.5">{lead.phone}</p>}
+                                              </div>
+                                            </div>
+                                          </td>
+                                          <td className="px-3 py-3">
+                                            <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap">
+                                              {lead.status}
+                                            </span>
+                                          </td>
+                                          <td className="px-3 py-3 font-medium whitespace-nowrap">
+                                            {lead.budget ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(lead.budget)) : '-'}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                           <input id="ownerNameInput" type="text" className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm" value={formData.ownerName || ''} onChange={e => setFormData({...formData, ownerName: e.target.value})} placeholder="Nombre del Propietario" />
                           <div className="flex gap-3">
                             <input type="tel" className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm" value={formData.ownerPhone || ''} onChange={e => setFormData({...formData, ownerPhone: e.target.value})} placeholder="Teléfono" />
@@ -3125,3 +3209,4 @@ export default function PropertyDetailsPage() {
     </div>
   );
 }
+

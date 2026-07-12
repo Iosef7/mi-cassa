@@ -93,7 +93,7 @@ export default async function ProspectoDetailPage({ params }: { params: Promise<
                 <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">{lead.type === 'PROPIETARIO' ? 'Precio Esperado' : 'Presupuesto'}</p>
                 <p className="text-slate-900 font-medium flex items-center gap-2 mt-1">
                   <Banknote size={16} className="text-green-600" />
-                  {lead.budget ? `$${Number(lead.budget).toLocaleString()}` : 'No definido'}
+                  {lead.budget ? `${lead.currency === 'ILS' ? '₪' : lead.currency === 'USD' ? '$' : lead.currency === 'EUR' ? '€' : lead.currency === 'MXN' ? 'MX$' : '$'}${Number(lead.budget).toLocaleString()}` : 'No definido'}
                 </p>
               </div>
               
@@ -111,10 +111,42 @@ export default async function ProspectoDetailPage({ params }: { params: Promise<
                 </div>
               )}
 
-              {lead.type === 'CLIENTE' && lead.targetLocations && (
+              {lead.targetLocations && (
                 <div>
-                  <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Zonas de Interés</p>
+                  <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Zona de Interés</p>
                   <p className="text-slate-900 mt-1">{lead.targetLocations}</p>
+                </div>
+              )}
+
+              {(lead.targetArea || lead.minArea || lead.maxArea) && (
+                <div>
+                  <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Metros Cuadrados (m²)</p>
+                  <p className="text-slate-900 mt-1">
+                    {lead.targetArea ? `${lead.targetArea}m² esperados ` : ''}
+                    {lead.minArea ? `(Min: ${lead.minArea}m² ` : ''}
+                    {lead.maxArea ? `- Max: ${lead.maxArea}m²)` : ''}
+                  </p>
+                </div>
+              )}
+
+              {lead.moveInDate && (
+                <div>
+                  <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">{lead.type === 'INQUILINO' ? 'Inicio de Contrato' : 'Fecha de Mudanza'}</p>
+                  <p className="text-slate-900 mt-1">{new Date(lead.moveInDate).toLocaleDateString()}</p>
+                </div>
+              )}
+
+              {lead.numberOfPeople && (
+                <div>
+                  <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Número de Personas</p>
+                  <p className="text-slate-900 mt-1">{lead.numberOfPeople}</p>
+                </div>
+              )}
+
+              {lead.type === 'INQUILINO' && lead.petFriendly && (
+                <div>
+                  <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Mascotas</p>
+                  <p className="text-slate-900 mt-1">Requiere Pet Friendly</p>
                 </div>
               )}
               

@@ -10,7 +10,7 @@ export default async function ProspectosContent({
   status,
   page,
   view,
-  tab = 'clientes',
+  tab = 'compradores',
 }: {
   query: string;
   status: string;
@@ -33,6 +33,14 @@ export default async function ProspectosContent({
   if (status) {
     where.status = status;
   }
+  
+  if (tab === 'propietarios') {
+    where.type = 'PROPIETARIO';
+  } else if (tab === 'inquilinos') {
+    where.type = 'INQUILINO';
+  } else {
+    where.type = { in: ['COMPRADOR', 'CLIENTE'] };
+  }
 
   // Fetch paginated leads (only if view is list, if view is board we might need all matching leads without pagination, or maybe keep pagination?)
   const take = view === 'board' ? 200 : limit;
@@ -48,7 +56,11 @@ export default async function ProspectosContent({
       include: {
         _count: {
           select: { calls: true, tasks: true }
-        }
+        },
+        agent: { select: { name: true, image: true } },
+        property: { select: { id: true, title: true } },
+        tasks: { where: { status: 'PENDIENTE' }, orderBy: { dueDate: 'asc' }, take: 1 },
+        calls: { orderBy: { createdAt: 'desc' }, take: 1, select: { summary: true, commitments: true } }
       }
     }),
     prisma.lead.count({ where }),

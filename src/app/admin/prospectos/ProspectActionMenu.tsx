@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MoreVertical, User, Phone, CheckSquare, Trash2, Edit } from 'lucide-react';
+import { MoreVertical, User, Phone, Edit, Trash2 } from 'lucide-react';
 import { showAlert, showConfirm, showToast } from '@/lib/alerts';
 
 interface ProspectActionMenuProps {
@@ -58,8 +59,8 @@ export default function ProspectActionMenu({ leadId }: ProspectActionMenuProps) 
 
             <button
               onClick={() => {
-                showAlert('Función en desarrollo', 'La edición rápida estará disponible pronto.', 'info');
                 setIsOpen(false);
+                router.push(`/admin/prospectos/${leadId}/editar`);
               }}
               className="group flex w-full items-center px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >

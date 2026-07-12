@@ -6,6 +6,7 @@ import SectionGuard from "@/components/SectionGuard";
 import { SectionSettingsMap } from "@/actions/settings";
 import { Menu, Building } from "lucide-react";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface AdminLayoutWrapperProps {
   children: React.ReactNode;
@@ -47,25 +48,36 @@ export default function AdminLayoutWrapper({ children, settings, userRole, siteL
       <Sidebar settings={settings} userRole={userRole} siteLogo={siteLogo} />
 
       {/* Mobile Sidebar Overlay */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex">
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
-            onClick={() => setIsMobileMenuOpen(false)}
-          ></div>
-          
-          {/* Sidebar Drawer */}
-          <div className="relative z-10 w-64 max-w-[80%] h-full flex-shrink-0 animate-in slide-in-from-left-full duration-200">
-             <Sidebar isMobile onClose={() => setIsMobileMenuOpen(false)} settings={settings} userRole={userRole} siteLogo={siteLogo} />
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex">
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-md" 
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+            
+            {/* Sidebar Drawer */}
+            <motion.div 
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+              className="relative z-10 w-72 max-w-[80%] h-full flex-shrink-0 premium-shadow"
+            >
+               <Sidebar isMobile onClose={() => setIsMobileMenuOpen(false)} settings={settings} userRole={userRole} siteLogo={siteLogo} className="w-full" />
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Mobile Header */}
-        <header className="md:hidden shrink-0 flex items-center justify-between p-4 border-b border-border bg-card z-40">
+        <header className="md:hidden shrink-0 flex items-center justify-between p-4 border-b border-border glass z-40 sticky top-0">
           <div className="flex items-center gap-3">
              <MobileLogo siteLogo={siteLogo} />
              <span className="font-bold text-lg text-foreground tracking-tight">Mi Cassa</span>

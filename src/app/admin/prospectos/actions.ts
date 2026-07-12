@@ -26,6 +26,7 @@ export async function createLead(data: any) {
         phone: data.phone,
         status: data.status || 'NUEVO',
         budget: data.budget ? parseFloat(data.budget) : null,
+        currency: data.currency || 'ILS',
         notes: data.notes || null,
         source: data.source || 'MANUAL',
         preferences: data.preferences || null,
@@ -38,9 +39,17 @@ export async function createLead(data: any) {
         acceptsTrade: data.acceptsTrade || false,
         viewingAvailability: data.viewingAvailability || null,
         targetLocations: data.targetLocations || null,
+        targetArea: data.targetArea ? parseFloat(data.targetArea) : null,
+        minArea: data.minArea ? parseFloat(data.minArea) : null,
+        maxArea: data.maxArea ? parseFloat(data.maxArea) : null,
+        moveInDate: data.moveInDate ? new Date(data.moveInDate) : null,
+        numberOfPeople: data.numberOfPeople ? parseInt(data.numberOfPeople) : null,
+        petFriendly: data.petFriendly || false,
         isLegalClear: data.isLegalClear !== undefined ? data.isLegalClear : true,
         hasMortgage: data.hasMortgage || false,
         mandateType: data.mandateType || null,
+        propertyId: data.propertyId || null,
+        contactDate: data.contactDate ? new Date(data.contactDate) : null,
       }
     });
     revalidatePath('/admin/prospectos');
@@ -61,6 +70,7 @@ export async function updateLead(leadId: string, data: any) {
         phone: data.phone,
         status: data.status || 'NUEVO',
         budget: data.budget ? parseFloat(data.budget) : null,
+        currency: data.currency || 'ILS',
         notes: data.notes || null,
         preferences: data.preferences || null,
         requiresMortgage: data.requiresMortgage || false,
@@ -72,16 +82,68 @@ export async function updateLead(leadId: string, data: any) {
         acceptsTrade: data.acceptsTrade || false,
         viewingAvailability: data.viewingAvailability || null,
         targetLocations: data.targetLocations || null,
+        targetArea: data.targetArea ? parseFloat(data.targetArea) : null,
+        minArea: data.minArea ? parseFloat(data.minArea) : null,
+        maxArea: data.maxArea ? parseFloat(data.maxArea) : null,
+        moveInDate: data.moveInDate ? new Date(data.moveInDate) : null,
+        numberOfPeople: data.numberOfPeople ? parseInt(data.numberOfPeople) : null,
+        petFriendly: data.petFriendly || false,
         isLegalClear: data.isLegalClear !== undefined ? data.isLegalClear : true,
         hasMortgage: data.hasMortgage || false,
         mandateType: data.mandateType || null,
+        propertyId: data.propertyId || null,
+        contactDate: data.contactDate ? new Date(data.contactDate) : null,
       }
     });
     revalidatePath('/admin/prospectos');
     revalidatePath(`/admin/prospectos/${leadId}`);
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating lead:', error);
-    return { success: false, error: 'Failed to update lead' };
+    return { success: false, error: error.message || 'Failed to update lead' };
+  }
+}
+
+export async function getSmartMatches(leadId: string) {
+  try {
+    const lead = await prisma.lead.findUnique({
+      where: { id: leadId },
+      select: { budget: true, propertyTypeOfInterest: true, targetLocations: true }
+    });
+
+    if (!lead || !lead.budget) {
+      return { success: true, matches: [] };
+    }
+
+    const margin = 0.2; // 20% margin
+    const minBudget = Number(lead.budget) * (1 - margin);
+    const maxBudget = Number(lead.budget) * (1 + margin);
+
+    const matches = await prisma.property.findMany({
+      where: {
+        price: {
+          gte: minBudget,
+          lte: maxBudget
+        },
+        status: 'DISPONIBLE'
+      },
+      take: 3,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        price: true,
+        images: true,
+        type: true,
+        location: true,
+        bedrooms: true,
+        bathrooms: true
+      }
+    });
+
+    return { success: true, matches };
+  } catch (error) {
+    console.error('Error getting smart matches:', error);
+    return { success: false, error: 'Failed to get matches' };
   }
 }

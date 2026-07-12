@@ -1403,7 +1403,7 @@ export default function NewProjectPage() {
 
         {activeTab === 'multimedia' && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="grid grid--grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-8">
               {/* Videos / Recorridos Virtuales */}
               <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
@@ -1427,8 +1427,8 @@ export default function NewProjectPage() {
                         <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
                           {isVideoData ? (
                             <video src={url} className="w-full h-full object-cover" />
-                          ) : isImageData || url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                            <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                          ) : isImageData || url.match(/\.(jpeg|jpg|gif|png)$/i) || url.includes('drive.google.com') ? (
+                            <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
                           ) : (
                             <Building className="w-5 h-5 text-muted-foreground" />
                           )}
@@ -1486,29 +1486,34 @@ export default function NewProjectPage() {
 
                           return (
                             <div key={i} className="flex flex-col gap-2">
-                              <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
-                                <div className="flex items-center justify-between gap-2 px-2">
+                              <details className="group/video border border-border rounded-2xl bg-card hover:bg-muted/30 transition-colors">
+                                <summary className="flex items-center justify-between p-4 cursor-pointer outline-none list-none [&::-webkit-details-marker]:hidden">
                                   <div className="flex items-center gap-2">
                                     <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center shrink-0">
                                       <div className="w-0 h-0 border-t-[3px] border-t-transparent border-l-[4px] border-l-white border-b-[3px] border-b-transparent ml-0.5"></div>
                                     </div>
                                     <span className="font-bold text-sm text-foreground">Video / Recorrido {i + 1}</span>
                                   </div>
-                                  <button 
-                                    onClick={() => window.open(url, '_blank')}
-                                    className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-xl transition-colors"
-                                  >
-                                    <Globe className="w-3 h-3" /> Abrir link
-                                  </button>
+                                  <div className="flex items-center gap-2">
+                                    <button 
+                                      onClick={(e) => { e.preventDefault(); window.open(url, '_blank'); }}
+                                      className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-xl transition-colors"
+                                    >
+                                      <Globe className="w-3 h-3" /> Abrir link
+                                    </button>
+                                    <ChevronDown className="w-4 h-4 text-muted-foreground group-open/video:rotate-180 transition-transform" />
+                                  </div>
+                                </summary>
+                                <div className="p-4 pt-0">
+                                  <div className="w-full aspect-video rounded-xl overflow-hidden border border-border shadow-sm bg-muted relative">
+                                    {isVideoFile ? (
+                                      <video src={url} controls className="w-full h-full bg-black" />
+                                    ) : (
+                                      <iframe src={embedUrl} className="w-full h-full" allowFullScreen></iframe>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="w-full aspect-video rounded-2xl overflow-hidden border border-border shadow-sm bg-muted relative">
-                                  {isVideoFile ? (
-                                    <video src={url} controls className="w-full h-full bg-black" />
-                                  ) : (
-                                    <iframe src={embedUrl} className="w-full h-full" allowFullScreen></iframe>
-                                  )}
-                                </div>
-                              </div>
+                              </details>
                             </div>
                           );
                         })}
@@ -1523,7 +1528,75 @@ export default function NewProjectPage() {
                 </>
               )}
               </div>
-
+                  </div>
+                  <div className='space-y-8'>
+                  {/* Afiches Promocionales */}
+              <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-4 group">
+                  <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                    <ImageIcon className="text-primary w-5 h-5" /> Afiches Promocionales
+                  </h3>
+                  {editingSection !== 'posters' && (
+                    <button onClick={() => setEditingSection('posters')} className="opacity-0 group-hover:opacity-100 p-2 hover:bg-muted rounded-full transition-opacity"><Edit className="w-4 h-4 text-muted-foreground"/></button>
+                  )}
+                </div>
+                {editingSection === 'posters' ? (
+                <div className="space-y-4">
+                  {postersList.map((url, i) => (
+                    <div key={i} className="flex gap-2">
+                      <input value={url} onChange={(e) => {
+                        const newList = [...postersList]; newList[i] = e.target.value; setPostersList(newList);
+                      }} placeholder="https://..." className="flex-1 p-3 rounded-xl border border-border outline-none" />
+                      <button onClick={() => setPostersList(postersList.filter((_, idx) => idx !== i))} className="p-3 bg-destructive/10 text-destructive rounded-xl"><Trash2 className="w-5 h-5"/></button>
+                    </div>
+                  ))}
+                  <div className="flex gap-4">
+                    <button onClick={() => setPostersList([...postersList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
+                    <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                      setPostersList(prev => [...prev, url]);
+                      if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
+                    }} />
+                    <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
+                      <Upload className="w-4 h-4"/> Subir Archivo
+                      <input 
+                        type="file" 
+                        accept="image/*,application/pdf" 
+                        multiple
+                        className="hidden" 
+                        onChange={(e) => handleFileUpload(e.target.files, setPostersList)} 
+                      />
+                    </label>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <button onClick={() => setEditingSection(null)} className="px-4 py-2 text-sm font-semibold hover:bg-muted rounded-xl transition-colors">Cancelar</button>
+                    <button onClick={() => handleSaveSection(['postersList'])} className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-xl">Guardar</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                {postersList.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    {postersList.map((url, i) => (
+                      <div key={i} onClick={() => window.open(url, '_blank')} className="relative group rounded-xl overflow-hidden border border-border aspect-[3/4] block shadow-sm cursor-pointer">
+                        <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Afiche ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                          <Maximize className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div onClick={() => setEditingSection('posters')} className="cursor-pointer hover:bg-muted/80 transition-colors p-6 bg-muted rounded-2xl border border-dashed border-border flex flex-col items-center justify-center text-muted-foreground text-sm text-center">
+                    <ImageIcon className="w-8 h-8 opacity-50 mb-2" />
+                    <span className="font-semibold text-primary">Añadir Afiches</span>
+                    <p className="text-xs mt-1">Sube renders, flyers o publicidad</p>
+                  </div>
+                )}
+                </>
+              )}
+              </div>
+              </div>
+              
               {/* Presentations Card */}
               <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
                 <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
@@ -1637,78 +1710,10 @@ export default function NewProjectPage() {
                 </>
               )}
               </div>
-
-              {/* Afiches Promocionales */}
-              <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-4 group">
-                  <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-                    <ImageIcon className="text-primary w-5 h-5" /> Afiches Promocionales
-                  </h3>
-                  {editingSection !== 'posters' && (
-                    <button onClick={() => setEditingSection('posters')} className="opacity-0 group-hover:opacity-100 p-2 hover:bg-muted rounded-full transition-opacity"><Edit className="w-4 h-4 text-muted-foreground"/></button>
-                  )}
-                </div>
-                {editingSection === 'posters' ? (
-                <div className="space-y-4">
-                  {postersList.map((url, i) => (
-                    <div key={i} className="flex gap-2">
-                      <input value={url} onChange={(e) => {
-                        const newList = [...postersList]; newList[i] = e.target.value; setPostersList(newList);
-                      }} placeholder="https://..." className="flex-1 p-3 rounded-xl border border-border outline-none" />
-                      <button onClick={() => setPostersList(postersList.filter((_, idx) => idx !== i))} className="p-3 bg-destructive/10 text-destructive rounded-xl"><Trash2 className="w-5 h-5"/></button>
-                    </div>
-                  ))}
-                  <div className="flex gap-4">
-                    <button onClick={() => setPostersList([...postersList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                    <GoogleDrivePicker onFileSelect={(url, thumb) => {
-                      setPostersList(prev => [...prev, url]);
-                      if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
-                    }} />
-                    <label className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline cursor-pointer">
-                      <Upload className="w-4 h-4"/> Subir Archivo
-                      <input 
-                        type="file" 
-                        accept="image/*,application/pdf" 
-                        multiple
-                        className="hidden" 
-                        onChange={(e) => handleFileUpload(e.target.files, setPostersList)} 
-                      />
-                    </label>
-                  </div>
-                  <div className="flex justify-end gap-2 pt-4">
-                    <button onClick={() => setEditingSection(null)} className="px-4 py-2 text-sm font-semibold hover:bg-muted rounded-xl transition-colors">Cancelar</button>
-                    <button onClick={() => handleSaveSection(['postersList'])} className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-xl">Guardar</button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                {postersList.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-4">
-                    {postersList.map((url, i) => (
-                      <div key={i} onClick={() => window.open(url, '_blank')} className="relative group rounded-xl overflow-hidden border border-border aspect-[3/4] block shadow-sm cursor-pointer">
-                        <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Afiche ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                          <Maximize className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div onClick={() => setEditingSection('posters')} className="cursor-pointer hover:bg-muted/80 transition-colors p-6 bg-muted rounded-2xl border border-dashed border-border flex flex-col items-center justify-center text-muted-foreground text-sm text-center">
-                    <ImageIcon className="w-8 h-8 opacity-50 mb-2" />
-                    <span className="font-semibold text-primary">Añadir Afiches</span>
-                    <p className="text-xs mt-1">Sube renders, flyers o publicidad</p>
-                  </div>
-                )}
-                </>
-              )}
-              </div>
-              </div>
-              
-              <MortgageCalculator price={Number(property.price)} />
             </div>
+            <MortgageCalculator price={Number(property.price)} />
           </div>
-        )}
+      )}
 
         {activeTab === 'comercial' && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">

@@ -46,6 +46,7 @@ model Property {
   images          String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  operationType   String   @default("VENTA")
   availableUnits  Int?
   deliveryDate    String?
   maxPrice        Decimal?
@@ -73,6 +74,7 @@ model Lead {
   phone            String
   status           String        @default("NUEVO")
   budget           Decimal?
+  currency         String        @default("ILS") // Moneda (ILS, USD, etc)
   notes            String?
   source           String?
   agentId          String?
@@ -89,6 +91,12 @@ model Lead {
   acceptsTrade     Boolean       @default(false)
   viewingAvailability String?    // Fines de semana, Mañanas, etc.
   targetLocations  String?       // Norte, Centro, Sur, etc.
+  targetArea       Float?        // Area esperada (m2)
+  minArea          Float?        // Area minima (m2)
+  maxArea          Float?        // Area maxima (m2)
+  moveInDate       DateTime?     // Fecha de llegada o inicio contrato
+  numberOfPeople   Int?          // Número de personas
+  petFriendly      Boolean       @default(false) // Mascotas permitidas
   isLegalClear     Boolean       @default(true)  // ¿Documentos al día?
   hasMortgage      Boolean       @default(false) // ¿Libre de gravamen?
   mandateType      String?       // Exclusiva, Abierta, Ninguna
@@ -98,6 +106,7 @@ model Lead {
   property         Property?     @relation(fields: [propertyId], references: [id])
   messages         Message[]
   tasks            Task[]
+  contactDate      DateTime?
 }
 
 model Appointment {

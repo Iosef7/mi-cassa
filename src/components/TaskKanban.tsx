@@ -132,54 +132,14 @@ export default function TaskKanban({ tasks, onTaskClick, onTaskStatusChange }: {
                   className={`flex-1 p-4 overflow-y-auto min-h-[150px] transition-all duration-300 rounded-b-[24px] ${snapshot.isDraggingOver ? 'bg-black/5 dark:bg-white/5 shadow-inner' : ''}`}
                 >
                   {columnsData[column.id]?.map((task, index) => (
-                    <Draggable key={task.id} draggableId={task.id} index={index}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          onClick={(e) => {
-                            if ((e.target as HTMLElement).closest('.no-modal-click')) return;
-                            onTaskClick(task);
-                          }}
-                          className={`bg-white dark:bg-slate-900/90 mb-3 p-4 rounded-2xl border ${snapshot.isDragging ? 'border-primary/50 shadow-2xl rotate-2 scale-105 ring-4 ring-primary/10' : 'border-slate-200/60 dark:border-slate-700/50 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600'} transition-all duration-200 group`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <button 
-                              onClick={() => onTaskStatusChange(task.id, task.status === 'COMPLETADO' ? 'PENDIENTE' : 'COMPLETADO')} 
-                              className={`shrink-0 transition-colors no-modal-click mt-0.5 ${task.status === 'COMPLETADO' ? 'text-primary' : 'text-slate-400 hover:text-primary dark:text-slate-500'}`}
-                            >
-                              {task.status === 'COMPLETADO' ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
-                            </button>
-                            <div className="flex-1 min-w-0">
-                              <p className={`text-[15px] font-medium leading-snug truncate ${task.status === 'COMPLETADO' ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}`}>
-                                {task.title}
-                              </p>
-                              
-                              {task.dueDate && (
-                                <p className="text-[11px] flex items-center gap-1.5 text-slate-500 dark:text-slate-400 mt-2 font-medium">
-                                  <CalendarIcon className="w-3.5 h-3.5" />
-                                  {new Date(task.dueDate).toLocaleDateString('es-MX', { month: 'short', day: 'numeric' })}
-                                </p>
-                              )}
-
-                              {task.property && (
-                                <div className="mt-3 flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-xl w-fit max-w-full border border-slate-100 dark:border-slate-700/50">
-                                  {getPropertyImage(task) ? (
-                                    <Image src={getPropertyImage(task)} width={24} height={24} className="object-cover rounded-lg shadow-sm" alt="" />
-                                  ) : (
-                                    <div className="w-6 h-6 bg-primary/10 flex items-center justify-center rounded-lg text-primary shrink-0">
-                                      <Building className="w-3.5 h-3.5" />
-                                    </div>
-                                  )}
-                                  <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 truncate pr-2">{task.property.title}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </Draggable>
+                    <TaskCard 
+                      key={task.id} 
+                      task={task} 
+                      index={index} 
+                      onTaskClick={onTaskClick} 
+                      onTaskStatusChange={onTaskStatusChange} 
+                      getPropertyImage={getPropertyImage} 
+                    />
                   ))}
                   {provided.placeholder}
                 </div>
@@ -191,3 +151,60 @@ export default function TaskKanban({ tasks, onTaskClick, onTaskStatusChange }: {
     </DragDropContext>
   );
 }
+
+const TaskCard = React.memo(function TaskCard({ task, index, onTaskClick, onTaskStatusChange, getPropertyImage }: { task: Task, index: number, onTaskClick: (task: Task) => void, onTaskStatusChange: (taskId: string, newStatus: string) => void, getPropertyImage: (task: any) => string | null }) {
+  return (
+    <Draggable key={task.id} draggableId={task.id} index={index}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          onClick={(e) => {
+            if ((e.target as HTMLElement).closest('.no-modal-click')) return;
+            onTaskClick(task);
+          }}
+          className={`bg-white dark:bg-slate-900/90 mb-3 p-4 rounded-2xl border ${snapshot.isDragging ? 'border-primary/50 shadow-2xl rotate-2 scale-105 ring-4 ring-primary/10' : 'border-slate-200/60 dark:border-slate-700/50 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600'} transition-all duration-200 group`}
+        >
+          <div className="flex items-start gap-3">
+            <button 
+              onClick={() => onTaskStatusChange(task.id, task.status === 'COMPLETADO' ? 'PENDIENTE' : 'COMPLETADO')} 
+              className={`shrink-0 transition-colors no-modal-click mt-0.5 ${task.status === 'COMPLETADO' ? 'text-primary' : 'text-slate-400 hover:text-primary dark:text-slate-500'}`}
+            >
+              {task.status === 'COMPLETADO' ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+            </button>
+            <div className="flex-1 min-w-0">
+              <p className={`text-[15px] font-medium leading-snug truncate ${task.status === 'COMPLETADO' ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}`}>
+                {task.title}
+              </p>
+              
+              {task.dueDate && (
+                <p className="text-[11px] flex items-center gap-1.5 text-slate-500 dark:text-slate-400 mt-2 font-medium">
+                  <CalendarIcon className="w-3.5 h-3.5" />
+                  {new Date(task.dueDate).toLocaleDateString('es-MX', { month: 'short', day: 'numeric' })}
+                </p>
+              )}
+
+              {task.property && (
+                <div className="mt-3 flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-xl w-fit max-w-full border border-slate-100 dark:border-slate-700/50">
+                  {getPropertyImage(task) ? (
+                    <Image src={getPropertyImage(task) as string} width={24} height={24} className="object-cover rounded-lg shadow-sm" alt="" />
+                  ) : (
+                    <div className="w-6 h-6 bg-primary/10 flex items-center justify-center rounded-lg text-primary shrink-0">
+                      <Building className="w-3.5 h-3.5" />
+                    </div>
+                  )}
+                  <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 truncate pr-2">{task.property.title}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </Draggable>
+  );
+}, (prevProps, nextProps) => {
+  return prevProps.task.id === nextProps.task.id && 
+         prevProps.task.status === nextProps.task.status && 
+         prevProps.index === nextProps.index;
+});

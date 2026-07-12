@@ -3,23 +3,31 @@
 import { useState, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, User, Phone, Mail, DollarSign, Building, AlertCircle, MapPin, Clock, HelpCircle, FileText } from 'lucide-react';
+import { ArrowLeft, Save, User, Phone, Mail, DollarSign, Building, AlertCircle, MapPin, Clock, HelpCircle, FileText, ChevronDown, Target, Maximize, Calendar, Users, PawPrint } from 'lucide-react';
 import { createLead } from '../actions';
 import { showToast } from '@/lib/alerts';
 
 function NuevoProspectoForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialType = searchParams.get('type') === 'PROPIETARIO' ? 'PROPIETARIO' : 'CLIENTE';
+  const initialType = searchParams.get('type') || 'COMPRADOR';
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const [properties, setProperties] = useState<{id: string, title: string, images: any}[]>([]);
+  useEffect(() => {
+    fetch('/api/properties?limit=100').then(r => r.json()).then(data => setProperties(data));
+  }, []);
 
   const [formData, setFormData] = useState({
     name: '',
-    phone: '',
+    phonePrefix: '+972',
+    phoneNumber: '',
     email: '',
     budget: '',
+    currency: 'ILS',
     status: 'NUEVO',
     requiresMortgage: false,
     notes: '',
@@ -27,14 +35,22 @@ function NuevoProspectoForm() {
     type: initialType,
     urgency: '',
     propertyTypeOfInterest: '',
+    propertyId: '',
     hasPropertyToSell: false,
     reasonForSelling: '',
     acceptsTrade: false,
     viewingAvailability: '',
     targetLocations: '',
+    targetArea: '',
+    minArea: '',
+    maxArea: '',
+    moveInDate: '',
+    numberOfPeople: '',
+    petFriendly: false,
     isLegalClear: true,
     hasMortgage: false,
-    mandateType: ''
+    mandateType: '',
+    contactDate: new Date().toISOString().split('T')[0]
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -52,18 +68,19 @@ function NuevoProspectoForm() {
     setIsSubmitting(true);
     setError('');
 
-    if (!formData.name || !formData.phone) {
+    if (!formData.name || !formData.phoneNumber) {
       setError('El nombre y el teléfono son obligatorios');
       setIsSubmitting(false);
       return;
     }
 
     try {
-      const res = await createLead(formData);
+      const submissionData = { ...formData, phone: `${formData.phonePrefix} ${formData.phoneNumber}` };
+      const res = await createLead(submissionData);
       
       if (res.success) {
-        showToast(formData.type === 'PROPIETARIO' ? 'Propietario creado exitosamente' : 'Prospecto creado exitosamente', 'success');
-        router.push(formData.type === 'PROPIETARIO' ? '/admin/prospectos?tab=propietarios' : '/admin/prospectos?tab=clientes');
+        showToast(formData.type === 'PROPIETARIO' ? 'Propietario creado exitosamente' : formData.type === 'INQUILINO' ? 'Inquilino creado exitosamente' : 'Comprador creado exitosamente', 'success');
+        router.push(formData.type === 'PROPIETARIO' ? '/admin/prospectos?tab=propietarios' : formData.type === 'INQUILINO' ? '/admin/prospectos?tab=inquilinos' : '/admin/prospectos?tab=compradores');
       } else {
         setError(res.error || 'Hubo un error al crear el registro');
       }
@@ -75,6 +92,8 @@ function NuevoProspectoForm() {
   };
 
   const isPropietario = formData.type === 'PROPIETARIO';
+  const isInquilino = formData.type === 'INQUILINO';
+  const isComprador = formData.type === 'COMPRADOR' || formData.type === 'CLIENTE';
 
   return (
     <>
@@ -90,7 +109,7 @@ function NuevoProspectoForm() {
             {isPropietario ? 'Nuevo Propietario' : 'Nuevo Cliente'}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            {isPropietario ? 'Registra un nuevo vendedor en el sistema.' : 'Registra un nuevo comprador potencial.'}
+            {isPropietario ? 'Registra un nuevo vendedor en el sistema.' : 'Registra un nuevo cliente potencial.'}
           </p>
         </div>
       </div>
@@ -108,10 +127,15 @@ function NuevoProspectoForm() {
           {/* Tipo de Contacto */}
           <section>
             <div className="flex gap-4">
-              <label className={`flex-1 border rounded-xl p-4 cursor-pointer transition-colors flex items-center justify-center gap-2 ${!isPropietario ? 'border-primary bg-primary/5 text-primary' : 'border-border text-muted-foreground'}`}>
-                <input type="radio" name="type" value="CLIENTE" checked={!isPropietario} onChange={handleChange} className="hidden" />
+              <label className={`flex-1 border rounded-xl p-4 cursor-pointer transition-colors flex items-center justify-center gap-2 ${isComprador ? 'border-primary bg-primary/5 text-primary' : 'border-border text-muted-foreground'}`}>
+                <input type="radio" name="type" value="COMPRADOR" checked={isComprador} onChange={handleChange} className="hidden" />
                 <User size={18} />
-                <span className="font-medium">Comprador / Inquilino</span>
+                <span className="font-medium">Comprador</span>
+              </label>
+              <label className={`flex-1 border rounded-xl p-4 cursor-pointer transition-colors flex items-center justify-center gap-2 ${isInquilino ? 'border-primary bg-primary/5 text-primary' : 'border-border text-muted-foreground'}`}>
+                <input type="radio" name="type" value="INQUILINO" checked={isInquilino} onChange={handleChange} className="hidden" />
+                <Target size={18} />
+                <span className="font-medium">Inquilino</span>
               </label>
               <label className={`flex-1 border rounded-xl p-4 cursor-pointer transition-colors flex items-center justify-center gap-2 ${isPropietario ? 'border-primary bg-primary/5 text-primary' : 'border-border text-muted-foreground'}`}>
                 <input type="radio" name="type" value="PROPIETARIO" checked={isPropietario} onChange={handleChange} className="hidden" />
@@ -134,9 +158,24 @@ function NuevoProspectoForm() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Teléfono *</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400"><Phone size={16} /></div>
-                  <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="Ej. +52 123 456 7890" className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" required />
+                <div className="flex gap-2">
+                  <select name="phonePrefix" value={formData.phonePrefix} onChange={handleChange} className="w-1/3 bg-background border border-border rounded-lg px-2 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="+972">🇮🇱 +972</option>
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+34">🇪🇸 +34</option>
+                    <option value="+52">🇲🇽 +52</option>
+                    <option value="+54">🇦🇷 +54</option>
+                    <option value="+56">🇨🇱 +56</option>
+                    <option value="+57">🇨🇴 +57</option>
+                    <option value="+51">🇵🇪 +51</option>
+                    <option value="+58">🇻🇪 +58</option>
+                    <option value="+507">🇵🇦 +507</option>
+                    <option value="+598">🇺🇾 +598</option>
+                  </select>
+                  <div className="relative flex-1">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400"><Phone size={16} /></div>
+                    <input type="tel" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} placeholder="Ej. 123 456 7890" className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  </div>
                 </div>
               </div>
               <div className="md:col-span-2">
@@ -161,7 +200,7 @@ function NuevoProspectoForm() {
               
               {/* Estado */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Estado Inicial</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2"><AlertCircle size={16}/> Estado Inicial</label>
                 <select name="status" value={formData.status} onChange={handleChange} className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
                   <option value="NUEVO">Nuevo</option>
                   <option value="CONTACTADO">Contactado</option>
@@ -179,13 +218,12 @@ function NuevoProspectoForm() {
                 </select>
               </div>
 
-              {/* Presupuesto / Precio */}
+              {/* Fecha de Contacto */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isPropietario ? 'Precio Esperado' : 'Presupuesto Estimado'}</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400"><DollarSign size={16} /></div>
-                  <input type="number" name="budget" value={formData.budget} onChange={handleChange} placeholder="Ej. 1500000" min="0" step="1000" className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2">
+                  <Clock size={16} /> Fecha de Contacto
+                </label>
+                <input type="date" name="contactDate" value={formData.contactDate} onChange={handleChange} className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
 
               {/* Urgencia */}
@@ -199,17 +237,107 @@ function NuevoProspectoForm() {
                 </select>
               </div>
 
-              {/* Tipo de propiedad */}
+              {/* Vincular Propiedad */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Tipo de Propiedad {isPropietario ? 'a Vender' : 'Deseada'}</label>
-                <input type="text" name="propertyTypeOfInterest" value={formData.propertyTypeOfInterest} onChange={handleChange} placeholder="Casa, Departamento, Terreno..." className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2"><Building size={16} /> Vincular Propiedad (Opcional)</label>
+                <div className="relative">
+                  <div 
+                    className="w-full bg-background border border-border rounded-lg px-4 py-2.5 cursor-pointer flex items-center justify-between hover:border-blue-400 transition-colors"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  >
+                    <span className="truncate flex items-center gap-3">
+                      {(() => {
+                        const sel = properties.find(p => p.id === formData.propertyId);
+                        if (!sel) return "Ninguna";
+                        let src = null;
+                        try {
+                          const imgs = typeof sel.images === 'string' ? JSON.parse(sel.images) : sel.images;
+                          if (imgs && imgs.length > 0) {
+                            if (imgs[0].startsWith('http')) {
+                              if (imgs[0].includes('drive.google.com') && (imgs[0].includes('/preview') || imgs[0].includes('/view'))) {
+                                const fileId = imgs[0].match(/\/d\/(.+?)\/(?:preview|view)/)?.[1];
+                                src = fileId ? `/api/drive/image/${fileId}` : imgs[0];
+                              } else {
+                                src = imgs[0];
+                              }
+                            } else if (imgs[0].startsWith('data:image')) {
+                              src = imgs[0];
+                            } else {
+                              src = `data:image/jpeg;base64,${imgs[0]}`;
+                            }
+                          }
+                        } catch(e) {}
+                        return (
+                          <>
+                            {src && <img src={src} className="w-6 h-6 rounded object-cover" />}
+                            {sel.title}
+                          </>
+                        );
+                      })()}
+                    </span>
+                    <ChevronDown size={16} className="text-slate-400" />
+                  </div>
+                  
+                  {isDropdownOpen && (
+                    <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                      <div 
+                        className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer text-sm font-medium transition-colors"
+                        onClick={() => { setFormData(prev => ({...prev, propertyId: ''})); setIsDropdownOpen(false); }}
+                      >
+                        Ninguna
+                      </div>
+                      {properties.map(p => {
+                        let src = null;
+                        try {
+                          const imgs = typeof p.images === 'string' ? JSON.parse(p.images) : p.images;
+                          if (imgs && imgs.length > 0) {
+                            if (imgs[0].startsWith('http')) {
+                              if (imgs[0].includes('drive.google.com') && (imgs[0].includes('/preview') || imgs[0].includes('/view'))) {
+                                const fileId = imgs[0].match(/\/d\/(.+?)\/(?:preview|view)/)?.[1];
+                                src = fileId ? `/api/drive/image/${fileId}` : imgs[0];
+                              } else {
+                                src = imgs[0];
+                              }
+                            } else if (imgs[0].startsWith('data:image')) {
+                              src = imgs[0];
+                            } else {
+                              src = `data:image/jpeg;base64,${imgs[0]}`;
+                            }
+                          }
+                        } catch(e) {}
+                        
+                        return (
+                          <div 
+                            key={p.id} 
+                            className={`px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-3 border-t border-border transition-colors ${formData.propertyId === p.id ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
+                            onClick={() => { setFormData(prev => ({...prev, propertyId: p.id})); setIsDropdownOpen(false); }}
+                          >
+                            {src ? (
+                              <div className="w-12 h-12 rounded-md overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-sm">
+                                <img src={src} alt="" className="w-full h-full object-cover" />
+                              </div>
+                            ) : (
+                              <div className="w-12 h-12 rounded-md bg-slate-100 dark:bg-slate-800 shrink-0 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                                <Building size={16} className="text-slate-400" />
+                              </div>
+                            )}
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-slate-800 dark:text-slate-200">{p.title}</span>
+                              <span className="text-xs text-slate-500">ID: {p.id.slice(-6)}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Zonas de Interés (Solo Compradores) */}
-              {!isPropietario && (
+              {isPropietario && (
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2"><MapPin size={16} /> Zonas de Interés</label>
-                  <input type="text" name="targetLocations" value={formData.targetLocations} onChange={handleChange} placeholder="Norte de la ciudad, Centro, etc." className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2"><MapPin size={16} /> Ubicación de la Propiedad</label>
+                  <input type="text" name="targetLocations" value={formData.targetLocations} onChange={handleChange} placeholder="Dirección o Zona..." className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
               )}
 
@@ -274,6 +402,93 @@ function NuevoProspectoForm() {
               )}
             </div>
           </section>
+
+          {!isPropietario && (
+            <>
+              <hr className="border-border" />
+              <section>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                  <Target size={18} className="text-blue-500" />
+                  Datos de lo que busca
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Presupuesto / Precio */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Presupuesto Estimado</label>
+                    <div className="flex gap-2">
+                      <select name="currency" value={formData.currency} onChange={handleChange} className="w-1/4 bg-background border border-border rounded-lg px-2 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="ILS">₪</option>
+                        <option value="USD">$</option>
+                        <option value="EUR">€</option>
+                        <option value="MXN">MX$</option>
+                      </select>
+                      <input type="number" name="budget" value={formData.budget} onChange={handleChange} placeholder="Ej. 1500000" min="0" step="1000" className="w-3/4 bg-background border border-border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" />
+                    </div>
+                  </div>
+
+                  {/* Tipo de propiedad */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Tipo de Propiedad Deseada</label>
+                    <select name="propertyTypeOfInterest" value={formData.propertyTypeOfInterest} onChange={handleChange} className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none appearance-none">
+                      <option value="">Cualquiera...</option>
+                      <option value="Departamento">Departamento</option>
+                      <option value="Casa">Casa</option>
+                      <option value="Terreno">Terreno</option>
+                      <option value="Oficina">Oficina</option>
+                      <option value="Local Comercial">Local Comercial</option>
+                      <option value="Otro">Otro</option>
+                    </select>
+                  </div>
+
+                  {/* Zonas de Interés */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2"><MapPin size={16} /> Zonas de Interés</label>
+                    <input type="text" name="targetLocations" value={formData.targetLocations} onChange={handleChange} placeholder="Norte de la ciudad, Centro, etc." className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" />
+                  </div>
+
+                  {/* Metros Cuadrados */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2"><Maximize size={16} /> Metros Cuadrados (m²)</label>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <span className="text-xs text-slate-500 mb-1 block">Esperados</span>
+                        <input type="number" name="targetArea" value={formData.targetArea} onChange={handleChange} placeholder="Ej. 100" min="0" className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" />
+                      </div>
+                      <div>
+                        <span className="text-xs text-slate-500 mb-1 block">Mínimo</span>
+                        <input type="number" name="minArea" value={formData.minArea} onChange={handleChange} placeholder="Ej. 80" min="0" className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" />
+                      </div>
+                      <div>
+                        <span className="text-xs text-slate-500 mb-1 block">Máximo</span>
+                        <input type="number" name="maxArea" value={formData.maxArea} onChange={handleChange} placeholder="Ej. 120" min="0" className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Fecha y Personas */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2"><Calendar size={16} /> {isInquilino ? 'Inicio de Contrato' : 'Fecha de Mudanza'}</label>
+                    <input type="date" name="moveInDate" value={formData.moveInDate} onChange={handleChange} className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2"><Users size={16} /> Número de Personas</label>
+                    <input type="number" name="numberOfPeople" value={formData.numberOfPeople} onChange={handleChange} placeholder="Ej. 2" min="1" className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" />
+                  </div>
+
+                  {/* Mascotas */}
+                  {isInquilino && (
+                    <div className="md:col-span-2">
+                      <label className="flex items-center gap-3 p-4 border border-border rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <input name="petFriendly" type="checkbox" checked={formData.petFriendly} onChange={handleChange} className="w-5 h-5 border-slate-300 rounded text-blue-600 focus:ring-blue-500" />
+                        <span className="text-sm font-medium text-slate-900 dark:text-white flex items-center gap-2"><PawPrint size={16} className="text-slate-500" /> Tiene Mascotas / Requiere Pet Friendly</span>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </section>
+            </>
+          )}
 
           <hr className="border-border" />
 
