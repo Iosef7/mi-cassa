@@ -50,6 +50,23 @@ async function connectToWhatsApp(sessionId) {
 
     const folderPath = path.join(__dirname, `auth_info_baileys_${sessionId}`);
     const { state, saveCreds } = await useMultiFileAuthState(folderPath);
+    
+    const contactsPath = path.join(folderPath, 'contacts.json');
+    if (fs.existsSync(contactsPath)) {
+        try {
+            sessionData.contacts = JSON.parse(fs.readFileSync(contactsPath));
+        } catch(e) {
+            console.error(`Error loading contacts for ${sessionId}`, e);
+        }
+    }
+
+    const saveContacts = () => {
+        try {
+            fs.writeFileSync(contactsPath, JSON.stringify(sessionData.contacts));
+        } catch(e) {
+            console.error(`Error saving contacts for ${sessionId}`, e);
+        }
+    };
 
     const sock = makeWASocket({
         auth: state,
@@ -59,20 +76,39 @@ async function connectToWhatsApp(sessionId) {
 
     sessionData.sock = sock;
 
+    sock.ev.on('messaging-history.set', ({ contacts }) => {
+        let changed = false;
+        if (contacts) {
+            for (const contact of contacts) {
+                if (contact.id && contact.id.endsWith('@s.whatsapp.net') && !sessionData.contacts.includes(contact.id)) {
+                    sessionData.contacts.push(contact.id);
+                    changed = true;
+                }
+            }
+        }
+        if (changed) saveContacts();
+    });
+
     sock.ev.on('contacts.upsert', (contacts) => {
+        let changed = false;
         for (const contact of contacts) {
             if (contact.id && contact.id.endsWith('@s.whatsapp.net') && !sessionData.contacts.includes(contact.id)) {
                 sessionData.contacts.push(contact.id);
+                changed = true;
             }
         }
+        if (changed) saveContacts();
     });
     
     sock.ev.on('contacts.update', (contacts) => {
+        let changed = false;
         for (const contact of contacts) {
             if (contact.id && contact.id.endsWith('@s.whatsapp.net') && !sessionData.contacts.includes(contact.id)) {
                 sessionData.contacts.push(contact.id);
+                changed = true;
             }
         }
+        if (changed) saveContacts();
     });
 
     sock.ev.on('connection.update', async (update) => {
@@ -222,7 +258,7 @@ app.put('/session/:sessionId/rename', async (req, res) => {
 // Endpoint to send status to multiple sessions
 app.post('/status', async (req, res) => {
     try {
-        const { caption, imageBase64, sessionIds } = req.body;
+        const { caption, imageBase64, videoBase64, sessionIds } = req.body;
         
         let targetSessions = [];
         
@@ -242,14 +278,18 @@ app.post('/status', async (req, res) => {
             return res.status(400).json({ error: 'No connected WhatsApp sessions available to send status.' });
         }
 
-        if (!imageBase64 && !caption) {
-            return res.status(400).json({ error: 'Either imageBase64 or caption must be provided.' });
+        if (!imageBase64 && !videoBase64 && !caption) {
+            return res.status(400).json({ error: 'Either imageBase64, videoBase64 or caption must be provided.' });
         }
 
-        let base64Data, buffer;
+        let base64Data, buffer, isVideo = false;
         if (imageBase64) {
             base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
             buffer = Buffer.from(base64Data, 'base64');
+        } else if (videoBase64) {
+            base64Data = videoBase64.replace(/^data:video\/\w+;base64,/, "");
+            buffer = Buffer.from(base64Data, 'base64');
+            isVideo = true;
         }
 
         let successCount = 0;
@@ -262,10 +302,11 @@ app.post('/status', async (req, res) => {
                 if (!contacts.includes(myJid)) contacts.push(myJid);
                 
                 if (buffer) {
-                    await session.sock.sendMessage('status@broadcast', {
-                        image: buffer,
-                        caption: caption || ''
-                    }, {
+                    const messageContent = isVideo 
+                        ? { video: buffer, caption: caption || '' }
+                        : { image: buffer, caption: caption || '' };
+                        
+                    await session.sock.sendMessage('status@broadcast', messageContent, {
                         statusJidList: contacts,
                         broadcast: true,
                         backgroundColor: '#000000'

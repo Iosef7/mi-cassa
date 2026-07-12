@@ -352,6 +352,8 @@ model WhatsappStatus {
   publishAt   DateTime? // When it should be uploaded (null means immediate)
   publishedAt DateTime? // When it was actually uploaded
   errorMessage String?
+  recurringInterval String? // "DAILY", "WEEKLY", etc
+  sessionIds  String?  // JSON array of session IDs
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

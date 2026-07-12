@@ -80,12 +80,13 @@ export async function sendUltramsgStatuses(mediaUrls: string[], caption: string,
       throw e;
     }
   } else {
-    // Múltiples imágenes
+    // Múltiples medios (imágenes o videos)
     for (let i = 0; i < mediaUrls.length; i++) {
       let url = mediaUrls[i];
-      let imagePayload = url;
+      let mediaPayload = url;
+      let isVideo = false;
       
-      // Convertimos a base64 porque el bot necesita el buffer de la imagen
+      // Convertimos a base64 porque el bot necesita el buffer de la imagen/video
       if (url.startsWith("/uploads/")) {
         const fs = require('fs');
         const path = require('path');
@@ -93,30 +94,32 @@ export async function sendUltramsgStatuses(mediaUrls: string[], caption: string,
           const localPath = path.join(process.cwd(), 'public', url);
           const bitmap = fs.readFileSync(localPath);
           const ext = path.extname(localPath).toLowerCase().substring(1) || 'jpeg';
-          imagePayload = `data:image/${ext};base64,` + bitmap.toString('base64');
+          isVideo = ['mp4', 'webm', 'ogg', 'mov'].includes(ext);
+          const mimeType = isVideo ? (ext === 'mov' ? 'video/quicktime' : `video/${ext}`) : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+          mediaPayload = `data:${mimeType};base64,` + bitmap.toString('base64');
         } catch (e) {
           console.error("No se pudo leer el archivo local:", e);
         }
       } else {
-        // Si es una URL pública en producción, la descargamos y convertimos a base64
+        // Si es una URL pública en producción
         try {
           const res = await fetch(url.startsWith("http") ? url : `${baseUrl}${url}`);
+          const contentType = res.headers.get('content-type') || 'image/jpeg';
+          isVideo = contentType.startsWith('video/');
           const arrayBuffer = await res.arrayBuffer();
           const buffer = Buffer.from(arrayBuffer);
-          imagePayload = `data:image/jpeg;base64,` + buffer.toString('base64');
+          mediaPayload = `data:${contentType};base64,` + buffer.toString('base64');
         } catch (e) {
-          console.error("Error descargando imagen remota:", e);
+          console.error("Error descargando imagen/video remota:", e);
         }
       }
 
       try {
-        const payload: any = {
-          imageBase64: imagePayload
-        };
+        const payload: any = isVideo ? { videoBase64: mediaPayload } : { imageBase64: mediaPayload };
         if (sessionIds && sessionIds.length > 0) {
           payload.sessionIds = sessionIds;
         }
-        // Agregar caption solo a la primera imagen
+        // Agregar caption solo al primer archivo
         if (i === 0 && caption) {
           payload.caption = caption;
         }
@@ -133,7 +136,7 @@ export async function sendUltramsgStatuses(mediaUrls: string[], caption: string,
         // Pequeño delay entre envíos para asegurar el orden
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (e) {
-        console.error("Bot error image:", e);
+        console.error("Bot error media:", e);
         throw e;
       }
     }

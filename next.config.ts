@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   typescript: {
     ignoreBuildErrors: true,
   },
   images: {
+    minimumCacheTTL: 86400, // 24 hours to reduce image optimization memory spikes
     remotePatterns: [
       {
         protocol: 'https',

@@ -35,7 +35,7 @@ export default function WhatsAppStatusPage() {
 
   // Form state
   const [files, setFiles] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
+  const [previews, setPreviews] = useState<{url: string, type: string}[]>([]);
   const [caption, setCaption] = useState("");
   const [dateStr, setDateStr] = useState("");
   const [timeStr, setTimeStr] = useState("");
@@ -92,9 +92,14 @@ export default function WhatsAppStatusPage() {
     const selectedFiles = Array.from(e.target.files || []);
     if (selectedFiles.length > 0) {
       setFiles(prev => [...prev, ...selectedFiles]);
-      const urls = selectedFiles.map(file => URL.createObjectURL(file));
-      setPreviews(prev => [...prev, ...urls]);
+      const newPreviews = selectedFiles.map(file => ({
+        url: URL.createObjectURL(file),
+        type: file.type || ""
+      }));
+      setPreviews(prev => [...prev, ...newPreviews]);
     }
+    // Limpiar el input para permitir seleccionar el mismo archivo de nuevo
+    e.target.value = "";
   };
 
   const removeFile = (index: number) => {
@@ -462,15 +467,19 @@ export default function WhatsAppStatusPage() {
                 )}
               </div>
 
-              {/* Imágenes */}
+              {/* Imágenes y Videos */}
               <div>
-                <label className="block text-sm font-medium mb-2">Imágenes (Opcional)</label>
+                <label className="block text-sm font-medium mb-2">Imágenes o Videos (Opcional)</label>
                 
                 {previews.length > 0 && (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 mb-4">
                     {previews.map((prev, index) => (
-                      <div key={index} className="relative w-full aspect-[9/16] rounded-lg overflow-hidden shadow-md border border-neutral-200">
-                        <img src={prev} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                      <div key={index} className="relative w-full aspect-[9/16] rounded-lg overflow-hidden shadow-md border border-neutral-200 bg-black">
+                        {prev?.type?.startsWith('video/') ? (
+                          <video src={prev.url} className="w-full h-full object-cover" controls={false} />
+                        ) : (
+                          <img src={prev.url} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                        )}
                         <button 
                           type="button" 
                           onClick={(e) => { e.preventDefault(); removeFile(index); }}
@@ -486,12 +495,12 @@ export default function WhatsAppStatusPage() {
                 <div className="border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors relative">
                   <ImageIcon className="w-8 h-8 text-neutral-400 mb-2" />
                   <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                    Haz clic o arrastra para añadir {previews.length > 0 ? "más imágenes" : "imágenes"}
+                    Haz clic o arrastra para añadir {previews.length > 0 ? "más imágenes o videos" : "imágenes o videos"}
                   </p>
                   <input 
                     type="file" 
                     multiple
-                    accept="image/*" 
+                    accept="image/*,video/*" 
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     onChange={handleImageChange}
                   />
@@ -587,10 +596,15 @@ export default function WhatsAppStatusPage() {
                            const urls = JSON.parse(status.mediaUrls);
                            if (urls && urls.length > 0) imgUrl = urls[0];
                          } catch (e) {}
+                         const isVideo = imgUrl && imgUrl.match(/\.(mp4|webm|ogg|mov)$/i);
                          return imgUrl ? (
-                           <img src={imgUrl} alt="Preview" className="w-full h-full object-cover" />
+                           isVideo ? (
+                             <video src={imgUrl} className="w-full h-full object-cover" controls={false} />
+                           ) : (
+                             <img src={imgUrl} alt="Preview" className="w-full h-full object-cover" />
+                           )
                          ) : (
-                           <div className="w-full h-full flex items-center justify-center text-neutral-400">
+                           <div className="w-full h-full flex items-center justify-center text-neutral-400 bg-neutral-100 dark:bg-neutral-800">
                              <ImageIcon className="w-6 h-6" />
                            </div>
                          );

@@ -17,16 +17,32 @@ export async function GET(req: NextRequest) {
   }
 }
 
+function getNextOccurrenceOfDay(dayOfWeek: number, timeStr: string): Date {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(hours, minutes, 0, 0);
+
+  if (now.getDay() === dayOfWeek) {
+    if (next <= now) {
+      next.setDate(next.getDate() + 7);
+    }
+  } else {
+    const diff = (dayOfWeek + 7 - now.getDay()) % 7;
+    next.setDate(next.getDate() + diff);
+  }
+  return next;
+}
+
 // POST: Programar o enviar un nuevo estado
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     
-    // getAll para obtener múltiples archivos
     const files = formData.getAll("files") as File[];
     const caption = formData.get("caption") as string | null;
-    const publishAtStr = formData.get("publishAt") as string | null;
     const sessionIdsStr = formData.get("sessionIds") as string | null;
+    const scheduleType = formData.get("scheduleType") as string | null || "now";
 
     let sessionIds: string[] | undefined = undefined;
     if (sessionIdsStr) {
@@ -37,19 +53,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    let publishAt: Date | null = null;
-    if (publishAtStr && publishAtStr !== "now") {
-      publishAt = new Date(publishAtStr);
-    }
-
     const mediaUrls: string[] = [];
     const uploadDir = path.join(process.cwd(), "public", "uploads", "whatsapp");
     
     try {
       await mkdir(uploadDir, { recursive: true });
-    } catch (e) {
-      // Ignorar si existe
-    }
+    } catch (e) {}
 
     // Guardar todos los archivos
     for (const file of files) {
@@ -60,17 +69,17 @@ export async function POST(req: NextRequest) {
         const filename = `status_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
         const filepath = path.join(uploadDir, filename);
         await writeFile(filepath, buffer);
-        
         mediaUrls.push(`/uploads/whatsapp/${filename}`);
       }
     }
 
-    // Si es "ahora" (publishAt es null), intentamos enviar inmediatamente
-    let finalStatus = "SCHEDULED";
-    let publishedAt: Date | null = null;
-    let errorMessage = null;
+    // Preparar registros a crear
+    const recordsToCreate: any[] = [];
     
-    if (!publishAt) {
+    if (scheduleType === "now") {
+      let finalStatus = "SCHEDULED";
+      let publishedAt: Date | null = null;
+      let errorMessage = null;
       try {
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
         await sendUltramsgStatuses(mediaUrls, caption || "", baseUrl, sessionIds);
@@ -81,20 +90,65 @@ export async function POST(req: NextRequest) {
         finalStatus = "FAILED";
         errorMessage = err.message || String(err);
       }
-    }
-
-    const status = await prisma.whatsappStatus.create({
-      data: {
+      recordsToCreate.push({
         mediaUrls: JSON.stringify(mediaUrls),
         caption: caption || "",
-        publishAt: publishAt,
+        publishAt: null,
         status: finalStatus,
         publishedAt: publishedAt,
-        errorMessage: errorMessage
+        errorMessage: errorMessage,
+        sessionIds: sessionIds ? JSON.stringify(sessionIds) : null
+      });
+    } else if (scheduleType === "once") {
+      const dateStr = formData.get("dateStr") as string;
+      const timeStr = formData.get("timeStr") as string;
+      const publishAt = new Date(`${dateStr}T${timeStr}`);
+      recordsToCreate.push({
+        mediaUrls: JSON.stringify(mediaUrls),
+        caption: caption || "",
+        publishAt,
+        status: "SCHEDULED",
+        sessionIds: sessionIds ? JSON.stringify(sessionIds) : null
+      });
+    } else if (scheduleType === "multiple") {
+      const schedulesStr = formData.get("schedules") as string;
+      if (schedulesStr) {
+        const schedules = JSON.parse(schedulesStr);
+        for (const sch of schedules) {
+          recordsToCreate.push({
+            mediaUrls: JSON.stringify(mediaUrls),
+            caption: caption || "",
+            publishAt: new Date(`${sch.date}T${sch.time}`),
+            status: "SCHEDULED",
+            sessionIds: sessionIds ? JSON.stringify(sessionIds) : null
+          });
+        }
       }
-    });
+    } else if (scheduleType === "recurring") {
+      const weeklyStr = formData.get("weeklySchedule") as string;
+      if (weeklyStr) {
+        const weekly = JSON.parse(weeklyStr);
+        for (const w of weekly) {
+          const publishAt = getNextOccurrenceOfDay(w.dayOfWeek, w.time);
+          recordsToCreate.push({
+            mediaUrls: JSON.stringify(mediaUrls),
+            caption: caption || "",
+            publishAt,
+            status: "SCHEDULED",
+            recurringInterval: "WEEKLY",
+            sessionIds: sessionIds ? JSON.stringify(sessionIds) : null
+          });
+        }
+      }
+    }
 
-    return NextResponse.json(status);
+    const created = [];
+    for (const data of recordsToCreate) {
+      const status = await prisma.whatsappStatus.create({ data });
+      created.push(status);
+    }
+
+    return NextResponse.json(created.length === 1 ? created[0] : created);
   } catch (error) {
     console.error("Error scheduling status:", error);
     return NextResponse.json({ error: "Failed to schedule status", details: error instanceof Error ? error.message : String(error) }, { status: 500 });
