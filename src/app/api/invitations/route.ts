@@ -70,9 +70,23 @@ export async function POST(request: Request) {
       };
 
       // Enviar el correo en segundo plano para no demorar la respuesta en la interfaz
-      transporter.sendMail(mailOptions).catch((err: any) => {
-        console.error("Error sending invitation email:", err);
-      });
+      // Utilizando after() de next/server aseguramos que Vercel (o el entorno serverless) no mate el proceso antes de enviar
+      try {
+        const { after } = require('next/server');
+        if (typeof after === 'function') {
+          after(async () => {
+            try {
+              await transporter.sendMail(mailOptions);
+            } catch (err: any) {
+              console.error("Error sending invitation email:", err);
+            }
+          });
+        } else {
+          transporter.sendMail(mailOptions).catch((err: any) => console.error("Error sending invitation email:", err));
+        }
+      } catch (e) {
+        transporter.sendMail(mailOptions).catch((err: any) => console.error("Error sending invitation email:", err));
+      }
     }
 
     return NextResponse.json({ token: invitation.token });
