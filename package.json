@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "concurrently \"next dev\" \"npm start --prefix whatsapp-bot\"",
     "build": "prisma generate && next build",
-    "start": "next start",
+    "start": "concurrently \"next start\" \"npm start --prefix whatsapp-bot\"",
     "lint": "eslint"
   },
   "dependencies": {
