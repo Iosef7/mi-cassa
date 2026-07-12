@@ -69,12 +69,10 @@ export async function POST(request: Request) {
         `,
       };
 
-      try {
-        await transporter.sendMail(mailOptions);
-      } catch (err: any) {
+      // Enviar el correo en segundo plano para no demorar la respuesta en la interfaz
+      transporter.sendMail(mailOptions).catch((err: any) => {
         console.error("Error sending invitation email:", err);
-        return NextResponse.json({ error: "Error al enviar el correo: " + err.message }, { status: 500 });
-      }
+      });
     }
 
     return NextResponse.json({ token: invitation.token });
