@@ -39,7 +39,12 @@ export default function WhatsAppStatusPage() {
   const [caption, setCaption] = useState("");
   const [dateStr, setDateStr] = useState("");
   const [timeStr, setTimeStr] = useState("");
-  const [sendNow, setSendNow] = useState(true);
+  
+  type ScheduleType = "now" | "once" | "multiple" | "recurring";
+  const [scheduleType, setScheduleType] = useState<ScheduleType>("now");
+  const [multipleSchedules, setMultipleSchedules] = useState<{date: string, time: string}[]>([{ date: "", time: "" }]);
+  const [weeklySchedule, setWeeklySchedule] = useState<{dayOfWeek: number, time: string}[]>([]);
+  const daysOfWeek = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
   
   // Selection
   const [sendToAll, setSendToAll] = useState(true);
@@ -114,21 +119,28 @@ export default function WhatsAppStatusPage() {
   };
 
   const handleSubmit = async () => {
-    if (!sendNow && (!dateStr || !timeStr)) {
-      toast.error("Debes seleccionar fecha y hora de publicación o marcar Enviar Ahora.");
-      return;
-    }
-
     if (!sendToAll && selectedSessions.length === 0) {
       toast.error("Debes seleccionar al menos un teléfono para enviar.");
       return;
     }
 
-    let publishAt = new Date();
-    if (!sendNow) {
-      publishAt = new Date(`${dateStr}T${timeStr}`);
-      if (publishAt <= new Date()) {
-        toast.error("La fecha y hora debe ser en el futuro.");
+    if (scheduleType === "once" && (!dateStr || !timeStr)) {
+      toast.error("Selecciona fecha y hora.");
+      return;
+    }
+
+    if (scheduleType === "multiple") {
+      const valid = multipleSchedules.filter(s => s.date && s.time);
+      if (valid.length === 0) {
+        toast.error("Añade al menos una fecha y hora válida.");
+        return;
+      }
+    }
+
+    if (scheduleType === "recurring") {
+      const valid = weeklySchedule.filter(w => w.time);
+      if (valid.length === 0) {
+        toast.error("Selecciona al menos un día y hora.");
         return;
       }
     }
@@ -143,10 +155,17 @@ export default function WhatsAppStatusPage() {
         formData.append("sessionIds", JSON.stringify(selectedSessions));
       }
       
-      if (sendNow) {
-        formData.append("publishAt", "now");
-      } else {
-        formData.append("publishAt", publishAt.toISOString());
+      formData.append("scheduleType", scheduleType);
+
+      if (scheduleType === "once") {
+        formData.append("dateStr", dateStr);
+        formData.append("timeStr", timeStr);
+      } else if (scheduleType === "multiple") {
+        const valid = multipleSchedules.filter(s => s.date && s.time);
+        formData.append("schedules", JSON.stringify(valid));
+      } else if (scheduleType === "recurring") {
+        const valid = weeklySchedule.filter(w => w.time);
+        formData.append("weeklySchedule", JSON.stringify(valid));
       }
 
       const res = await fetch("/api/whatsapp/status", {
@@ -155,12 +174,14 @@ export default function WhatsAppStatusPage() {
       });
 
       if (res.ok) {
-        toast.success(sendNow ? "Estado enviado con éxito." : "Estado programado con éxito.");
+        toast.success(scheduleType === "now" ? "Estado enviado con éxito." : "Estado programado con éxito.");
         setFiles([]);
         setPreviews([]);
         setCaption("");
         setDateStr("");
         setTimeStr("");
+        setMultipleSchedules([{ date: "", time: "" }]);
+        setWeeklySchedule([]);
         fetchStatuses();
       } else {
         const errorData = await res.json();
@@ -518,22 +539,23 @@ export default function WhatsAppStatusPage() {
                 ></textarea>
               </div>
 
-              {/* Enviar Ahora Toggle */}
-              <div className="flex items-center gap-3 bg-neutral-50 dark:bg-neutral-800/30 p-3 rounded-lg border border-neutral-100 dark:border-neutral-800">
-                <input
-                  type="checkbox"
-                  id="sendNow"
-                  checked={sendNow}
-                  onChange={(e) => setSendNow(e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-600 cursor-pointer"
-                />
-                <label htmlFor="sendNow" className="text-sm font-medium cursor-pointer flex-1">
-                  Enviar inmediatamente
-                </label>
+              {/* Tipo de Programación */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Cuándo enviar</label>
+                <select 
+                  value={scheduleType} 
+                  onChange={(e) => setScheduleType(e.target.value as any)}
+                  className="w-full p-3 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:ring-2 focus:ring-green-500 outline-none"
+                >
+                  <option value="now">Enviar inmediatamente</option>
+                  <option value="once">Programar una fecha y hora única</option>
+                  <option value="multiple">Programar varias fechas específicas</option>
+                  <option value="recurring">Programación semanal recurrente</option>
+                </select>
               </div>
 
-              {/* Fecha y Hora (Condicional) */}
-              {!sendNow && (
+              {/* Fecha y Hora Única */}
+              {scheduleType === "once" && (
                 <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
                   <div>
                     <label className="block text-sm font-medium mb-2 flex items-center gap-1">
@@ -560,6 +582,65 @@ export default function WhatsAppStatusPage() {
                 </div>
               )}
 
+              {/* Varias Fechas */}
+              {scheduleType === "multiple" && (
+                <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-300">
+                  {multipleSchedules.map((item, index) => (
+                    <div key={index} className="flex items-end gap-3">
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium mb-1">Fecha {index + 1}</label>
+                        <input type="date" value={item.date} onChange={e => {
+                          const newScheds = [...multipleSchedules];
+                          newScheds[index].date = e.target.value;
+                          setMultipleSchedules(newScheds);
+                        }} className="w-full p-2 rounded-md border border-neutral-200 dark:border-neutral-700 bg-transparent" />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium mb-1">Hora {index + 1}</label>
+                        <input type="time" value={item.time} onChange={e => {
+                          const newScheds = [...multipleSchedules];
+                          newScheds[index].time = e.target.value;
+                          setMultipleSchedules(newScheds);
+                        }} className="w-full p-2 rounded-md border border-neutral-200 dark:border-neutral-700 bg-transparent" />
+                      </div>
+                      {multipleSchedules.length > 1 && (
+                        <button type="button" onClick={() => setMultipleSchedules(multipleSchedules.filter((_, i) => i !== index))} className="p-2 mb-0.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setMultipleSchedules([...multipleSchedules, {date: "", time: ""}])} className="text-sm text-green-600 font-medium flex items-center gap-1 hover:text-green-700">
+                    <Plus className="w-4 h-4" /> Añadir otro día
+                  </button>
+                </div>
+              )}
+
+              {/* Recurrencia Semanal */}
+              {scheduleType === "recurring" && (
+                <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-300">
+                  <p className="text-sm text-neutral-500">Selecciona los días de la semana y a qué hora quieres que se envíe.</p>
+                  {daysOfWeek.map((dayName, dayIndex) => {
+                    const isSelected = weeklySchedule.some(w => w.dayOfWeek === dayIndex);
+                    const selectedTime = weeklySchedule.find(w => w.dayOfWeek === dayIndex)?.time || "";
+                    return (
+                      <div key={dayIndex} className="flex items-center gap-3">
+                        <input type="checkbox" id={`day-${dayIndex}`} checked={isSelected} onChange={(e) => {
+                          if (e.target.checked) setWeeklySchedule([...weeklySchedule, { dayOfWeek: dayIndex, time: "10:00" }]);
+                          else setWeeklySchedule(weeklySchedule.filter(w => w.dayOfWeek !== dayIndex));
+                        }} className="w-4 h-4 text-green-600 rounded" />
+                        <label htmlFor={`day-${dayIndex}`} className="text-sm font-medium w-24 cursor-pointer">{dayName}</label>
+                        {isSelected && (
+                          <input type="time" value={selectedTime} onChange={e => {
+                            setWeeklySchedule(weeklySchedule.map(w => w.dayOfWeek === dayIndex ? { ...w, time: e.target.value } : w));
+                          }} className="p-1.5 text-sm rounded-md border border-neutral-200 dark:border-neutral-700 bg-transparent" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               <button 
                 type="button" 
                 onClick={handleSubmit}
@@ -567,7 +648,7 @@ export default function WhatsAppStatusPage() {
                 className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 shadow-sm"
               >
                 {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-                {sendNow ? "Enviar Estado Ahora" : "Guardar y Programar"}
+                {scheduleType === "now" ? "Enviar Estado Ahora" : "Guardar y Programar"}
               </button>
             </div>
           </div>

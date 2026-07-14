@@ -67,10 +67,11 @@ export async function PATCH(
         status: data.status,
         dealType: data.dealType,
         ownershipShare: data.ownershipShare !== undefined ? (data.ownershipShare === null ? null : parseFloat(data.ownershipShare)) : undefined,
-        estimatedCost: data.estimatedCost !== undefined ? data.estimatedCost : undefined,
-        expectedRevenue: data.expectedRevenue !== undefined ? data.expectedRevenue : undefined,
+        estimatedCost: data.estimatedCost !== undefined ? (data.estimatedCost === null ? null : parseFloat(data.estimatedCost)) : undefined,
+        expectedRevenue: data.expectedRevenue !== undefined ? (data.expectedRevenue === null ? null : parseFloat(data.expectedRevenue)) : undefined,
         driveFolderId: data.driveFolderId,
         attachments: data.attachments,
+        financialData: data.financialData !== undefined ? data.financialData : undefined,
         notes: data.notes,
       },
     });

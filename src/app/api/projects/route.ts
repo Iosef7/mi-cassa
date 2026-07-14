@@ -51,9 +51,9 @@ export async function POST(req: Request) {
         dealType: data.dealType,
         ownershipShare: data.ownershipShare ? parseFloat(data.ownershipShare) : null,
         estimatedCost: data.estimatedCost || null,
-        expectedRevenue: data.expectedRevenue || null,
+        expectedRevenue: data.expectedRevenue ? parseFloat(data.expectedRevenue) : null,
         driveFolderId: data.driveFolderId,
-        attachments: data.attachments,
+        attachments: data.attachments, // Ahora pasaremos el JSON stringificado aquí
         notes: data.notes,
       },
     });

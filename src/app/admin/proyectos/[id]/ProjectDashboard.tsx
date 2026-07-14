@@ -180,7 +180,7 @@ export default function ProjectDashboard({ projectId, userRole }: { projectId: s
         )}
 
         {/* FINANZAS */}
-        {(activeTab === "finanzas" || typeof window !== 'undefined' && window.matchMedia('print').matches) && (
+        {(activeTab === "finanzas") && (
           <div className="space-y-6 animate-in fade-in">
              <h3 className="text-xl font-semibold mb-4 print:hidden">Simulador de Rentabilidad & Finanzas</h3>
              <ProjectSimulator initialData={project} />

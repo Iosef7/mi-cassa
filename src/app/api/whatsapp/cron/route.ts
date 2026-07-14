@@ -49,7 +49,16 @@ export async function GET(request: Request) {
           console.error("Error parsing mediaUrls:", e);
         }
 
-        const data = await sendUltramsgStatuses(mediaUrls, status.caption || "", baseUrl);
+        let sessionIds: string[] | undefined = undefined;
+        try {
+          if (status.sessionIds) {
+            sessionIds = JSON.parse(status.sessionIds);
+          }
+        } catch (e) {
+          console.error("Error parsing sessionIds:", e);
+        }
+
+        const data = await sendUltramsgStatuses(mediaUrls, status.caption || "", baseUrl, sessionIds);
         
         // Actualizar estado a publicado
         await prisma.whatsappStatus.update({
@@ -58,8 +67,30 @@ export async function GET(request: Request) {
               status: "PUBLISHED",
               publishedAt: new Date()
             }
-          });
-          results.push({ id: status.id, success: true, data });
+        });
+
+        // Clonar si es recurrente
+        if (status.recurringInterval && status.publishAt) {
+            const nextPublish = new Date(status.publishAt);
+            if (status.recurringInterval === "DAILY") {
+                nextPublish.setDate(nextPublish.getDate() + 1);
+            } else if (status.recurringInterval === "WEEKLY") {
+                nextPublish.setDate(nextPublish.getDate() + 7);
+            }
+            
+            await prisma.whatsappStatus.create({
+                data: {
+                    mediaUrls: status.mediaUrls,
+                    caption: status.caption,
+                    status: "SCHEDULED",
+                    publishAt: nextPublish,
+                    recurringInterval: status.recurringInterval,
+                    sessionIds: status.sessionIds
+                }
+            });
+        }
+
+        results.push({ id: status.id, success: true, data });
       } catch (err: any) {
         console.error(`Error publicando estado ${status.id}:`, err);
         await prisma.whatsappStatus.update({
