@@ -86,7 +86,6 @@ export default function ProjectSimulator({ initialData }: ProjectSimulatorProps)
     return {
       grossRevenue,
       baseConstructionCost,
-      totalConstruction,
       totalCosts,
       netProfit,
       roiPercentage,
