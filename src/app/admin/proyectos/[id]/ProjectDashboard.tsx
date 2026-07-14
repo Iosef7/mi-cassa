@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Building2, MapPin, Loader2, Calendar, FileText, CheckCircle2, LayoutDashboard, Calculator, Folder, FileSpreadsheet, Lock, Printer } from "lucide-react";
+import { ArrowLeft, Building2, MapPin, Loader2, Calendar, FileText, CheckCircle2, LayoutDashboard, Calculator, Folder, FileSpreadsheet, Lock, Printer, Upload, X } from "lucide-react";
+import { toast } from "sonner";
+import { GoogleDrivePicker } from "@/components/GoogleDrivePicker";
 import ProjectSimulator from "./ProjectSimulator";
 import ProjectTimeline from "./ProjectTimeline";
 
@@ -10,6 +12,8 @@ export default function ProjectDashboard({ projectId, userRole }: { projectId: s
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("resumen");
+  const [attachments, setAttachments] = useState<any>({ images: [], videos: [], presentations: [], legalDocs: [], posters: [] });
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     fetchProject();
@@ -21,11 +25,84 @@ export default function ProjectDashboard({ projectId, userRole }: { projectId: s
       if (res.ok) {
         const data = await res.json();
         setProject(data);
+        try {
+          const parsed = JSON.parse(data.attachments || "{}");
+          setAttachments({
+            images: parsed.images || [],
+            videos: parsed.videos || [],
+            presentations: parsed.presentations || [],
+            legalDocs: parsed.legalDocs || [],
+            posters: parsed.posters || []
+          });
+        } catch(e) {}
       }
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveAttachments = async (newAttachments: any) => {
+    try {
+      await fetch(`/api/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attachments: JSON.stringify(newAttachments) })
+      });
+      toast.success("Documentos actualizados");
+    } catch (e) {
+      console.error(e);
+      toast.error("Error al guardar documentos");
+    }
+  };
+
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    if (!project?.driveFolderId) {
+      toast.error("Este proyecto no tiene carpeta de Drive vinculada.");
+      return;
+    }
+    
+    setIsUploading(true);
+    try {
+      const uploadedUrls: string[] = [];
+      const token = localStorage.getItem('google_drive_token');
+      if (!token) {
+        toast.error("Inicia sesión con Google Drive primero (botón Desde Drive).");
+        setIsUploading(false);
+        return;
+      }
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('parentId', project.driveFolderId);
+        
+        const res = await fetch('/api/drive/upload', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: formData
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          uploadedUrls.push(`https://drive.google.com/file/d/${data.id}/preview`);
+        } else {
+          toast.error("Error al subir archivo");
+        }
+      }
+      
+      const newAtt = { ...attachments, presentations: [...attachments.presentations, ...uploadedUrls] };
+      setAttachments(newAtt);
+      await saveAttachments(newAtt);
+      
+    } catch (err) {
+      console.error(err);
+      toast.error("Error al subir archivos.");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -207,10 +284,59 @@ export default function ProjectDashboard({ projectId, userRole }: { projectId: s
               </div>
             )}
              
-            <div className="mt-8 bg-background border border-dashed rounded-xl p-8 text-center text-muted-foreground">
-                <p className="font-medium text-foreground">Sistema de subida de archivos locales en desarrollo.</p>
-                <p className="text-sm mt-2">Próximamente podrás arrastrar PDFs y Excels directamente aquí.</p>
+            <div className="mt-8">
+              <h4 className="font-semibold mb-4">Subir Nuevos Documentos</h4>
+              <div 
+                className="w-full h-32 border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center bg-muted/20 hover:bg-muted/50 transition-colors cursor-pointer relative"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleFileUpload(e.dataTransfer.files);
+                }}
+              >
+                <input type="file" multiple className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e.target.files)} />
+                {isUploading ? (
+                  <Loader2 className="w-8 h-8 text-primary mb-2 animate-spin" />
+                ) : (
+                  <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                )}
+                <p className="text-sm font-medium">Haz clic o arrastra PDFs/Excels aquí</p>
+              </div>
+              
+              <div className="mt-4 flex justify-center">
+                <GoogleDrivePicker onFileSelect={async (url) => {
+                  const newAtt = { ...attachments, presentations: [...attachments.presentations, url] };
+                  setAttachments(newAtt);
+                  await saveAttachments(newAtt);
+                }} />
+              </div>
             </div>
+
+            {attachments.presentations?.length > 0 && (
+              <div className="mt-8">
+                <h4 className="font-semibold mb-4">Archivos del Proyecto</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {attachments.presentations.map((url: string, i: number) => (
+                    <div key={i} className="relative group rounded-xl overflow-hidden border border-border shadow-sm h-32 bg-muted/20 flex flex-col">
+                      <button 
+                        onClick={async () => {
+                          const newAtt = { ...attachments, presentations: attachments.presentations.filter((_: any, idx: number) => idx !== i) };
+                          setAttachments(newAtt);
+                          await saveAttachments(newAtt);
+                        }} 
+                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <a href={url} target="_blank" rel="noreferrer" className="flex-1 flex flex-col items-center justify-center p-4">
+                        <FileText className="w-8 h-8 text-primary mb-2" />
+                        <span className="text-xs text-center break-all text-muted-foreground line-clamp-2">Documento {i+1}</span>
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
