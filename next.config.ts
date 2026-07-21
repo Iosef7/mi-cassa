@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    unoptimized: true,
     minimumCacheTTL: 86400, // 24 hours to reduce image optimization memory spikes
     remotePatterns: [
       {

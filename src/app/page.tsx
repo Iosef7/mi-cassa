@@ -13,7 +13,7 @@ export default function PublicHomepage() {
             <div className="flex-shrink-0 flex items-center">
               <Link href="/">
                 <div className="relative w-48 h-16 cursor-pointer hover:opacity-90 transition flex items-center">
-                  <Image src="/images/logo.jpg" alt="MiCassa Logo" fill className="object-contain" priority />
+                  <Image src="/micassa-brand.png?v=1" alt="MiCassa Logo" fill className="object-contain" priority unoptimized />
                 </div>
               </Link>
             </div>

@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/auth';
+import { getToken } from 'next-auth/jwt';
 
 export async function GET(request: Request) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const token = await getToken({ req: request as any, secret: process.env.AUTH_SECRET || "mi_cassa_super_secret_fallback_2026", secureCookie: process.env.NODE_ENV === "production" });
+    if (!token?.id) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
+    const userId = token.id as string;
 
     const notifications = await prisma.notification.findMany({
-      where: { userId: session.user.id },
+      where: { userId: userId },
       orderBy: { createdAt: 'desc' },
       take: 20 // Fetch last 20 notifications
     });
@@ -24,10 +25,11 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const token = await getToken({ req: request as any, secret: process.env.AUTH_SECRET || "mi_cassa_super_secret_fallback_2026", secureCookie: process.env.NODE_ENV === "production" });
+    if (!token?.id) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
+    const userId = token.id as string;
 
     const body = await request.json();
     const { id } = body;
@@ -35,7 +37,7 @@ export async function PUT(request: Request) {
     if (!id) {
        // Mark all as read
        await prisma.notification.updateMany({
-         where: { userId: session.user.id, read: false },
+         where: { userId: userId, read: false },
          data: { read: true }
        });
        return NextResponse.json({ success: true });

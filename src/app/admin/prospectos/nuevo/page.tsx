@@ -3,6 +3,7 @@
 import { useState, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, Save, User, Phone, Mail, DollarSign, Building, AlertCircle, MapPin, Clock, HelpCircle, FileText, ChevronDown, Target, Maximize, Calendar, Users, PawPrint } from 'lucide-react';
 import { createLead } from '../actions';
 import { showToast } from '@/lib/alerts';
@@ -17,8 +18,10 @@ function NuevoProspectoForm() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const [properties, setProperties] = useState<{id: string, title: string, images: any}[]>([]);
+  const [users, setUsers] = useState<{id: string, name: string, role: string}[]>([]);
   useEffect(() => {
     fetch('/api/properties?limit=100').then(r => r.json()).then(data => setProperties(data));
+    fetch('/api/users').then(r => r.json()).then(data => setUsers(data));
   }, []);
 
   const [formData, setFormData] = useState({
@@ -50,6 +53,8 @@ function NuevoProspectoForm() {
     isLegalClear: true,
     hasMortgage: false,
     mandateType: '',
+    propertyId: '',
+    agentId: '',
     contactDate: new Date().toISOString().split('T')[0]
   });
 
@@ -269,7 +274,7 @@ function NuevoProspectoForm() {
                         } catch(e) {}
                         return (
                           <>
-                            {src && <img src={src} className="w-6 h-6 rounded object-cover" />}
+                            {src && <Image src={src} unoptimized={true} width={24} height={24} className="w-6 h-6 rounded object-cover" alt="Preview" />}
                             {sel.title}
                           </>
                         );
@@ -313,8 +318,8 @@ function NuevoProspectoForm() {
                             onClick={() => { setFormData(prev => ({...prev, propertyId: p.id})); setIsDropdownOpen(false); }}
                           >
                             {src ? (
-                              <div className="w-12 h-12 rounded-md overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-sm">
-                                <img src={src} alt="" className="w-full h-full object-cover" />
+                              <div className="w-12 h-12 rounded-md overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-sm relative">
+                                <Image src={src} alt="" fill unoptimized={true} className="object-cover" />
                               </div>
                             ) : (
                               <div className="w-12 h-12 rounded-md bg-slate-100 dark:bg-slate-800 shrink-0 flex items-center justify-center border border-slate-200 dark:border-slate-700">
@@ -331,6 +336,17 @@ function NuevoProspectoForm() {
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Asesor Asignado */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2"><User size={16} /> Asesor Asignado</label>
+                <select name="agentId" value={formData.agentId} onChange={handleChange} className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none appearance-none">
+                  <option value="">Sin asignar</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.id}>{u.name} {u.role === 'ADMIN' ? '(Admin)' : ''}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Zonas de Interés (Solo Compradores) */}

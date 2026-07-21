@@ -118,7 +118,7 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
           <div className="relative group w-full flex justify-center items-center min-h-[48px]">
             {!logoError ? (
                <Image 
-                  src={validLogo || "/logo.png"} 
+                  src={validLogo || "/logo_final.png"} 
                   alt="Mi Cassa Logo" 
                   width={160} 
                   height={48} 
@@ -164,7 +164,7 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
         )}
       </div>
       <nav className="flex-1 px-3 space-y-2 mt-2 overflow-y-auto overflow-x-hidden custom-scrollbar pb-4">
-        <NavItem isCollapsed={isCollapsed} href="/admin" icon={<Home />} label={dict.sidebar.dashboard} active={pathname === "/admin"} />
+        <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin" icon={<Home />} label={dict.sidebar.dashboard} active={pathname === "/admin"} />
         
         <NavGroup 
           icon={<Building />} 
@@ -173,16 +173,16 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
           active={pathname?.startsWith("/admin/propiedades") || pathname?.startsWith("/admin/proyectos") || pathname?.startsWith("/admin/rentas")}
           onExpand={() => setIsCollapsed(false)}
         >
-          <SubNavItem href="/admin/propiedades" label="Catálogo" active={pathname === "/admin/propiedades" || pathname?.startsWith("/admin/propiedades/")} />
-          <SubNavItem href="/admin/rentas" label={dict.sidebar.rentals || "Rentas"} active={pathname?.startsWith("/admin/rentas")} />
-          <SubNavItem href="/admin/proyectos" label={dict.sidebar.projects || "Proyectos"} active={pathname?.startsWith("/admin/proyectos")} />
+          <SubNavItem onClick={onClose} href="/admin/propiedades" label="Catálogo" active={pathname === "/admin/propiedades" || pathname?.startsWith("/admin/propiedades/")} />
+          <SubNavItem onClick={onClose} href="/admin/rentas" label={dict.sidebar.rentals || "Rentas"} active={pathname?.startsWith("/admin/rentas")} />
+          <SubNavItem onClick={onClose} href="/admin/proyectos" label={dict.sidebar.projects || "Proyectos"} active={pathname?.startsWith("/admin/proyectos")} />
         </NavGroup>
 
-        <NavItem isCollapsed={isCollapsed} href="/admin/prospectos" icon={<Users />} label={dict.sidebar.prospects} active={pathname?.startsWith("/admin/prospectos")} status={getStatus("/admin/prospectos")} isLocked={isLocked("/admin/prospectos")} userRole={getRole()} />
-        <NavItem isCollapsed={isCollapsed} href="/admin/tareas" icon={<CheckSquare />} label={dict.sidebar.tasks} active={pathname?.startsWith("/admin/tareas")} status={getStatus("/admin/tareas")} isLocked={isLocked("/admin/tareas")} userRole={getRole()} />
-        <NavItem isCollapsed={isCollapsed} href="/admin/ai-match" icon={<Sparkles />} label={dict.sidebar.aiMatch} active={pathname === "/admin/ai-match"} status={getStatus("/admin/ai-match")} isLocked={isLocked("/admin/ai-match")} userRole={getRole()} />
-        <NavItem isCollapsed={isCollapsed} href="/admin/tabulador" icon={<Calculator />} label={dict.sidebar.tabulator} active={pathname?.startsWith("/admin/tabulador")} status={getStatus("/admin/tabulador")} isLocked={isLocked("/admin/tabulador")} userRole={getRole()} />
-        <NavItem isCollapsed={isCollapsed} href="/admin/whatsapp" icon={<Phone />} label="WhatsApp" active={pathname?.startsWith("/admin/whatsapp")} />
+        <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/prospectos" icon={<Users />} label={dict.sidebar.prospects} active={pathname?.startsWith("/admin/prospectos")} status={getStatus("/admin/prospectos")} isLocked={isLocked("/admin/prospectos")} userRole={getRole()} />
+        <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/tareas" icon={<CheckSquare />} label={dict.sidebar.tasks} active={pathname?.startsWith("/admin/tareas")} status={getStatus("/admin/tareas")} isLocked={isLocked("/admin/tareas")} userRole={getRole()} />
+        <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/ai-match" icon={<Sparkles />} label={dict.sidebar.aiMatch} active={pathname === "/admin/ai-match"} status={getStatus("/admin/ai-match")} isLocked={isLocked("/admin/ai-match")} userRole={getRole()} />
+        <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/tabulador" icon={<Calculator />} label={dict.sidebar.tabulator} active={pathname?.startsWith("/admin/tabulador")} status={getStatus("/admin/tabulador")} isLocked={isLocked("/admin/tabulador")} userRole={getRole()} />
+        <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/whatsapp" icon={<Phone />} label="WhatsApp" active={pathname?.startsWith("/admin/whatsapp")} />
         
         {getRole() === 'ADMIN' && (
           <div className="pt-4 pb-2">
@@ -191,9 +191,9 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
             ) : (
               <div className="h-px bg-border w-10 mx-auto my-3" />
             )}
-            <NavItem isCollapsed={isCollapsed} href="/admin/ia" icon={<Sparkles />} label={dict.sidebar.ai} active={pathname?.startsWith("/admin/ia")} status={getStatus("/admin/ia")} isLocked={isLocked("/admin/ia")} userRole={getRole()} />
-            <NavItem isCollapsed={isCollapsed} href="/admin/equipo" icon={<Shield />} label={dict.sidebar.team} active={pathname?.startsWith("/admin/equipo")} />
-            <NavItem isCollapsed={isCollapsed} href="/admin/configuracion" icon={<Settings />} label={dict.sidebar.settings} active={pathname?.startsWith("/admin/configuracion")} />
+            <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/ia" icon={<Sparkles />} label={dict.sidebar.ai} active={pathname?.startsWith("/admin/ia")} status={getStatus("/admin/ia")} isLocked={isLocked("/admin/ia")} userRole={getRole()} />
+            <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/equipo" icon={<Shield />} label={dict.sidebar.team} active={pathname?.startsWith("/admin/equipo")} />
+            <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/configuracion" icon={<Settings />} label={dict.sidebar.settings} active={pathname?.startsWith("/admin/configuracion")} />
           </div>
         )}
       </nav>
@@ -210,7 +210,7 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
             className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors hover-lift"
             aria-label="Toggle Dark Mode"
           >
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            {!mounted ? <div className="w-[18px] h-[18px] opacity-0" /> : theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           <button
             onClick={async () => {
@@ -272,7 +272,8 @@ const NavItem = memo(function NavItem({
   isCollapsed = false, 
   status = "active", 
   isLocked = false,
-  userRole
+  userRole,
+  onClick
 }: { 
   href: string, 
   icon: React.ReactNode, 
@@ -281,13 +282,15 @@ const NavItem = memo(function NavItem({
   isCollapsed?: boolean,
   status?: string,
   isLocked?: boolean,
-  userRole?: string
+  userRole?: string,
+  onClick?: () => void
 }) {
   if (status === "hidden" && userRole !== "ADMIN") return null;
 
   return (
     <Link 
       href={href} 
+      onClick={onClick}
       title={isCollapsed ? label : undefined} 
       prefetch={true}
       className={`w-full flex items-center ${isCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5'} rounded-lg text-sm font-medium transition-colors block relative group/navitem z-10 ${
@@ -404,10 +407,11 @@ function NavGroup({
   );
 }
 
-function SubNavItem({ href, label, active }: { href: string, label: string, active: boolean }) {
+function SubNavItem({ href, label, active, onClick }: { href: string, label: string, active: boolean, onClick?: () => void }) {
   return (
     <Link 
       href={href} 
+      onClick={onClick}
       className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors relative ${
         active 
           ? 'text-primary bg-primary/10 font-bold' 

@@ -30,6 +30,7 @@ model User {
   tasks         Task[]
   taskAuditLogs TaskAuditLog[]
   taskComments  TaskComment[]
+  brokerageContracts BrokerageContract[]
 }
 
 model Property {
@@ -65,6 +66,11 @@ model Property {
   developmentProject   DevelopmentProject? @relation(fields: [developmentProjectId], references: [id])
   leads           Lead[]
   tasks           Task[]
+  brokerageContracts BrokerageContract[]
+
+  @@index([operationType])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Lead {
@@ -107,6 +113,13 @@ model Lead {
   messages         Message[]
   tasks            Task[]
   contactDate      DateTime?
+  brokerageContracts BrokerageContract[]
+  whatsAppMessages   WhatsAppMessage[]
+
+  @@index([status])
+  @@index([type])
+  @@index([agentId])
+  @@index([createdAt])
 }
 
 model Appointment {
@@ -354,6 +367,78 @@ model WhatsappStatus {
   errorMessage String?
   recurringInterval String? // "DAILY", "WEEKLY", etc
   sessionIds  String?  // JSON array of session IDs
+  expiresAt   DateTime? // Limit date for recurring schedules
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model BrokerageContract {
+  id             String    @id @default(cuid())
+  token          String    @unique
+  leadId         String
+  propertyId     String
+  agentId        String
+  commissionRate Float
+  status         String    @default("PENDIENTE") // PENDIENTE, FIRMADO
+  signatureImage String?   @db.Text
+  signerIp       String?
+  signerIdNumber String?
+  signerPhone    String?
+  signedAt       DateTime?
+  pdfUrl         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  lead           Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  property       Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  agent          User      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
+
+model WhatsAppSession {
+  id               String   @id @default(cuid())
+  name             String
+  sessionId        String   @unique
+  isConnected      Boolean  @default(false)
+  isDefaultSender  Boolean  @default(false)
+  currentQr        String?  @db.Text
+  pairingCode      String?  @db.Text
+  contacts         String?  @db.Text // JSON string
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  messages         WhatsAppMessage[]
+}
+
+model WhatsAppAuth {
+  id        String   @id @default(cuid())
+  sessionId String
+  keyId     String   // The key used by Baileys
+  keyData   String   @db.Text // JSON stringified state
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, keyId])
+}
+
+model WhatsAppMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  remoteJid String   
+  fromMe    Boolean  @default(false)
+  messageId String   
+  content   String   @db.Text
+  status    String   @default("PENDING") 
+  timestamp DateTime @default(now())
+
+  session   WhatsAppSession @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
+  leadId    String?
+  lead      Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId, remoteJid])
+}
+
+model SystemSettings {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String @db.Text
 }

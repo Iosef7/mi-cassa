@@ -2,8 +2,6 @@ import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import PropiedadesFetcher from './PropiedadesFetcher';
 
-export const dynamic = 'force-dynamic';
-
 function PropiedadesSkeleton() {
   return (
     <div className="p-8 animate-pulse space-y-8">

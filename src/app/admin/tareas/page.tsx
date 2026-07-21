@@ -2,8 +2,6 @@ import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import TareasFetcher from './TareasFetcher';
 
-export const dynamic = 'force-dynamic';
-
 function TareasSkeleton() {
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans">

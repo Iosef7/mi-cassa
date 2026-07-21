@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Save, X, Edit, Upload, Sparkles, FolderLock, CheckCircle2, FileText, GripVertical, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import Image from "next/image";
 import { GoogleDrivePicker } from "@/components/GoogleDrivePicker";
 import { DriveImagePreview } from "@/components/DriveImagePreview";
 import { showAlert } from "@/lib/alerts";
@@ -295,7 +296,9 @@ export default function NewProjectPage() {
                         <button onClick={() => setAiFiles(aiFiles.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 z-10 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100"><X className="w-3 h-3" /></button>
                         <div className="flex-1 flex items-center justify-center bg-indigo-50/50 relative w-full h-full overflow-hidden">
                           {f.type.startsWith('image/') ? (
-                            <img src={URL.createObjectURL(f)} alt="Preview" className="w-full h-full object-cover" />
+                            <div className="relative w-full h-full">
+                              <Image src={URL.createObjectURL(f)} alt="Preview" fill unoptimized={true} className="object-cover" />
+                            </div>
                           ) : (
                             <FileText className="w-8 h-8 text-indigo-300" />
                           )}
@@ -308,7 +311,9 @@ export default function NewProjectPage() {
                         <button onClick={() => setAiDriveUrls(aiDriveUrls.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 z-10 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100"><X className="w-3 h-3" /></button>
                         <div className="flex-1 flex items-center justify-center bg-blue-50/50 relative w-full h-full overflow-hidden">
                           {driveThumbnails[url] ? (
-                            <img src={driveThumbnails[url]} alt="Drive preview" className="w-full h-full object-cover" />
+                            <div className="relative w-full h-full">
+                              <Image src={driveThumbnails[url]} alt="Drive preview" fill unoptimized={true} className="object-cover" />
+                            </div>
                           ) : (
                             <FileText className="w-8 h-8 text-blue-300" />
                           )}
@@ -409,8 +414,10 @@ export default function NewProjectPage() {
                       {section.list.map((itemUrl, itemIdx) => (
                         <div key={itemIdx} className="relative group rounded-xl overflow-hidden border border-border h-32 bg-muted flex items-center justify-center">
                           <button onClick={() => section.setter(section.list.filter((_, i) => i !== itemIdx))} className="absolute top-2 right-2 z-10 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-4 h-4"/></button>
-                          {itemUrl.startsWith('data:image/') || itemUrl.match(/\.(jpeg|jpg|gif|png)$/) != null ? (
-                             <img src={itemUrl} alt="Preview" className="w-full h-full object-cover" />
+                          {itemUrl.startsWith('data:image/') || itemUrl.match(/\.(jpeg|jpg|gif|png)$/) ? (
+                             <div className="relative w-full h-full">
+                               <Image src={itemUrl} alt="Preview" fill unoptimized={true} className="object-cover" />
+                             </div>
                           ) : (
                              <div className="text-center p-2"><FileText className="w-8 h-8 mx-auto text-muted-foreground mb-1"/><p className="text-xs text-muted-foreground truncate w-full">{itemUrl}</p></div>
                           )}

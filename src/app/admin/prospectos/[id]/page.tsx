@@ -4,9 +4,12 @@ import { ArrowLeft, User, Phone, Mail, Building, Tag, Banknote, Edit3 } from 'lu
 import CallCard from '@/components/CallCard';
 import UploadAudioTest from '@/components/UploadAudioTest';
 import { notFound } from 'next/navigation';
+import GenerateContractButton from './GenerateContractButton';
+import { auth } from '@/auth';
 
 export default async function ProspectoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const session = await auth();
   
   const lead = await prisma.lead.findUnique({
     where: { id: id },
@@ -27,6 +30,11 @@ export default async function ProspectoDetailPage({ params }: { params: Promise<
       property: true,
       agent: true,
     }
+  });
+
+  const properties = await prisma.property.findMany({
+    select: { id: true, title: true, location: true, images: true },
+    orderBy: { title: 'asc' }
   });
 
   if (!lead) {
@@ -70,6 +78,12 @@ export default async function ProspectoDetailPage({ params }: { params: Promise<
           </div>
         </div>
         <div className="flex gap-3">
+          <GenerateContractButton 
+            leadId={lead.id} 
+            propertyId={lead.propertyId} 
+            agentId={lead.agentId || session?.user?.id || null} 
+            availableProperties={properties}
+          />
           <Link href={`/admin/prospectos/${lead.id}/editar`} className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium transition-colors border border-slate-200">
             <Edit3 size={18} />
             Editar

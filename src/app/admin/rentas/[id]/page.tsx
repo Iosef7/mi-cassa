@@ -350,7 +350,7 @@ export default function PropertyDetailsPage() {
   useEffect(() => {
     fetchProperty();
     fetch('/api/users').then(res => res.json()).then(data => {
-      if (Array.isArray(data)) setAgentsList(data.filter((u: any) => u.role !== 'ADMIN'));
+      if (Array.isArray(data)) setAgentsList(data);
     }).catch(console.error);
     getDisabledPropertyTabs().then(tabs => setDisabledTabs(tabs));
   }, [id]);
@@ -2203,7 +2203,7 @@ export default function PropertyDetailsPage() {
                             ) : (
                               <div className="absolute inset-0 bg-gray-900"></div>
                             )}
-                            <Image src="/logo.png" alt="Mi Cassa" width={192} height={48} className="absolute top-12 left-24 object-contain mix-blend-screen invert grayscale opacity-90 z-20" />
+                            <Image src="/logo_final.png" alt="Mi Cassa" width={192} height={48} className="absolute top-12 left-24 object-contain mix-blend-screen invert grayscale opacity-90 z-20" />
                             <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent w-[75%] z-0"></div>
                             <div className="absolute inset-0 flex flex-col justify-center px-24 z-10 text-white w-[65%]">
                               <div className="flex items-center gap-6 mb-6 mt-12">
@@ -3006,8 +3006,8 @@ export default function PropertyDetailsPage() {
                             if (part.inlineData) {
                               if (part.inlineData.mimeType.startsWith('image/')) {
                                 return (
-                                  <div key={pIdx} className="mt-2 mb-1">
-                                    <img src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} className="w-32 h-32 object-cover rounded-lg border border-primary/20" alt="Adjunto" />
+                                  <div key={pIdx} className="mt-2 mb-1 relative w-32 h-32">
+                                    <Image src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} fill className="object-cover rounded-lg border border-primary/20" alt="Adjunto" unoptimized />
                                   </div>
                                 );
                               }
@@ -3153,7 +3153,7 @@ export default function PropertyDetailsPage() {
                     </div>
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground p-8 text-center bg-[#faf9f6]">
-                      <div className="w-32 h-32 opacity-10 mb-6 bg-[url('/logo.png')] bg-contain bg-center bg-no-repeat grayscale"></div>
+                      <div className="w-32 h-32 opacity-10 mb-6 bg-[url('/logo_final.png')] bg-contain bg-center bg-no-repeat grayscale"></div>
                       <h3 className="font-bold text-xl mb-2">No hay diseño generado</h3>
                       <p className="max-w-sm">Escríbele al Asistente de Diseño para crear una presentación espectacular basada en esta propiedad.</p>
                     </div>

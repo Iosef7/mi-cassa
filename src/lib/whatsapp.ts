@@ -55,6 +55,13 @@ export async function sendWhatsAppMessage(to: string, text: string) {
  * @param baseUrl Base URL for relative images (e.g. http://localhost:3000)
  * @param sessionIds Optional array of session IDs to broadcast to. If empty/undefined, broadcasts to all connected sessions.
  */
+interface BotStatusPayload {
+  caption?: string;
+  sessionIds?: string[];
+  imageBase64?: string;
+  videoBase64?: string;
+}
+
 export async function sendUltramsgStatuses(mediaUrls: string[], caption: string, baseUrl: string, sessionIds?: string[]) {
   const results = [];
   const BOT_URL = process.env.WHATSAPP_BOT_URL || "http://localhost:3001";
@@ -62,7 +69,7 @@ export async function sendUltramsgStatuses(mediaUrls: string[], caption: string,
   if (mediaUrls.length === 0) {
     // Texto solamente
     try {
-      const payload: any = { caption: caption || "" };
+      const payload: BotStatusPayload = { caption: caption || "" };
       if (sessionIds && sessionIds.length > 0) {
         payload.sessionIds = sessionIds;
       }
@@ -115,7 +122,7 @@ export async function sendUltramsgStatuses(mediaUrls: string[], caption: string,
       }
 
       try {
-        const payload: any = isVideo ? { videoBase64: mediaPayload } : { imageBase64: mediaPayload };
+        const payload: BotStatusPayload = isVideo ? { videoBase64: mediaPayload } : { imageBase64: mediaPayload };
         if (sessionIds && sessionIds.length > 0) {
           payload.sessionIds = sessionIds;
         }

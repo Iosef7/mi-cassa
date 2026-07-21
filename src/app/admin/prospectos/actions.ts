@@ -3,6 +3,38 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
+export interface LeadFormData {
+  name: string;
+  email?: string;
+  phone: string;
+  status?: string;
+  budget?: string | number;
+  notes?: string;
+  source?: string;
+  preferences?: string;
+  requiresMortgage?: boolean;
+  type?: string;
+  urgency?: string;
+  propertyTypeOfInterest?: string;
+  hasPropertyToSell?: boolean;
+  reasonForSelling?: string;
+  acceptsTrade?: boolean;
+  viewingAvailability?: string;
+  targetLocations?: string;
+  targetArea?: string | number;
+  minArea?: string | number;
+  maxArea?: string | number;
+  moveInDate?: string | Date;
+  numberOfPeople?: string | number;
+  petFriendly?: boolean;
+  isLegalClear?: boolean;
+  hasMortgage?: boolean;
+  mandateType?: string;
+  propertyId?: string;
+  agentId?: string;
+  contactDate?: string | Date;
+}
+
 export async function updateLeadStatus(leadId: string, newStatus: string) {
   try {
     await prisma.lead.update({
@@ -17,7 +49,7 @@ export async function updateLeadStatus(leadId: string, newStatus: string) {
   }
 }
 
-export async function createLead(data: any) {
+export async function createLead(data: LeadFormData) {
   try {
     const lead = await prisma.lead.create({
       data: {
@@ -48,6 +80,7 @@ export async function createLead(data: any) {
         hasMortgage: data.hasMortgage || false,
         mandateType: data.mandateType || null,
         propertyId: data.propertyId || null,
+        agentId: data.agentId || null,
         contactDate: data.contactDate ? new Date(data.contactDate) : null,
       }
     });
@@ -59,7 +92,7 @@ export async function createLead(data: any) {
   }
 }
 
-export async function updateLead(leadId: string, data: any) {
+export async function updateLead(leadId: string, data: LeadFormData) {
   try {
     await prisma.lead.update({
       where: { id: leadId },
@@ -90,6 +123,7 @@ export async function updateLead(leadId: string, data: any) {
         hasMortgage: data.hasMortgage || false,
         mandateType: data.mandateType || null,
         propertyId: data.propertyId || null,
+        agentId: data.agentId || null,
         contactDate: data.contactDate ? new Date(data.contactDate) : null,
       }
     });

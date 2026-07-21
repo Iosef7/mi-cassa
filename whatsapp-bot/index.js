@@ -2,81 +2,145 @@ const express = require('express');
 const cors = require('cors');
 const { 
     default: makeWASocket, 
-    useMultiFileAuthState, 
-    DisconnectReason
+    DisconnectReason,
+    delay,
+    fetchLatestBaileysVersion,
+    Browsers
 } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const qrcodeLib = require('qrcode');
-const fs = require('fs');
-const path = require('path');
+const { PrismaClient } = require('../prisma/generated/client');
+const usePostgresAuthState = require('./postgresAuthState');
+const { initScheduler } = require('./cron');
 
+const prisma = new PrismaClient();
 const app = express();
 const port = process.env.BOT_PORT || 3001;
+const NEXT_PUBLIC_URL = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Sessions management
+// Sessions management (in-memory tracker for active sockets)
 const sessions = new Map();
 
-// Helper to delete session folder
-const deleteSessionFolder = (sessionId) => {
-    const folderPath = path.join(__dirname, `auth_info_baileys_${sessionId}`);
-    if (fs.existsSync(folderPath)) {
+// Message Queue for Anti-Ban (Jitter)
+const messageQueue = [];
+let isProcessingQueue = false;
+
+async function processMessageQueue() {
+    if (isProcessingQueue || messageQueue.length === 0) return;
+    isProcessingQueue = true;
+
+    while (messageQueue.length > 0) {
+        const task = messageQueue.shift();
         try {
-            fs.rmSync(folderPath, { recursive: true, force: true });
-        } catch (err) {
-            console.error(`Error deleting folder ${folderPath}:`, err.message);
+            const sessionData = sessions.get(task.sessionId);
+            if (sessionData && sessionData.isConnected && sessionData.sock) {
+                // Jitter: Random delay between 1000ms and 3000ms
+                const jitterMs = Math.floor(Math.random() * 2000) + 1000;
+                await delay(jitterMs);
+                
+                if (task.type === 'text') {
+                    await sessionData.sock.sendMessage(task.to, { text: task.content });
+                } else if (task.type === 'status') {
+                    const statusObj = {
+                        statusJidList: sessionData.contacts
+                    };
+                    if (task.mediaPath) {
+                        // Media status
+                        const ext = task.mediaPath.split('.').pop().toLowerCase();
+                        if (['jpg', 'jpeg', 'png'].includes(ext)) {
+                            statusObj.image = { url: task.mediaPath };
+                            if (task.content) statusObj.caption = task.content;
+                        } else if (['mp4', 'mov'].includes(ext)) {
+                            statusObj.video = { url: task.mediaPath };
+                            if (task.content) statusObj.caption = task.content;
+                        }
+                    } else if (task.content) {
+                        // Text status
+                        statusObj.text = task.content;
+                        // Add background color logic if needed
+                    }
+                    await sessionData.sock.sendMessage('status@broadcast', statusObj);
+                }
+                console.log(`[Queue] Successfully sent message/status to ${task.to || 'status'}`);
+            } else {
+                console.log(`[Queue] Session ${task.sessionId} is not connected, dropping message.`);
+            }
+        } catch (error) {
+            console.error(`[Queue] Error sending message:`, error);
         }
     }
-};
+    isProcessingQueue = false;
+}
 
-async function connectToWhatsApp(sessionId) {
+async function connectToWhatsApp(sessionId, phoneNumber = null) {
     if (sessions.has(sessionId)) {
         const existingSession = sessions.get(sessionId);
         if (existingSession.isConnected) return existingSession;
-        sessions.delete(sessionId);
+        // Keep existing data to allow pairing code logic to persist
     }
 
-    let sessionData = {
+    let sessionData = sessions.get(sessionId) || {
         sock: null,
         isConnected: false,
         currentQr: null,
-        contacts: []
+        contacts: [],
+        pairingCode: null
     };
     
     sessions.set(sessionId, sessionData);
 
-    const folderPath = path.join(__dirname, `auth_info_baileys_${sessionId}`);
-    const { state, saveCreds } = await useMultiFileAuthState(folderPath);
+    // Sync state with DB
+    await prisma.whatsAppSession.upsert({
+        where: { sessionId },
+        create: { sessionId, name: sessionId, isConnected: false },
+        update: { isConnected: false, currentQr: null }
+    });
+
+    const { state, saveCreds } = await usePostgresAuthState(prisma, sessionId);
     
-    const contactsPath = path.join(folderPath, 'contacts.json');
-    if (fs.existsSync(contactsPath)) {
+    // Load contacts from DB
+    const dbSession = await prisma.whatsAppSession.findUnique({ where: { sessionId } });
+    if (dbSession && dbSession.contacts) {
         try {
-            sessionData.contacts = JSON.parse(fs.readFileSync(contactsPath));
-        } catch(e) {
-            console.error(`Error loading contacts for ${sessionId}`, e);
-        }
+            sessionData.contacts = JSON.parse(dbSession.contacts);
+        } catch(e) {}
     }
 
-    const saveContacts = () => {
+    const saveContacts = async () => {
         try {
-            fs.writeFileSync(contactsPath, JSON.stringify(sessionData.contacts));
+            await prisma.whatsAppSession.update({
+                where: { sessionId },
+                data: { contacts: JSON.stringify(sessionData.contacts) }
+            });
         } catch(e) {
             console.error(`Error saving contacts for ${sessionId}`, e);
         }
     };
 
+    console.log(`[${sessionId}] Initializing WASocket...`);
+
     const sock = makeWASocket({
         auth: state,
         printQRInTerminal: false,
-        logger: pino({ level: 'silent' })
+        logger: pino({ level: 'info' }),
+        browser: ['Ubuntu', 'Chrome', '20.0.04'],
+        keepAliveIntervalMs: 30000,
+        syncFullHistory: false,
+        markOnlineOnConnect: true,
+        generateHighQualityLinkPreview: true,
+        getMessage: async (key) => {
+            return { conversation: 'hello' }
+        }
     });
 
     sessionData.sock = sock;
 
-    sock.ev.on('messaging-history.set', ({ contacts }) => {
+    // Contact Sync
+    const handleContacts = (contacts) => {
         let changed = false;
         if (contacts) {
             for (const contact of contacts) {
@@ -87,286 +151,256 @@ async function connectToWhatsApp(sessionId) {
             }
         }
         if (changed) saveContacts();
-    });
+    };
 
-    sock.ev.on('contacts.upsert', (contacts) => {
-        let changed = false;
-        for (const contact of contacts) {
-            if (contact.id && contact.id.endsWith('@s.whatsapp.net') && !sessionData.contacts.includes(contact.id)) {
-                sessionData.contacts.push(contact.id);
-                changed = true;
-            }
-        }
-        if (changed) saveContacts();
-    });
-    
-    sock.ev.on('contacts.update', (contacts) => {
-        let changed = false;
-        for (const contact of contacts) {
-            if (contact.id && contact.id.endsWith('@s.whatsapp.net') && !sessionData.contacts.includes(contact.id)) {
-                sessionData.contacts.push(contact.id);
-                changed = true;
-            }
-        }
-        if (changed) saveContacts();
-    });
+    sock.ev.on('messaging-history.set', ({ contacts }) => handleContacts(contacts));
+    sock.ev.on('contacts.upsert', handleContacts);
+    sock.ev.on('contacts.update', handleContacts);
 
+    // Connection Updates
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
         
         if (qr) {
             sessionData.currentQr = qr;
+            await prisma.whatsAppSession.update({
+                where: { sessionId },
+                data: { currentQr: qr }
+            });
         }
 
         if (connection === 'close') {
             const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
             console.log(`[${sessionId}] Connection closed, reconnecting: ${shouldReconnect}`);
             sessionData.isConnected = false;
+            sessionData.pairingCode = null; // Clear pairing code on disconnect
             
+            await prisma.whatsAppSession.update({
+                where: { sessionId },
+                data: { isConnected: false, currentQr: null, pairingCode: null }
+            });
+
             if (shouldReconnect) {
-                setTimeout(() => connectToWhatsApp(sessionId), 2000);
+                setTimeout(() => connectToWhatsApp(sessionId), 5000); // 5s delay before reconnect
             } else {
-                console.log(`[${sessionId}] Logged out. Deleting session folder.`);
+                console.log(`[${sessionId}] Logged out. Deleting session data.`);
                 sessions.delete(sessionId);
-                deleteSessionFolder(sessionId);
+                await prisma.whatsAppSession.delete({ where: { sessionId } }).catch(() => {});
+                await prisma.whatsAppAuth.deleteMany({ where: { sessionId } });
             }
         } else if (connection === 'open') {
             console.log(`[${sessionId}] ✅ WhatsApp Bot Connected!`);
             sessionData.isConnected = true;
             sessionData.currentQr = null;
+            await prisma.whatsAppSession.update({
+                where: { sessionId },
+                data: { isConnected: true, currentQr: null }
+            });
+        }
+    });
+
+    // Incoming Messages Webhook
+    sock.ev.on('messages.upsert', async (m) => {
+        if (m.type !== 'notify') return;
+        
+        for (const msg of m.messages) {
+            if (!msg.message) continue;
+            
+            const remoteJid = msg.key.remoteJid;
+            // Ignore status broadcasts
+            if (remoteJid === 'status@broadcast') continue;
+
+            // Extract text
+            let text = '';
+            if (msg.message.conversation) {
+                text = msg.message.conversation;
+            } else if (msg.message.extendedTextMessage) {
+                text = msg.message.extendedTextMessage.text;
+            }
+
+            if (!text) continue;
+
+            // Forward to Next.js Webhook
+            try {
+                await fetch(`${NEXT_PUBLIC_URL}/api/whatsapp/webhook`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId,
+                        messageId: msg.key.id,
+                        remoteJid: remoteJid,
+                        fromMe: msg.key.fromMe,
+                        content: text,
+                        pushName: msg.pushName
+                    })
+                });
+            } catch (error) {
+                console.error(`[Webhook Error] Failed to send to Next.js:`, error.message);
+            }
         }
     });
 
     sock.ev.on('creds.update', saveCreds);
+
+    // Attempt to request pairing code if phoneNumber is provided
+    if (phoneNumber) {
+        const cleanNumber = phoneNumber.replace(/[^0-9]/g, '');
+        try {
+            setTimeout(async () => {
+                try {
+                    const code = await sock.requestPairingCode(cleanNumber);
+                    console.log(`[${sessionId}] Pairing code for ${cleanNumber}: ${code}`);
+                    sessionData.pairingCode = code;
+                    await prisma.whatsAppSession.update({
+                        where: { sessionId },
+                        data: { pairingCode: code }
+                    });
+                } catch (pairErr) {
+                    console.error(`[${sessionId}] Failed to request pairing code:`, pairErr);
+                }
+            }, 3000);
+        } catch (e) {
+            console.error(`[${sessionId}] Error requesting pairing code:`, e);
+        }
+    }
+
     return sessionData;
 }
 
-// Endpoint: Initialize or get status of a session
+// REST API Endpoints for Next.js to interact with the bot
+
+// Initialize or get status
 app.get('/session/:sessionId', async (req, res) => {
     const { sessionId } = req.params;
-    
-    let session = sessions.get(sessionId);
-    
-    if (!session) {
-        // Start a new session
-        session = await connectToWhatsApp(sessionId);
-    }
-    
-    res.json({
-        sessionId,
-        isConnected: session.isConnected,
-        hasQr: !!session.currentQr
-    });
-});
-
-// Endpoint: Get QR Code image URL for a session
-app.get('/session/:sessionId/qr', async (req, res) => {
-    const { sessionId } = req.params;
-    const session = sessions.get(sessionId);
-    
-    if (!session) {
-        return res.status(404).json({ error: 'Session not found. Initialize it first.' });
-    }
-    
-    if (session.isConnected) {
-        return res.json({ connected: true });
-    }
-    
-    if (!session.currentQr) {
-        return res.json({ waiting: true });
-    }
-    
+    console.log(`[API] GET /session/${sessionId} received`);
     try {
-        const qrImage = await qrcodeLib.toDataURL(session.currentQr);
-        res.json({ qr: qrImage });
-    } catch (e) {
-        res.status(500).json({ error: 'Error generating QR' });
-    }
-});
-
-// Endpoint: List all active sessions
-app.get('/sessions', (req, res) => {
-    const activeSessions = [];
-    sessions.forEach((data, id) => {
-        activeSessions.push({
-            id,
-            isConnected: data.isConnected
-        });
-    });
-    res.json({ sessions: activeSessions });
-});
-
-// Endpoint: Logout / Delete session
-app.delete('/session/:sessionId', (req, res) => {
-    const { sessionId } = req.params;
-    const session = sessions.get(sessionId);
-    
-    if (session) {
-        if (session.sock) {
-            session.sock.logout().catch(() => {});
+        let session = sessions.get(sessionId);
+        if (!session) {
+            session = await connectToWhatsApp(sessionId);
         }
-        sessions.delete(sessionId);
+        
+        res.json({
+            sessionId,
+            isConnected: session.isConnected,
+            hasQr: !!session.currentQr,
+            pairingCode: session.pairingCode || null
+        });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
     }
-    
-    deleteSessionFolder(sessionId);
-    res.json({ success: true, message: `Session ${sessionId} deleted.` });
 });
 
-// Endpoint: Rename a session
-app.put('/session/:sessionId/rename', async (req, res) => {
+// Pair device via phone number
+app.post('/session/:sessionId/pair', express.json(), async (req, res) => {
     const { sessionId } = req.params;
-    const { newId } = req.body;
+    const { phoneNumber } = req.body;
     
-    console.log(`Rename request: ${sessionId} -> ${newId}`);
-    console.log(`Available sessions:`, Array.from(sessions.keys()));
-
-    if (!newId || newId === sessionId) {
-        return res.status(400).json({ error: 'Invalid new name' });
+    if (!phoneNumber) {
+        return res.status(400).json({ error: "phoneNumber is required" });
     }
+    
+    console.log(`[API] POST /session/${sessionId}/pair received for ${phoneNumber}`);
+    try {
+        const session = await connectToWhatsApp(sessionId, phoneNumber);
+        res.json({
+            sessionId,
+            isConnected: session.isConnected,
+            hasQr: !!session.currentQr,
+            pairingCode: session.pairingCode || null
+        });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
 
+// Delete session explicitly
+app.delete('/session/:sessionId', async (req, res) => {
+    const { sessionId } = req.params;
     const session = sessions.get(sessionId);
-    if (!session) {
-        console.log(`Session ${sessionId} not found in map!`);
-        return res.status(404).json({ error: 'Session not found' });
-    }
-
-    // Disconnect temporarily if connected
-    if (session.sock) {
-        session.sock.end(undefined);
-    }
-    
-    sessions.delete(sessionId);
-    
-    const oldFolder = path.join(__dirname, `auth_info_baileys_${sessionId}`);
-    const newFolder = path.join(__dirname, `auth_info_baileys_${newId}`);
-    
-    if (fs.existsSync(oldFolder)) {
+    if (session && session.sock) {
         try {
-            fs.renameSync(oldFolder, newFolder);
-        } catch (err) {
-            console.error('Error renaming folder:', err);
-            return res.status(500).json({ error: 'Error renaming folder' });
-        }
+            session.sock.logout();
+        } catch (e) {}
     }
+    sessions.delete(sessionId);
+    await prisma.whatsAppSession.delete({ where: { sessionId } }).catch(() => {});
+    await prisma.whatsAppAuth.deleteMany({ where: { sessionId } });
     
-    // Reconnect with new ID
-    await connectToWhatsApp(newId);
-    
-    res.json({ success: true, newId });
+    res.json({ success: true, message: 'Session deleted' });
 });
 
-// Endpoint to send status to multiple sessions
+// Send Message via Queue
+app.post('/send-message', async (req, res) => {
+    const { sessionId, to, message } = req.body;
+    
+    if (!sessionId || !to || !message) {
+        return res.status(400).json({ error: 'Missing parameters' });
+    }
+
+    const session = sessions.get(sessionId);
+    if (!session || !session.isConnected) {
+        return res.status(400).json({ error: 'Session not connected' });
+    }
+
+    const jid = to.includes('@') ? to : `${to}@s.whatsapp.net`;
+    
+    // Push to Queue
+    messageQueue.push({
+        type: 'text',
+        sessionId,
+        to: jid,
+        content: message
+    });
+    
+    processMessageQueue();
+
+    res.json({ success: true, queued: true });
+});
+
+// Send Status via Queue
 app.post('/status', async (req, res) => {
-    try {
-        const { caption, imageBase64, videoBase64, sessionIds } = req.body;
-        
-        let targetSessions = [];
-        
-        if (sessionIds && Array.isArray(sessionIds) && sessionIds.length > 0) {
-            sessionIds.forEach(id => {
-                const s = sessions.get(id);
-                if (s && s.isConnected) targetSessions.push(s);
-            });
-        } else {
-            // Default: broadcast to all connected sessions
-            sessions.forEach((s) => {
-                if (s.isConnected) targetSessions.push(s);
-            });
-        }
-        
-        if (targetSessions.length === 0) {
-            return res.status(400).json({ error: 'No connected WhatsApp sessions available to send status.' });
-        }
-
-        if (!imageBase64 && !videoBase64 && !caption) {
-            return res.status(400).json({ error: 'Either imageBase64, videoBase64 or caption must be provided.' });
-        }
-
-        let base64Data, buffer, isVideo = false;
-        if (imageBase64) {
-            base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-            buffer = Buffer.from(base64Data, 'base64');
-        } else if (videoBase64) {
-            base64Data = videoBase64.replace(/^data:video\/\w+;base64,/, "");
-            buffer = Buffer.from(base64Data, 'base64');
-            isVideo = true;
-        }
-
-        let successCount = 0;
-        let errors = [];
-
-        for (const session of targetSessions) {
-            try {
-                const myJid = session.sock.user.id.split(':')[0] + '@s.whatsapp.net';
-                const contacts = [...session.contacts];
-                if (!contacts.includes(myJid)) contacts.push(myJid);
-                
-                if (buffer) {
-                    const messageContent = isVideo 
-                        ? { video: buffer, caption: caption || '' }
-                        : { image: buffer, caption: caption || '' };
-                        
-                    await session.sock.sendMessage('status@broadcast', messageContent, {
-                        statusJidList: contacts,
-                        broadcast: true,
-                        backgroundColor: '#000000'
-                    });
-                } else {
-                    await session.sock.sendMessage('status@broadcast', {
-                        text: caption,
-                        backgroundColor: '#000000'
-                    }, {
-                        statusJidList: contacts,
-                        broadcast: true
-                    });
-                }
-                successCount++;
-            } catch (err) {
-                errors.push(err.message);
-            }
-        }
-
-        if (successCount === 0) {
-            return res.status(500).json({ error: 'Failed to send to any session', details: errors });
-        }
-
-        return res.status(200).json({ 
-            success: true, 
-            message: `Status uploaded to ${successCount} session(s).`,
-            errors: errors.length > 0 ? errors : undefined
-        });
-
-    } catch (error) {
-        console.error('Error sending status:', error);
-        return res.status(500).json({ error: error.message || 'Internal Server Error' });
+    const { sessionIds, caption, mediaPath } = req.body;
+    
+    if (!sessionIds || !Array.isArray(sessionIds)) {
+        return res.status(400).json({ error: 'Invalid sessionIds array' });
     }
+
+    let queuedCount = 0;
+    for (const sessionId of sessionIds) {
+        const session = sessions.get(sessionId);
+        if (session && session.isConnected) {
+            messageQueue.push({
+                type: 'status',
+                sessionId,
+                content: caption,
+                mediaPath
+            });
+            queuedCount++;
+        }
+    }
+
+    if (queuedCount > 0) {
+        processMessageQueue();
+    }
+
+    res.json({ success: true, queued: queuedCount });
 });
 
-// Load existing sessions on startup
-const loadExistingSessions = () => {
-    try {
-        const files = fs.readdirSync(__dirname);
-        const sessionFolders = files.filter(f => f.startsWith('auth_info_baileys_'));
-        
-        sessionFolders.forEach(folder => {
-            const sessionId = folder.replace('auth_info_baileys_', '');
-            console.log(`Starting existing session: ${sessionId}`);
-            connectToWhatsApp(sessionId);
-        });
-        
-        // Also support old legacy auth_info_baileys folder for backwards compatibility
-        if (fs.existsSync(path.join(__dirname, 'auth_info_baileys'))) {
-            console.log(`Migrating legacy session to session_default`);
-            fs.renameSync(path.join(__dirname, 'auth_info_baileys'), path.join(__dirname, 'auth_info_baileys_default'));
-            connectToWhatsApp('default');
-        }
-    } catch (e) {
-        console.log('Error loading existing sessions:', e.message);
+// Load all sessions from DB on startup
+async function startup() {
+    const dbSessions = await prisma.whatsAppSession.findMany();
+    for (const s of dbSessions) {
+        await connectToWhatsApp(s.sessionId);
     }
-};
+    console.log(`[Startup] Initialized ${dbSessions.length} sessions from DB.`);
+}
 
-// Start Express and WhatsApp Connection
 app.listen(port, () => {
-    console.log(`🚀 Bot API running on http://localhost:${port}`);
-    loadExistingSessions();
+    console.log(`🚀 Enterprise WhatsApp Bot running on port ${port}`);
+    
+    // Start Cron Jobs
+    initScheduler(sessions, messageQueue, processMessageQueue);
+    startup();
 });

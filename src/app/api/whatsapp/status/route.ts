@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
-import { sendUltramsgStatuses } from "@/lib/whatsapp";
+// import { sendUltramsgStatuses } from "@/lib/whatsapp";
 
 // GET: Obtener todos los estados programados/históricos
 export async function GET(req: NextRequest) {
@@ -43,6 +43,11 @@ export async function POST(req: NextRequest) {
     const caption = formData.get("caption") as string | null;
     const sessionIdsStr = formData.get("sessionIds") as string | null;
     const scheduleType = formData.get("scheduleType") as string | null || "now";
+    const expiresAtStr = formData.get("expiresAt") as string | null;
+    let expiresAt: Date | null = null;
+    if (expiresAtStr) {
+      expiresAt = new Date(expiresAtStr);
+    }
 
     let sessionIds: string[] | undefined = undefined;
     if (sessionIdsStr) {
@@ -81,12 +86,27 @@ export async function POST(req: NextRequest) {
       let publishedAt: Date | null = null;
       let errorMessage = null;
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-        await sendUltramsgStatuses(mediaUrls, caption || "", baseUrl, sessionIds);
+        const botUrl = process.env.BOT_API_URL || "http://localhost:3001";
+        const mediaPath = mediaUrls.length > 0 ? path.join(process.cwd(), "public", mediaUrls[0]) : null;
+        
+        const res = await fetch(`${botUrl}/status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionIds: sessionIds || [],
+            caption: caption || "",
+            mediaPath
+          })
+        });
+
+        if (!res.ok) {
+           throw new Error("Bot API returned error: " + await res.text());
+        }
+
         finalStatus = "PUBLISHED";
         publishedAt = new Date();
       } catch (err: any) {
-        console.error("Error sending immediate status:", err);
+        console.error("Error sending immediate status via Bot API:", err);
         finalStatus = "FAILED";
         errorMessage = err.message || String(err);
       }
@@ -136,7 +156,8 @@ export async function POST(req: NextRequest) {
             publishAt,
             status: "SCHEDULED",
             recurringInterval: "WEEKLY",
-            sessionIds: sessionIds ? JSON.stringify(sessionIds) : null
+            sessionIds: sessionIds ? JSON.stringify(sessionIds) : null,
+            expiresAt
           });
         }
       }

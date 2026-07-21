@@ -29,7 +29,7 @@ function MobileLogo({ siteLogo }: { siteLogo?: string | null }) {
 
   return (
     <Image 
-      src={validLogo || "/logo.png"} 
+      src={validLogo || "/logo_final.png"} 
       alt="Mi Cassa Logo" 
       width={128} 
       height={32} 
@@ -39,8 +39,17 @@ function MobileLogo({ siteLogo }: { siteLogo?: string | null }) {
   );
 }
 
+import { useRouter, usePathname } from "next/navigation";
+
 export default function AdminLayoutWrapper({ children, settings, userRole, siteLogo }: AdminLayoutWrapperProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  React.useEffect(() => {
+    // Force cache bust to resolve stale redirects
+    router.refresh();
+  }, [router]);
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
@@ -91,10 +100,20 @@ export default function AdminLayoutWrapper({ children, settings, userRole, siteL
           </button>
         </header>
 
-        {/* Page Content */}
-        <div className="flex-1 flex flex-col overflow-y-auto bg-muted/20">
+        <div className="flex-1 flex flex-col overflow-y-auto bg-muted/20 custom-scrollbar">
           <SectionGuard settings={settings} userRole={userRole}>
-            {children}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={pathname}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+                className="flex-1 flex flex-col w-full h-full"
+              >
+                {children}
+              </motion.div>
+            </AnimatePresence>
           </SectionGuard>
         </div>
       </div>

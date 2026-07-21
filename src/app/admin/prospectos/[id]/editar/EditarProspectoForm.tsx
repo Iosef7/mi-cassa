@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, Save, User, Phone, Mail, DollarSign, Building, AlertCircle, MapPin, Clock, HelpCircle, FileText, ChevronDown, Target, Maximize, Calendar, Users, PawPrint } from 'lucide-react';
 import { updateLead } from '../../actions';
 import { showToast } from '@/lib/alerts';
 
-export default function EditarProspectoForm({ lead }: { lead: any }) {
+export default function EditarProspectoForm({ lead, users = [] }: { lead: any, users?: {id: string, name: string, role: string}[] }) {
   const router = useRouter();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,6 +62,8 @@ export default function EditarProspectoForm({ lead }: { lead: any }) {
     isLegalClear: lead.isLegalClear !== undefined ? lead.isLegalClear : true,
     hasMortgage: lead.hasMortgage || false,
     mandateType: lead.mandateType || '',
+    propertyId: lead.propertyId || '',
+    agentId: lead.agentId || '',
     contactDate: lead.contactDate ? new Date(lead.contactDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
   });
 
@@ -285,7 +288,7 @@ export default function EditarProspectoForm({ lead }: { lead: any }) {
                         } catch(e) {}
                         return (
                           <>
-                            {src && <img src={src} className="w-6 h-6 rounded object-cover" />}
+                            {src && <Image src={src} unoptimized={true} width={24} height={24} className="w-6 h-6 rounded object-cover" alt="Preview" />}
                             {sel.title}
                           </>
                         );
@@ -329,8 +332,8 @@ export default function EditarProspectoForm({ lead }: { lead: any }) {
                             onClick={() => { setFormData(prev => ({...prev, propertyId: p.id})); setIsDropdownOpen(false); }}
                           >
                             {src ? (
-                              <div className="w-12 h-12 rounded-md overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-sm">
-                                <img src={src} alt="" className="w-full h-full object-cover" />
+                              <div className="w-12 h-12 rounded-md overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-sm relative">
+                                <Image src={src} alt="" fill unoptimized={true} className="object-cover" />
                               </div>
                             ) : (
                               <div className="w-12 h-12 rounded-md bg-slate-100 dark:bg-slate-800 shrink-0 flex items-center justify-center border border-slate-200 dark:border-slate-700">
@@ -347,6 +350,17 @@ export default function EditarProspectoForm({ lead }: { lead: any }) {
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Asesor Asignado */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2"><User size={16} /> Asesor Asignado</label>
+                <select name="agentId" value={formData.agentId} onChange={handleChange} className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none appearance-none">
+                  <option value="">Sin asignar</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.id}>{u.name} {u.role === 'ADMIN' ? '(Admin)' : ''}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Zonas de Interés (Solo Compradores) */}

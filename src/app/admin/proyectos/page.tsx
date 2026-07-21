@@ -1,8 +1,6 @@
 import { Suspense } from 'react';
 import ProjectsFetcher from './ProjectsFetcher';
 
-export const dynamic = 'force-dynamic';
-
 function ProjectsSkeleton() {
   return (
     <div className="p-8 animate-pulse space-y-8">

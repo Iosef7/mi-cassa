@@ -65,7 +65,7 @@ export async function createProject(formData: FormData) {
       },
     });
 
-    revalidatePath("/rentas");
+    revalidatePath("/admin/rentas");
     // Parse/stringify to convert Prisma Decimal/Date objects to plain JS types for the Client Component
     return { success: true, project: JSON.parse(JSON.stringify(newProject)) };
   } catch (error) {

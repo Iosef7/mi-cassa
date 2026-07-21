@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
@@ -7,9 +7,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
+    const token = await getToken({ req: req as any, secret: process.env.AUTH_SECRET || "mi_cassa_super_secret_fallback_2026", secureCookie: process.env.NODE_ENV === "production" });
 
-    if (!session) {
+    if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
@@ -46,9 +46,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
+    const token = await getToken({ req: req as any, secret: process.env.AUTH_SECRET || "mi_cassa_super_secret_fallback_2026", secureCookie: process.env.NODE_ENV === "production" });
 
-    if (!session || (session.user.role !== "ADMIN" && session.user.role !== "AGENT")) {
+    if (!token || (token.role !== "ADMIN" && token.role !== "AGENT")) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
@@ -91,9 +91,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
+    const token = await getToken({ req: req as any, secret: process.env.AUTH_SECRET || "mi_cassa_super_secret_fallback_2026", secureCookie: process.env.NODE_ENV === "production" });
 
-    if (!session || session.user.role !== "ADMIN") {
+    if (!token || token.role !== "ADMIN") {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 

@@ -127,7 +127,7 @@ export default async function PresentationPage({ params }: { params: { id: strin
         <DriveImagePreview url={imagesList[5] || imagesList[0] || heroImage} alt="Exterior" priority={true} className="absolute inset-0 w-full h-full object-cover" />
         
         {/* Logo outside the z-10 container so mix-blend works against the image */}
-        <Image src="/logo.png" alt="Mi Cassa" width={192} height={48} className="absolute top-12 left-24 object-contain mix-blend-screen invert grayscale opacity-90 z-20" />
+        <Image src="/logo_final.png" alt="Mi Cassa" width={192} height={48} className="absolute top-12 left-24 object-contain mix-blend-screen invert grayscale opacity-90 z-20" />
 
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent w-[75%] z-0"></div>
         
@@ -150,7 +150,7 @@ export default async function PresentationPage({ params }: { params: { id: strin
       <div className="slide page-break bg-[#111] flex flex-row">
         <div className="w-[45%] h-full flex flex-col justify-center px-16 z-10 relative text-white">
           <div className="mb-12">
-             <Image src="/logo.png" alt="Mi Cassa" width={160} height={40} className="object-contain mix-blend-screen invert grayscale opacity-90" />
+             <Image src="/logo_final.png" alt="Mi Cassa" width={160} height={40} className="object-contain mix-blend-screen invert grayscale opacity-90" />
           </div>
           
           <div className="flex items-center gap-6 mb-6">
@@ -353,7 +353,7 @@ export default async function PresentationPage({ params }: { params: { id: strin
       <div className="slide page-break bg-[#111] flex flex-row">
         <div className="w-[45%] h-full flex flex-col justify-center px-16 z-10 relative text-white">
           <div className="mb-12">
-             <Image src="/logo.png" alt="Mi Cassa" width={192} height={48} className="object-contain mix-blend-screen invert grayscale opacity-90" />
+             <Image src="/logo_final.png" alt="Mi Cassa" width={192} height={48} className="object-contain mix-blend-screen invert grayscale opacity-90" />
           </div>
           
           <div className="flex items-center gap-6 mb-6">

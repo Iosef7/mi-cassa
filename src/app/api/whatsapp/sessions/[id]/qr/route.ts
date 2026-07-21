@@ -1,16 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-const BOT_URL = process.env.WHATSAPP_BOT_URL || "http://localhost:3001";
-
-// GET: Get QR for a session
 export async function GET(req: NextRequest, context: any) {
   try {
     const params = await Promise.resolve(context.params);
-    const res = await fetch(`${BOT_URL}/session/${params.id}/qr`, { cache: 'no-store' });
-    const data = await res.json();
-    return NextResponse.json(data);
+    const sessionId = params.id;
+
+    const session = await prisma.whatsAppSession.findUnique({
+      where: { sessionId }
+    });
+
+    if (!session) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+
+    if (session.currentQr) {
+      return NextResponse.json({ qr: session.currentQr, isConnected: session.isConnected, pairingCode: session.pairingCode });
+    }
+
+    if (session.pairingCode) {
+      return NextResponse.json({ qr: null, isConnected: session.isConnected, pairingCode: session.pairingCode });
+    }
+
+    return NextResponse.json({ waiting: true, isConnected: session.isConnected });
+
   } catch (error) {
     console.error(`Error fetching QR for session:`, error);
-    return NextResponse.json({ error: "Failed to fetch QR from bot" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch QR" }, { status: 500 });
   }
 }

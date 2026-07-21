@@ -3,8 +3,6 @@ import ProjectDashboard from './ProjectDashboard';
 import { Loader2 } from 'lucide-react';
 import { auth } from "@/auth";
 
-export const dynamic = 'force-dynamic';
-
 function ProjectSkeleton() {
   return (
     <div className="p-8 animate-pulse space-y-8 h-screen">

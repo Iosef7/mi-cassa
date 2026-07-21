@@ -56,7 +56,7 @@ const DriveImagePreview = ({ url, alt, className, priority }: { url: string, alt
     return <Image src={displayUrl} alt={alt} fill className={className} sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" onError={() => setImgError(true)} priority={priority} />;
   }
 
-  return <img src={displayUrl} alt={alt} className={className} loading={priority ? "eager" : "lazy"} onError={() => setImgError(true)} />;
+  return <Image src={displayUrl} alt={alt} fill={className?.includes('absolute') || className?.includes('h-full') ? true : undefined} width={!className?.includes('absolute') && !className?.includes('h-full') ? 800 : undefined} height={!className?.includes('absolute') && !className?.includes('h-full') ? 600 : undefined} unoptimized={true} className={className} loading={priority ? "eager" : "lazy"} onError={() => setImgError(true)} />;
 };
 
 export default function PropiedadesClient({ initialProperties }: { initialProperties: Property[] }) {

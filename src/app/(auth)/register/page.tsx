@@ -113,7 +113,7 @@ export default function RegisterPage() {
         <div className="text-center">
           <div className="mx-auto flex items-center justify-center mb-6">
             <Image 
-              src="/logo.png" 
+              src="/logo_final.png" 
               alt="Mi Cassa Logo" 
               width={100} 
               height={100} 

@@ -3,13 +3,11 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
 import { prisma } from "@/lib/prisma"
-import bcrypt from "bcryptjs"
+import bcrypt from "bcrypt"
 import { authConfig } from "./auth.config"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  secret: process.env.AUTH_SECRET || "mi_cassa_super_secret_fallback_2026",
-  trustHost: true,
   adapter: PrismaAdapter(prisma as any),
   providers: [
     GoogleProvider({

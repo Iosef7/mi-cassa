@@ -3,25 +3,29 @@ import Link from 'next/link';
 import { Plus, Users, Target, CheckSquare, Inbox, Loader2 } from 'lucide-react';
 import ProspectControls from './ProspectControls';
 import ProspectosContent from './ProspectosContent';
+import ProspectosKPIs from './ProspectosKPIs';
 import { cookies } from 'next/headers';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 
-export const dynamic = 'force-dynamic';
+function KPIsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="bg-card/50 p-5 rounded-xl border border-border flex items-center gap-4 h-[90px] animate-pulse">
+          <div className="w-12 h-12 rounded-full bg-muted flex-shrink-0"></div>
+          <div className="space-y-2 flex-1">
+            <div className="h-3 bg-muted rounded w-1/2"></div>
+            <div className="h-6 bg-muted rounded w-1/3"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function ProspectosSkeleton() {
   return (
     <div className="animate-pulse space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="bg-card/50 p-5 rounded-xl border border-border flex items-center gap-4 h-[90px]">
-            <div className="w-12 h-12 rounded-full bg-muted flex-shrink-0"></div>
-            <div className="space-y-2 flex-1">
-              <div className="h-3 bg-muted rounded w-1/2"></div>
-              <div className="h-6 bg-muted rounded w-1/3"></div>
-            </div>
-          </div>
-        ))}
-      </div>
       <div className="w-full h-[500px] bg-card/50 rounded-xl border border-border flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
       </div>
@@ -109,6 +113,10 @@ export default async function ProspectosPage({
       <ProspectControls currentTab={tab} />
 
       {/* Heavy Content (Streamed) */}
+      <Suspense fallback={<KPIsSkeleton />} key={`kpi-${tab}`}>
+        <ProspectosKPIs tab={tab} />
+      </Suspense>
+
       <Suspense fallback={<ProspectosSkeleton />} key={`${query}-${status}-${page}-${view}-${tab}`}>
         <ProspectosContent query={query} status={status} page={page} view={view} tab={tab} />
       </Suspense>

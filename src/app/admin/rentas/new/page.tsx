@@ -617,7 +617,7 @@ export default function NewProjectPage() {
                             }}
                           >
                             {isImage ? (
-                              <img src={URL.createObjectURL(f)} alt={f.name} className="absolute inset-0 w-full h-full object-cover" />
+                              <Image src={URL.createObjectURL(f)} alt={f.name} fill className="object-cover" unoptimized />
                             ) : (
                               <FileText className="w-8 h-8 text-indigo-300" />
                             )}
