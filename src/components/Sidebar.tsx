@@ -215,7 +215,7 @@ function ProfileModalWrapper({ session, isCollapsed }: { session: any, isCollaps
         onClick={() => setShowProfile(true)}
         className={`w-full flex items-center ${isCollapsed ? 'justify-center p-1' : 'gap-3 p-2'} hover:bg-muted/50 rounded-xl transition-colors text-left group`}
       >
-        <div className={`${isCollapsed ? 'w-10 h-10' : 'w-10 h-10'} rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shadow-inner overflow-hidden shrink-0`}>
+        <div className={`${isCollapsed ? 'w-10 h-10' : 'w-10 h-10'} relative rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shadow-inner overflow-hidden shrink-0`}>
           {session?.user?.image ? (
             <Image src={session.user.image} alt="Avatar" fill className="object-cover" sizes="40px" />
           ) : (
