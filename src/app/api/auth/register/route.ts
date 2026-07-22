@@ -65,6 +65,19 @@ export async function POST(req: Request) {
       where: { token }
     })
 
+    // Notify admins
+    const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map(admin => ({
+          userId: admin.id,
+          title: "Nuevo miembro del equipo",
+          message: `${user.name || user.email} ha aceptado su invitación y se ha unido.`,
+          link: "/admin/equipo",
+        }))
+      });
+    }
+
     return NextResponse.json(
       { message: "Usuario creado exitosamente", user: { id: user.id, name: user.name, email: user.email } },
       { status: 201 }

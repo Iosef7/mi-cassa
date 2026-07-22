@@ -4,8 +4,11 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
+import { signIn } from "next-auth/react"
 import { toast } from "sonner"
 import { ArrowRight, Loader2, ShieldAlert } from "lucide-react"
+import { FcGoogle } from "react-icons/fc"
+import logoImg from "@/../public/logo.png"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -111,13 +114,11 @@ export default function RegisterPage() {
       
       <div className="max-w-md w-full space-y-8 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl p-10 rounded-[2.5rem] shadow-[0_8px_40px_rgb(0,0,0,0.08)] dark:shadow-[0_8px_40px_rgb(0,0,0,0.2)] border border-white/40 dark:border-zinc-800/60 relative z-10 transition-all duration-300">
         <div className="text-center">
-          <div className="mx-auto flex items-center justify-center mb-6">
+          <div className="mx-auto flex items-center justify-center mb-6 w-32 h-32 bg-white rounded-full overflow-hidden p-4 drop-shadow-md hover:scale-105 transition-transform duration-300">
             <Image 
-              src="/logo_final.png" 
+              src={logoImg} 
               alt="Mi Cassa Logo" 
-              width={100} 
-              height={100} 
-              className="object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300"
+              className="object-contain w-full h-full"
               priority
             />
           </div>
@@ -193,6 +194,36 @@ export default function RegisterPage() {
             </button>
           </div>
         </form>
+
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200 dark:border-zinc-700" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white/70 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 font-medium backdrop-blur-md">
+                O regístrate con
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <button
+              onClick={() => {
+                setIsLoading(true);
+                signIn("google", { callbackUrl: "/admin" });
+              }}
+              disabled={isLoading}
+              className="w-full flex justify-center items-center py-3.5 px-4 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-sm bg-white dark:bg-zinc-800 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-zinc-700 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 transition-all duration-200 disabled:opacity-70 disabled:hover:translate-y-0"
+            >
+              <FcGoogle className="w-5 h-5 mr-2" />
+              Google
+            </button>
+            <p className="mt-2 text-xs text-center text-gray-500 dark:text-gray-400">
+              Asegúrate de usar la misma cuenta de Google a la que llegó esta invitación.
+            </p>
+          </div>
+        </div>
 
         <div className="text-center mt-6">
           <p className="text-sm font-medium text-gray-600 dark:text-gray-400">

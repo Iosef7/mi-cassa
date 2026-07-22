@@ -116,9 +116,26 @@ export default function CreateTaskModal({ onClose, onTaskCreated, agents, leads,
                   className="w-full bg-background border border-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
                   <option value="">Sin asignar</option>
-                  {agents.map(agent => (
-                    <option key={agent.id} value={agent.id}>{agent.name || agent.email || 'Agente sin nombre'}</option>
-                  ))}
+                  {[...agents].sort((a, b) => {
+                    const getWeight = (u: any) => {
+                      if (u.status === 'FOCUS' || u.status === 'ONLINE') return 1;
+                      if (u.status === 'AWAY') return 2;
+                      if (u.status === 'BREAK') return 3;
+                      return 4;
+                    };
+                    return getWeight(a) - getWeight(b);
+                  }).map(agent => {
+                    const isOnline = agent.status === 'ONLINE' || agent.status === 'FOCUS';
+                    const isAway = agent.status === 'AWAY';
+                    const isBusy = agent.status === 'DND';
+                    const indicator = isOnline ? '🟢' : isAway ? '🟡' : isBusy ? '🔴' : '⚪';
+                    const focus = agent.currentFocus ? ` - ${agent.currentFocus}` : '';
+                    return (
+                      <option key={agent.id} value={agent.id}>
+                        {indicator} {agent.name || agent.email || 'Agente'} {focus}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 

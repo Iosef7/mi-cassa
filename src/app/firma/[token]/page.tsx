@@ -1,6 +1,7 @@
 import { getContractByToken } from "@/actions/contracts";
 import { notFound } from "next/navigation";
 import SignatureFlow from "./SignatureFlow";
+import Image from "next/image";
 
 export default async function FirmaPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -38,13 +39,23 @@ export default async function FirmaPage({ params }: { params: Promise<{ token: s
     );
   }
 
+  const titles: Record<string, string> = {
+    es: "Acuerdo de Corretaje",
+    en: "Brokerage Agreement",
+    he: "הסכם תיווך",
+  };
+  const title = titles[contract.language || "es"] || titles.es;
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 sm:p-8">
       <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="bg-slate-900 p-6 sm:p-8 text-center relative overflow-hidden">
+        <div className="bg-slate-900 p-6 sm:p-8 text-center relative overflow-hidden flex flex-col items-center">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-600/20 to-transparent"></div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white relative z-10 tracking-tight">Acuerdo de Corretaje</h1>
+          <div className="relative z-10 mb-4 bg-white/10 p-3 rounded-xl backdrop-blur-sm border border-white/20">
+            <Image src="/micassa-brand.png" alt="Mi Cassa" width={180} height={60} className="object-contain h-10 sm:h-12 w-auto" />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white relative z-10 tracking-tight">{title}</h1>
           <p className="text-slate-300 relative z-10 mt-2">Mi Cassa Inmobiliaria</p>
         </div>
 

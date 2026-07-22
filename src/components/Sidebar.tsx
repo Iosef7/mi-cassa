@@ -14,6 +14,7 @@ import NotificationsDropdown from './NotificationsDropdown';
 import ProfileModal from './ProfileModal';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
+import { StatusSelector } from './presence/StatusSelector';
 
 interface SidebarProps {
   className?: string;
@@ -113,54 +114,31 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
         </button>
       )}
 
-      <div className={`p-6 flex ${isCollapsed ? 'justify-center' : 'justify-between'} items-center`}>
+      <div className="p-4 border-b border-border flex flex-col gap-3">
         {!isCollapsed ? (
-          <div className="relative group w-full flex justify-center items-center min-h-[48px]">
-            {!logoError ? (
-               <Image 
-                  src={validLogo || "/logo_final.png"} 
-                  alt="Mi Cassa Logo" 
-                  width={160} 
-                  height={48} 
-                  className="object-contain transition-all mx-auto drop-shadow-sm" 
-                  onError={() => setLogoError(true)}
-                  priority
-               />
-            ) : (
-               <div className="flex items-center gap-2 text-primary font-bold text-xl tracking-tight">
-                 <Building className="w-6 h-6" />
-                 <span>Mi Cassa</span>
-               </div>
-            )}
-            
-            {getRole() === 'ADMIN' && (
-              <>
-                <button 
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploadingLogo}
-                  className="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg text-sm font-semibold backdrop-blur-sm z-10"
-                >
-                  {isUploadingLogo ? (dict.common?.loading || 'Cargando...') : (dict.common?.edit || 'Cambiar')}
+          <>
+            {isMobile && (
+              <div className="flex justify-end">
+                <button onClick={onClose} className="p-2 -mr-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted">
+                  <X size={22} />
                 </button>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleLogoUpload} 
-                  accept="image/*" 
-                  className="hidden" 
-                />
-              </>
+              </div>
             )}
-          </div>
+
+            {/* User Icon & Status Selector at the top */}
+            {mounted && (
+              <div className="flex flex-col gap-2">
+                <ProfileModalWrapper session={session} isCollapsed={false} />
+                <div className="px-1 relative z-30">
+                  <StatusSelector direction="down" />
+                </div>
+              </div>
+            )}
+          </>
         ) : (
-          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shadow-sm">
-            <Building className="w-6 h-6 text-primary" />
+          <div className="flex flex-col items-center gap-3">
+            {mounted && <ProfileModalWrapper session={session} isCollapsed={true} />}
           </div>
-        )}
-        {isMobile && !isCollapsed && (
-          <button onClick={onClose} className="p-2 -mr-4 text-muted-foreground hover:text-foreground">
-            <X size={24} />
-          </button>
         )}
       </div>
       <nav className="flex-1 px-3 space-y-2 mt-2 overflow-y-auto overflow-x-hidden custom-scrollbar pb-4">
@@ -198,8 +176,6 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
         )}
       </nav>
       <div className="p-4 border-t border-border mt-auto flex flex-col gap-4">
-        {mounted && <ProfileModalWrapper session={session} isCollapsed={isCollapsed} />}
-        
         {!isCollapsed && <LanguageSwitcher />}
 
         <div className={`flex items-center ${isCollapsed ? 'flex-col gap-4 mt-2' : 'justify-between gap-1 px-2'}`}>

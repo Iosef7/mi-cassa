@@ -32,13 +32,23 @@ export function middleware(req: NextRequest) {
   if (req.nextUrl.pathname.startsWith('/api/')) {
     const isPublicApi = req.nextUrl.pathname.startsWith('/api/auth') || 
                         req.nextUrl.pathname.startsWith('/api/webhooks/') ||
-                        req.nextUrl.pathname.startsWith('/api/whatsapp/webhook');
+                        req.nextUrl.pathname.startsWith('/api/whatsapp/webhook') ||
+                        req.nextUrl.pathname.startsWith('/api/invitations/');
     if (!isPublicApi && !isLoggedIn) {
       return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { 
         status: 401, 
         headers: { 'content-type': 'application/json' } 
       });
     }
+    return NextResponse.next();
+  }
+
+  // Rutas públicas que no requieren autenticación
+  const isPublicRoute = req.nextUrl.pathname === '/' || 
+                        req.nextUrl.pathname.startsWith('/wp-uploads') ||
+                        req.nextUrl.pathname.startsWith('/images');
+                        
+  if (isPublicRoute) {
     return NextResponse.next();
   }
 

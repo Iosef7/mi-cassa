@@ -54,4 +54,52 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
     })
   ],
+  callbacks: {
+    ...authConfig.callbacks,
+    async signIn({ user, account, profile }) {
+      if (account?.provider === 'google') {
+        const existingUser = await prisma.user.findUnique({ where: { email: user.email! } });
+        if (existingUser) return true; // El usuario ya existe
+
+        const invitation = await prisma.invitation.findUnique({ where: { email: user.email! } });
+        if (!invitation) {
+          // No tiene invitación, denegar acceso
+          return "/login?error=AccessDenied";
+        }
+      }
+      return true;
+    }
+  },
+  events: {
+    async createUser({ user }) {
+      // Hook que se ejecuta justo después de que Prisma crea el usuario en la BD
+      if (user.email) {
+        const invitation = await prisma.invitation.findUnique({ where: { email: user.email } });
+        if (invitation) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { 
+              role: invitation.role, 
+              emailVerified: new Date() 
+            }
+          });
+          
+          await prisma.invitation.delete({ where: { email: user.email } });
+
+          // Notificar a los administradores
+          const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
+          if (admins.length > 0) {
+            await prisma.notification.createMany({
+              data: admins.map(admin => ({
+                userId: admin.id,
+                title: "Nuevo miembro del equipo",
+                message: `${user.name || user.email} ha aceptado su invitación y se ha unido.`,
+                link: "/admin/equipo",
+              }))
+            });
+          }
+        }
+      }
+    }
+  }
 })

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { 
   Calendar, 
   Clock, 
@@ -9,18 +9,14 @@ import {
   Trash2, 
   Edit2,
   CheckCircle2,
-  AlertCircle,
   Loader2,
-  Smartphone,
-  QrCode,
   X,
-  Wifi,
-  WifiOff
+  ChevronRight,
+  ChevronLeft
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
-import { QRCodeSVG } from "qrcode.react";
 import Image from "next/image";
 
 interface Session {
@@ -33,6 +29,9 @@ export default function StatusTab() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
+
+  // Stepper State
+  const [currentStep, setCurrentStep] = useState(1);
 
   // Form state
   const [files, setFiles] = useState<File[]>([]);
@@ -51,13 +50,6 @@ export default function StatusTab() {
   // Selection
   const [sendToAll, setSendToAll] = useState(true);
   const [selectedSessions, setSelectedSessions] = useState<string[]>([]);
-
-  // New Phone Modal
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newPhoneName, setNewPhoneName] = useState("");
-  const [qrCode, setQrCode] = useState<string | null>(null);
-  const [isLinking, setIsLinking] = useState(false);
-  const [linkIntervalId, setLinkIntervalId] = useState<NodeJS.Timeout | null>(null);
 
   // Rename Session Modal
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
@@ -95,7 +87,7 @@ export default function StatusTab() {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
     if (selectedFiles.length > 0) {
       setFiles(prev => [...prev, ...selectedFiles]);
@@ -105,27 +97,37 @@ export default function StatusTab() {
       }));
       setPreviews(prev => [...prev, ...newPreviews]);
     }
-    // Limpiar el input para permitir seleccionar el mismo archivo de nuevo
     e.target.value = "";
-  };
+  }, []);
 
-  const removeFile = (index: number) => {
+  const removeFile = useCallback((index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
     setPreviews(prev => prev.filter((_, i) => i !== index));
-  };
+  }, []);
 
-  const toggleSessionSelection = (id: string) => {
+  const toggleSessionSelection = useCallback((id: string) => {
     setSelectedSessions(prev => 
       prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
     );
-  };
+  }, []);
+
+  const handleNextStep = () => {
+    if (currentStep === 1) {
+       if (files.length === 0 && !caption.trim()) {
+         toast.error("Añade al menos una imagen, video o texto.");
+         return;
+       }
+       setCurrentStep(2);
+    } else if (currentStep === 2) {
+       if (!sendToAll && selectedSessions.length === 0) {
+         toast.error("Debes seleccionar al menos un teléfono para enviar.");
+         return;
+       }
+       setCurrentStep(3);
+    }
+  }
 
   const handleSubmit = async () => {
-    if (!sendToAll && selectedSessions.length === 0) {
-      toast.error("Debes seleccionar al menos un teléfono para enviar.");
-      return;
-    }
-
     if (scheduleType === "once" && (!dateStr || !timeStr)) {
       toast.error("Selecciona fecha y hora.");
       return;
@@ -189,6 +191,7 @@ export default function StatusTab() {
         setExpiresAtStr("");
         setMultipleSchedules([{ date: "", time: "" }]);
         setWeeklySchedule([]);
+        setCurrentStep(1);
         fetchStatuses();
       } else {
         const errorData = await res.json();
@@ -204,7 +207,6 @@ export default function StatusTab() {
 
   const handleDeleteStatus = async (id: string) => {
     const isConfirmed = window.confirm("¿Estás seguro?\nSe cancelará la publicación de este estado.");
-
     if (isConfirmed) {
       try {
         const res = await fetch(`/api/whatsapp/status?id=${id}`, { method: 'DELETE' });
@@ -219,88 +221,6 @@ export default function StatusTab() {
       }
     }
   };
-
-  const handleDeleteSession = async (id: string) => {
-    const isConfirmed = window.confirm(`¿Desvincular teléfono?\nEl teléfono "${id}" será desconectado.`);
-
-    if (isConfirmed) {
-      try {
-        const res = await fetch(`/api/whatsapp/sessions/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-          toast.success("Teléfono desvinculado.");
-          fetchSessions();
-        } else {
-          toast.error("No se pudo desvincular.");
-        }
-      } catch (error) {
-        toast.error("Error al desvincular.");
-      }
-    }
-  };
-
-  const openLinkModal = () => {
-    setNewPhoneName("");
-    setQrCode(null);
-    setIsLinking(false);
-    setIsModalOpen(true);
-  };
-
-  const closeLinkModal = () => {
-    setIsModalOpen(false);
-    if (linkIntervalId) clearInterval(linkIntervalId);
-    setLinkIntervalId(null);
-    fetchSessions(); // Refresh list when modal closes
-  };
-
-  const startLinking = async () => {
-    if (!newPhoneName.trim()) {
-      toast.error("Ingresa un nombre para el teléfono.");
-      return;
-    }
-    
-    // Normalize string to avoid filesystem issues
-    const normalizedId = newPhoneName.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
-    
-    setIsLinking(true);
-    setQrCode(null);
-    
-    try {
-      // Initialize session
-      await fetch(`/api/whatsapp/sessions/${normalizedId}`);
-      
-      // Poll for QR code
-      const interval = setInterval(async () => {
-        try {
-          const res = await fetch(`/api/whatsapp/sessions/${normalizedId}/qr`);
-          const data = await res.json();
-          
-          if (data.connected) {
-            clearInterval(interval);
-            setQrCode(null);
-            toast.success("¡Teléfono vinculado exitosamente!");
-            closeLinkModal();
-          } else if (data.qr) {
-            setQrCode(data.qr);
-          }
-        } catch (e) {
-          console.error("Polling error", e);
-        }
-      }, 3000);
-      
-      setLinkIntervalId(interval);
-      
-    } catch (e) {
-      toast.error("Error al iniciar vinculación.");
-      setIsLinking(false);
-    }
-  };
-
-  // Cleanup interval on unmount
-  useEffect(() => {
-    return () => {
-      if (linkIntervalId) clearInterval(linkIntervalId);
-    };
-  }, [linkIntervalId]);
 
   const openRenameModal = (id: string) => {
     setSessionToRename(id);
@@ -350,75 +270,41 @@ export default function StatusTab() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       
-      {/* Formulario de Programación */}
+      {/* Formulario de Programación (Stepper) */}
       <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm">
-            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-              <Plus className="w-5 h-5 text-green-600" />
-              Enviar Nuevo Estado
-            </h2>
-            
-            <div className="space-y-6">
-              {/* Selección de Destinatarios */}
-              <div className="p-4 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-lg">
-                <label className="block text-sm font-medium mb-3">¿A qué teléfonos se enviará el estado?</label>
-                <div className="flex items-center gap-4 mb-4">
-                  <label className="flex items-center gap-2 cursor-pointer text-sm">
-                    <input 
-                      type="radio" 
-                      checked={sendToAll} 
-                      onChange={() => setSendToAll(true)} 
-                      className="text-green-600 focus:ring-green-600"
-                    />
-                    A todos los vinculados
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-sm">
-                    <input 
-                      type="radio" 
-                      checked={!sendToAll} 
-                      onChange={() => setSendToAll(false)}
-                      className="text-green-600 focus:ring-green-600"
-                    />
-                    Seleccionar específicos
-                  </label>
-                </div>
-                
-                {!sendToAll && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3 p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-md">
-                    {sessions.map(s => (
-                      <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer p-1">
-                        <input 
-                          type="checkbox" 
-                          checked={selectedSessions.includes(s.id)}
-                          onChange={() => toggleSessionSelection(s.id)}
-                          className="rounded text-green-600 focus:ring-green-600"
-                        />
-                        {s.id}
-                      </label>
-                    ))}
-                    {sessions.length === 0 && (
-                      <span className="text-xs text-neutral-500 col-span-3">No hay teléfonos para seleccionar.</span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Imágenes y Videos */}
-              <div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 border-b border-neutral-100 dark:border-neutral-800 pb-4 gap-4">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Plus className="w-5 h-5 text-green-600" />
+            Crear Estado
+          </h2>
+          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 hide-scrollbar">
+            <span className={`whitespace-nowrap px-2.5 py-1 rounded-full transition-colors ${currentStep === 1 ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' : 'text-neutral-400'}`}>1. Contenido</span>
+            <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-neutral-300 flex-shrink-0" />
+            <span className={`whitespace-nowrap px-2.5 py-1 rounded-full transition-colors ${currentStep === 2 ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' : 'text-neutral-400'}`}>2. Destinos</span>
+            <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-neutral-300 flex-shrink-0" />
+            <span className={`whitespace-nowrap px-2.5 py-1 rounded-full transition-colors ${currentStep === 3 ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' : 'text-neutral-400'}`}>3. Horario</span>
+          </div>
+        </div>
+        
+        <div className="space-y-6">
+          {/* STEP 1: Contenido */}
+          {currentStep === 1 && (
+            <div className="animate-in slide-in-from-right-4 duration-300">
+              <div className="mb-6">
                 <label className="block text-sm font-medium mb-2">Imágenes o Videos (Opcional)</label>
-                
                 {previews.length > 0 && (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 mb-4">
                     {previews.map((prev, index) => (
-                      <div key={index} className="relative w-full aspect-[9/16] rounded-lg overflow-hidden shadow-md border border-neutral-200 bg-black">
+                      <div key={index} className="relative w-full aspect-[9/16] rounded-lg overflow-hidden shadow-md border border-neutral-200 bg-black group">
                         {prev?.type?.startsWith('video/') ? (
                           <video src={prev.url} className="w-full h-full object-cover" controls={false} />
                         ) : prev.type.startsWith('image/') ? (
-                          <Image src={prev.url} alt={`Preview ${index}`} fill unoptimized={true} className="object-cover" />
+                          <Image src={prev.url} alt={`Preview ${index}`} fill className="object-cover" />
                         ) : null}
                         <button 
                           type="button" 
                           onClick={(e) => { e.preventDefault(); removeFile(index); }}
-                          className="absolute top-2 right-2 bg-black/50 p-1.5 rounded-full text-white hover:bg-red-500 transition-colors z-10"
+                          className="absolute top-2 right-2 bg-black/50 p-1.5 rounded-full text-white hover:bg-red-500 opacity-0 group-hover:opacity-100 transition-all z-10"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -426,7 +312,6 @@ export default function StatusTab() {
                     ))}
                   </div>
                 )}
-
                 <div className="border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors relative">
                   <ImageIcon className="w-8 h-8 text-neutral-400 mb-2" />
                   <p className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -442,7 +327,6 @@ export default function StatusTab() {
                 </div>
               </div>
 
-              {/* Texto */}
               <div>
                 <label className="block text-sm font-medium mb-2">Texto (Caption)</label>
                 <textarea 
@@ -453,8 +337,84 @@ export default function StatusTab() {
                 ></textarea>
               </div>
 
-              {/* Tipo de Programación */}
-              <div>
+              <div className="mt-6 flex justify-end">
+                <button 
+                  onClick={handleNextStep}
+                  className="px-6 py-2.5 bg-neutral-900 dark:bg-white text-white dark:text-black rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
+                >
+                  Siguiente <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2: Destinos */}
+          {currentStep === 2 && (
+            <div className="animate-in slide-in-from-right-4 duration-300">
+              <div className="p-4 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-lg">
+                <label className="block text-sm font-medium mb-3">¿A qué teléfonos se enviará el estado?</label>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm">
+                    <input 
+                      type="radio" 
+                      checked={sendToAll} 
+                      onChange={() => setSendToAll(true)} 
+                      className="text-green-600 focus:ring-green-600 accent-green-600 w-4 h-4"
+                    />
+                    A todos los vinculados
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-sm">
+                    <input 
+                      type="radio" 
+                      checked={!sendToAll} 
+                      onChange={() => setSendToAll(false)}
+                      className="text-green-600 focus:ring-green-600 accent-green-600 w-4 h-4"
+                    />
+                    Seleccionar específicos
+                  </label>
+                </div>
+                
+                {!sendToAll && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-3 p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-md">
+                    {sessions.map(s => (
+                      <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer p-1.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 rounded-md transition-colors">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedSessions.includes(s.id)}
+                          onChange={() => toggleSessionSelection(s.id)}
+                          className="rounded text-green-600 focus:ring-green-600 accent-green-600 w-4 h-4"
+                        />
+                        {s.id}
+                      </label>
+                    ))}
+                    {sessions.length === 0 && (
+                      <span className="text-xs text-neutral-500 col-span-3">No hay teléfonos vinculados.</span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 flex justify-between">
+                <button 
+                  onClick={() => setCurrentStep(1)}
+                  className="px-6 py-2.5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg font-medium transition-colors flex items-center gap-2"
+                >
+                  <ChevronLeft className="w-4 h-4" /> Atrás
+                </button>
+                <button 
+                  onClick={handleNextStep}
+                  className="px-6 py-2.5 bg-neutral-900 dark:bg-white text-white dark:text-black rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
+                >
+                  Siguiente <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3: Horario */}
+          {currentStep === 3 && (
+            <div className="animate-in slide-in-from-right-4 duration-300">
+              <div className="mb-6">
                 <label className="block text-sm font-medium mb-2">Cuándo enviar</label>
                 <select 
                   value={scheduleType} 
@@ -468,9 +428,8 @@ export default function StatusTab() {
                 </select>
               </div>
 
-              {/* Fecha y Hora Única */}
               {scheduleType === "once" && (
-                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                   <div>
                     <label className="block text-sm font-medium mb-2 flex items-center gap-1">
                       <Calendar className="w-4 h-4" /> Fecha
@@ -496,12 +455,11 @@ export default function StatusTab() {
                 </div>
               )}
 
-              {/* Varias Fechas */}
               {scheduleType === "multiple" && (
-                <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="space-y-3 mb-6">
                   {multipleSchedules.map((item, index) => (
-                    <div key={index} className="flex items-end gap-3">
-                      <div className="flex-1">
+                    <div key={index} className="flex flex-col sm:flex-row sm:items-end gap-3 p-3 sm:p-0 bg-neutral-50 dark:bg-neutral-800/30 sm:bg-transparent rounded-lg">
+                      <div className="flex-1 w-full">
                         <label className="block text-xs font-medium mb-1">Fecha {index + 1}</label>
                         <input type="date" value={item.date} onChange={e => {
                           const newScheds = [...multipleSchedules];
@@ -509,7 +467,7 @@ export default function StatusTab() {
                           setMultipleSchedules(newScheds);
                         }} className="w-full p-2 rounded-md border border-neutral-200 dark:border-neutral-700 bg-transparent" />
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 w-full">
                         <label className="block text-xs font-medium mb-1">Hora {index + 1}</label>
                         <input type="time" value={item.time} onChange={e => {
                           const newScheds = [...multipleSchedules];
@@ -518,7 +476,7 @@ export default function StatusTab() {
                         }} className="w-full p-2 rounded-md border border-neutral-200 dark:border-neutral-700 bg-transparent" />
                       </div>
                       {multipleSchedules.length > 1 && (
-                        <button type="button" onClick={() => setMultipleSchedules(multipleSchedules.filter((_, i) => i !== index))} className="p-2 mb-0.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md">
+                        <button type="button" onClick={() => setMultipleSchedules(multipleSchedules.filter((_, i) => i !== index))} className="p-2 sm:mb-0.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md mt-2 sm:mt-0 w-full sm:w-auto flex justify-center">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       )}
@@ -530,28 +488,29 @@ export default function StatusTab() {
                 </div>
               )}
 
-              {/* Recurrencia Semanal */}
               {scheduleType === "recurring" && (
-                <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="space-y-3 mb-6">
                   <p className="text-sm text-neutral-500">Selecciona los días de la semana y a qué hora quieres que se envíe.</p>
-                  {daysOfWeek.map((dayName, dayIndex) => {
-                    const isSelected = weeklySchedule.some(w => w.dayOfWeek === dayIndex);
-                    const selectedTime = weeklySchedule.find(w => w.dayOfWeek === dayIndex)?.time || "";
-                    return (
-                      <div key={dayIndex} className="flex items-center gap-3">
-                        <input type="checkbox" id={`day-${dayIndex}`} checked={isSelected} onChange={(e) => {
-                          if (e.target.checked) setWeeklySchedule([...weeklySchedule, { dayOfWeek: dayIndex, time: "10:00" }]);
-                          else setWeeklySchedule(weeklySchedule.filter(w => w.dayOfWeek !== dayIndex));
-                        }} className="w-4 h-4 text-green-600 rounded" />
-                        <label htmlFor={`day-${dayIndex}`} className="text-sm font-medium w-24 cursor-pointer">{dayName}</label>
-                        {isSelected && (
-                          <input type="time" value={selectedTime} onChange={e => {
-                            setWeeklySchedule(weeklySchedule.map(w => w.dayOfWeek === dayIndex ? { ...w, time: e.target.value } : w));
-                          }} className="p-1.5 text-sm rounded-md border border-neutral-200 dark:border-neutral-700 bg-transparent" />
-                        )}
-                      </div>
-                    );
-                  })}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {daysOfWeek.map((dayName, dayIndex) => {
+                      const isSelected = weeklySchedule.some(w => w.dayOfWeek === dayIndex);
+                      const selectedTime = weeklySchedule.find(w => w.dayOfWeek === dayIndex)?.time || "";
+                      return (
+                        <div key={dayIndex} className="flex items-center gap-3 p-2 rounded-lg border border-neutral-100 dark:border-neutral-800">
+                          <input type="checkbox" id={`day-${dayIndex}`} checked={isSelected} onChange={(e) => {
+                            if (e.target.checked) setWeeklySchedule([...weeklySchedule, { dayOfWeek: dayIndex, time: "10:00" }]);
+                            else setWeeklySchedule(weeklySchedule.filter(w => w.dayOfWeek !== dayIndex));
+                          }} className="w-4 h-4 text-green-600 rounded accent-green-600" />
+                          <label htmlFor={`day-${dayIndex}`} className="text-sm font-medium flex-1 cursor-pointer">{dayName}</label>
+                          {isSelected && (
+                            <input type="time" value={selectedTime} onChange={e => {
+                              setWeeklySchedule(weeklySchedule.map(w => w.dayOfWeek === dayIndex ? { ...w, time: e.target.value } : w));
+                            }} className="p-1.5 text-sm rounded-md border border-neutral-200 dark:border-neutral-700 bg-transparent w-24" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                   <div className="pt-4 mt-4 border-t border-neutral-100 dark:border-neutral-800">
                     <label className="block text-sm font-medium mb-1">Fecha de Caducidad (Opcional)</label>
                     <p className="text-xs text-neutral-500 mb-2">Si dejas esto en blanco, se repetirá infinitamente.</p>
@@ -560,169 +519,104 @@ export default function StatusTab() {
                 </div>
               )}
 
-              <button 
-                type="button" 
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 shadow-sm"
-              >
-                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-                {scheduleType === "now" ? "Enviar Estado Ahora" : "Guardar y Programar"}
-              </button>
+              <div className="mt-6 flex justify-between">
+                <button 
+                  onClick={() => setCurrentStep(2)}
+                  className="px-6 py-2.5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg font-medium transition-colors flex items-center gap-2"
+                >
+                  <ChevronLeft className="w-4 h-4" /> Atrás
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 shadow-sm"
+                >
+                  {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                  {scheduleType === "now" ? "Enviar Ahora" : "Guardar y Programar"}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
+        </div>
+      </div>
 
-          {/* Lista de Programados */}
-          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm">
-            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-neutral-500" />
-              Historial y Programados
-            </h2>
-            
-            <div className="space-y-4">
-              {isLoading ? (
-                <div className="flex justify-center p-8">
-                  <Loader2 className="w-8 h-8 animate-spin text-neutral-400" />
-                </div>
-              ) : scheduledStatuses.length === 0 ? (
-                <p className="text-sm text-neutral-500 text-center py-8 bg-neutral-50 dark:bg-neutral-800/30 rounded-lg">No hay estados programados.</p>
-              ) : (
-                scheduledStatuses.map(status => (
-                  <div key={status.id} className="flex flex-col sm:flex-row items-start gap-4 p-4 border border-neutral-100 dark:border-neutral-800 rounded-lg hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors bg-neutral-50/50 dark:bg-neutral-800/10">
-                    <div className="w-16 h-24 bg-neutral-200 dark:bg-neutral-800 rounded-md flex-shrink-0 overflow-hidden relative shadow-sm">
-                       {(() => {
-                         let imgUrl = null;
-                         try {
-                           const urls = JSON.parse(status.mediaUrls);
-                           if (urls && urls.length > 0) imgUrl = urls[0];
-                         } catch (e) {}
-                         const isVideo = imgUrl && imgUrl.match(/\.(mp4|webm|ogg|mov)$/i);
-                         return imgUrl ? (
-                           isVideo ? (
-                             <video src={imgUrl} className="w-full h-full object-cover" controls={false} />
-                           ) : (
-                             <div className="relative w-full h-full">
-                               <Image src={imgUrl} alt="Preview" fill unoptimized={true} className="object-cover" />
-                             </div>
-                           )
-                         ) : (
-                           <div className="w-full h-full flex items-center justify-center text-neutral-400 bg-neutral-100 dark:bg-neutral-800">
-                             <ImageIcon className="w-6 h-6" />
-                           </div>
-                         );
-                       })()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium line-clamp-2 mb-2">{status.caption || <span className="text-neutral-400 italic">Sin texto</span>}</p>
-                      <div className="flex items-center gap-2 text-xs text-neutral-500 mb-3">
-                        <Clock className="w-3.5 h-3.5" />
-                        {status.publishAt ? format(new Date(status.publishAt), "PPP 'a las' p", { locale: es }) : format(new Date(status.createdAt || new Date()), "PPP 'a las' p", { locale: es })}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {status.status === "SCHEDULED" ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                            Programado
-                          </span>
-                        ) : status.status === "FAILED" ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200" title={status.errorMessage}>
-                            Error al Enviar
-                          </span>
+      {/* Lista de Programados */}
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm">
+        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+          <Clock className="w-5 h-5 text-neutral-500" />
+          Historial y Programados
+        </h2>
+        
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="w-8 h-8 animate-spin text-neutral-400" />
+            </div>
+          ) : scheduledStatuses.length === 0 ? (
+            <p className="text-sm text-neutral-500 text-center py-8 bg-neutral-50 dark:bg-neutral-800/30 rounded-lg">No hay estados programados.</p>
+          ) : (
+            scheduledStatuses.map(status => (
+              <div key={status.id} className="flex flex-col sm:flex-row items-start gap-4 p-4 border border-neutral-100 dark:border-neutral-800 rounded-lg hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors bg-neutral-50/50 dark:bg-neutral-800/10">
+                <div className="w-16 h-24 bg-neutral-200 dark:bg-neutral-800 rounded-md flex-shrink-0 overflow-hidden relative shadow-sm">
+                    {(() => {
+                      let imgUrl = null;
+                      try {
+                        const urls = JSON.parse(status.mediaUrls);
+                        if (urls && urls.length > 0) imgUrl = urls[0];
+                      } catch (e) {}
+                      const isVideo = imgUrl && imgUrl.match(/\.(mp4|webm|ogg|mov)$/i);
+                      return imgUrl ? (
+                        isVideo ? (
+                          <video src={imgUrl} className="w-full h-full object-cover" controls={false} />
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                            Publicado
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <button 
-                        onClick={() => handleDeleteStatus(status.id)}
-                        className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                        title="Eliminar"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-      {/* Modal para Vincular Nuevo Teléfono */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-neutral-900 w-full max-w-md rounded-2xl shadow-xl overflow-hidden border border-neutral-200 dark:border-neutral-800">
-            <div className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-neutral-800">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
-                <QrCode className="w-5 h-5 text-green-600" />
-                Vincular Teléfono
-              </h3>
-              <button onClick={closeLinkModal} className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="p-6">
-              {!isLinking ? (
-                <div className="space-y-4">
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                    Asigna un nombre descriptivo a este teléfono para identificarlo (ej. "Ventas Juan", "Soporte Central").
-                  </p>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Nombre del Dispositivo</label>
-                    <input 
-                      type="text" 
-                      value={newPhoneName}
-                      onChange={(e) => setNewPhoneName(e.target.value)}
-                      placeholder="Ej. Soporte Ventas"
-                      className="w-full p-2.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-transparent focus:ring-2 focus:ring-green-500 outline-none"
-                    />
-                  </div>
-                  <button 
-                    onClick={startLinking}
-                    className="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors mt-2"
-                  >
-                    Generar Código QR
-                  </button>
+                          <div className="relative w-full h-full">
+                            <Image src={imgUrl} alt="Preview" fill className="object-cover" />
+                          </div>
+                        )
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-neutral-400 bg-neutral-100 dark:bg-neutral-800">
+                          <ImageIcon className="w-6 h-6" />
+                        </div>
+                      );
+                    })()}
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center text-center space-y-4 py-4">
-                  <h4 className="font-medium">Escanea este código con WhatsApp</h4>
-                  
-                  <div className="w-64 h-64 bg-white border-4 border-white rounded-xl shadow-sm flex items-center justify-center relative overflow-hidden">
-                    {qrCode ? (
-                      <div className="relative w-full h-full">
-                        <Image src={qrCode} alt="QR Code" fill unoptimized={true} className="object-contain" />
-                      </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium line-clamp-2 mb-2">{status.caption || <span className="text-neutral-400 italic">Sin texto</span>}</p>
+                  <div className="flex items-center gap-2 text-xs text-neutral-500 mb-3">
+                    <Clock className="w-3.5 h-3.5" />
+                    {status.publishAt ? format(new Date(status.publishAt), "PPP 'a las' p", { locale: es }) : format(new Date(status.createdAt || new Date()), "PPP 'a las' p", { locale: es })}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {status.status === "SCHEDULED" ? (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                        Programado
+                      </span>
+                    ) : status.status === "FAILED" ? (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200" title={status.errorMessage}>
+                        Error al Enviar
+                      </span>
                     ) : (
-                      <div className="flex flex-col items-center justify-center text-neutral-400 gap-3">
-                        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
-                        <span className="text-sm">Generando QR...</span>
-                      </div>
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                        Publicado
+                      </span>
                     )}
                   </div>
-                  
-                  <div className="text-sm text-neutral-500 max-w-[280px]">
-                    <ol className="text-left list-decimal pl-4 space-y-1">
-                      <li>Abre WhatsApp en tu teléfono</li>
-                      <li>Ve a Configuración &gt; <b>Dispositivos vinculados</b></li>
-                      <li>Toca <b>Vincular un dispositivo</b></li>
-                      <li>Apunta la cámara a esta pantalla</li>
-                    </ol>
-                  </div>
-                  
+                </div>
+                <div className="flex-shrink-0">
                   <button 
-                    onClick={closeLinkModal}
-                    className="text-sm text-red-500 hover:text-red-700 font-medium underline mt-2"
+                    onClick={() => handleDeleteStatus(status.id)}
+                    className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                    title="Eliminar"
                   >
-                    Cancelar
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+            ))
+          )}
         </div>
-      )}
+      </div>
 
       {/* Modal para Renombrar Teléfono */}
       {isRenameModalOpen && (

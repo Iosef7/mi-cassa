@@ -27,6 +27,9 @@ export default async function ProspectoDetailPage({ params }: { params: Promise<
         orderBy: { createdAt: 'desc' },
         take: 10
       },
+      brokerageContracts: {
+        orderBy: { createdAt: 'desc' }
+      },
       property: true,
       agent: true,
     }
@@ -82,6 +85,7 @@ export default async function ProspectoDetailPage({ params }: { params: Promise<
             leadId={lead.id} 
             propertyId={lead.propertyId} 
             agentId={lead.agentId || session?.user?.id || null} 
+            leadEmail={lead.email}
             availableProperties={properties}
           />
           <Link href={`/admin/prospectos/${lead.id}/editar`} className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium transition-colors border border-slate-200">
@@ -235,9 +239,57 @@ export default async function ProspectoDetailPage({ params }: { params: Promise<
         {/* Right Column: AI Calls, WhatsApp & Activity */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Appointments Box */}
+        {/* Contracts Box */}
+        {lead.brokerageContracts && lead.brokerageContracts.length > 0 && (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Citas Agendadas</h2>
+            <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <Tag size={20} className="text-indigo-500" />
+              Contratos
+            </h2>
+            <div className="space-y-3">
+              {lead.brokerageContracts.map(contract => (
+                <div key={contract.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 bg-slate-50 rounded-xl border border-slate-100 gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-bold text-slate-900">
+                        Acuerdo de Corretaje ({contract.language.toUpperCase()})
+                      </p>
+                      {contract.status === "FIRMADO" ? (
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Firmado</span>
+                      ) : (
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full">Pendiente</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-500">
+                      Generado: {new Date(contract.createdAt).toLocaleString()}
+                    </p>
+                    {contract.signedAt && (
+                      <p className="text-sm text-green-600 font-medium">
+                        Firmado el: {new Date(contract.signedAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {contract.status === "FIRMADO" && contract.pdfUrl ? (
+                    <a 
+                      href={contract.pdfUrl} 
+                      target="_blank" 
+                      className="text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-4 py-2 rounded-lg transition-colors border border-indigo-200 text-center"
+                    >
+                      Ver Documento PDF
+                    </a>
+                  ) : (
+                    <span className="text-sm text-slate-400 italic">Esperando firma...</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Appointments Box */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h2 className="text-lg font-bold text-slate-900 mb-4">Citas Agendadas</h2>
             {lead.appointments && lead.appointments.length > 0 ? (
               <div className="space-y-3">
                 {lead.appointments.map(apt => (

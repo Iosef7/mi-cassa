@@ -1,286 +1,404 @@
-import React from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { motion } from "framer-motion";
 
-export default function PublicHomepage() {
+export default function Home() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   return (
-    <div className="min-h-screen bg-white text-legacy-gray font-lato">
-      {/* 1. Navbar Structure & Links */}
-      <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-[90px]">
-            {/* Logo */}
-            <div className="flex-shrink-0 flex items-center">
-              <Link href="/">
-                <div className="relative w-48 h-16 cursor-pointer hover:opacity-90 transition flex items-center">
-                  <Image src="/micassa-brand.png?v=1" alt="MiCassa Logo" fill className="object-contain" priority unoptimized />
-                </div>
-              </Link>
-            </div>
-
-            {/* Links */}
-            <nav className="hidden md:flex items-center space-x-6">
-              <Link href="#" className="font-copperplate text-legacy-blue text-[15px] hover:opacity-80 transition">INICIO</Link>
-              <Link href="#servicios" className="font-copperplate text-legacy-gray text-[15px] hover:opacity-80 transition">SERVICIOS</Link>
-              <div className="relative group py-6">
-                <Link href="#proyectos" className="font-copperplate text-legacy-gray text-[15px] hover:opacity-80 transition flex items-center">
-                  PROYECTOS <span className="ml-1 text-[10px]">▼</span>
+    <div className="min-h-screen bg-white text-gray-800 font-sans overflow-x-hidden">
+      
+      {/* 1. HEADER (Pixel-Perfect) */}
+      <header className="w-full bg-white relative z-50 shadow-sm">
+        <div className="mx-auto w-full max-w-[1400px] flex justify-between items-center py-4 px-4">
+          <div className="flex-shrink-0">
+            <Link href="/" className="flex items-center">
+              <span className="text-[#214953] font-bold text-2xl tracking-tight">Mi</span>
+              <span className="text-[#5280A4] font-bold text-2xl tracking-tight">CASSA</span>
+            </Link>
+          </div>
+          <div className="hidden lg:flex flex-row items-center space-x-6">
+            <nav className="flex items-center space-x-1">
+              {["Inicio", "Proyectos", "Venta", "Renta", "Asesoria legal", "Hipoteca", "Decoración"].map((item, idx) => (
+                <Link key={idx} href="#" className={`whitespace-nowrap text-[14px] xl:text-[16px] font-normal px-2 xl:px-4 py-2 transition-colors ${idx === 0 ? "text-[#5280A4] border-b-[3px] border-[#5280A4]" : "text-[#5280A4] hover:text-[#214953]"}`}>
+                  {item}
                 </Link>
-                
-                {/* Dropdown Menu */}
-                <div className="absolute top-full left-0 w-64 bg-white border-t-2 border-legacy-blue shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 flex flex-col py-4">
-                  <Link href="#" className="font-copperplate text-legacy-gray hover:text-legacy-blue text-sm py-3 px-6 transition">LEGACY</Link>
-                  <Link href="#" className="font-copperplate text-legacy-gray hover:text-legacy-blue text-sm py-3 px-6 transition">SAVYON VIEW<br/>JERUSALEM</Link>
-                  <Link href="#" className="font-copperplate text-legacy-gray hover:text-legacy-blue text-sm py-3 px-6 transition">BRIGA TOWERS</Link>
-                  <Link href="#" className="font-copperplate text-legacy-gray hover:text-legacy-blue text-sm py-3 px-6 transition">SAVYON CITY<br/>NETANYA</Link>
-                  <Link href="#" className="font-copperplate text-legacy-gray hover:text-legacy-blue text-sm py-3 px-6 transition">SPIRIT NETANYA</Link>
-                  <Link href="#" className="font-copperplate text-legacy-gray hover:text-legacy-blue text-sm py-3 px-6 transition">JERUSALEM<br/>SPIRIT</Link>
-                </div>
-              </div>
-              <Link href="#alquileres" className="font-copperplate text-legacy-gray text-[15px] hover:opacity-80 transition">ALQUILERES TEMPORARIOS</Link>
-              <Link href="#contacto" className="font-copperplate text-legacy-gray text-[15px] hover:opacity-80 transition">CONTACTO</Link>
-              
-              {/* Language Flags */}
-              <div className="flex items-center space-x-2 border-l border-gray-300 pl-4">
-                <button className="hover:opacity-80 transition" title="Español">
-                  <Image src="https://flagcdn.com/w20/es.png" alt="ES" width={20} height={15} />
-                </button>
-                <button className="hover:opacity-80 transition opacity-50" title="English">
-                  <Image src="https://flagcdn.com/w20/us.png" alt="EN" width={20} height={15} />
-                </button>
-              </div>
+              ))}
             </nav>
+            <div className="flex items-center space-x-2 border-l border-gray-200 pl-4">
+              <img src="https://flagcdn.com/w40/es.png" alt="ES" className="w-6 h-4 cursor-pointer shadow-sm hover:opacity-80" />
+              <img src="https://flagcdn.com/w40/us.png" alt="EN" className="w-6 h-4 cursor-pointer shadow-sm hover:opacity-80 opacity-60" />
+              <img src="https://flagcdn.com/w40/fr.png" alt="FR" className="w-6 h-4 cursor-pointer shadow-sm hover:opacity-80 opacity-60" />
+              <img src="https://flagcdn.com/w40/il.png" alt="HE" className="w-6 h-4 cursor-pointer shadow-sm hover:opacity-80 opacity-60" />
+            </div>
+            <form className="flex">
+              <div className="flex">
+                <input type="search" placeholder="Buscar..." className="w-[180px] xl:w-[260px] h-[36px] bg-[#214953] text-white px-3 text-[14px] border-none outline-none placeholder-gray-300" />
+                <button type="submit" className="h-[36px] w-[36px] bg-[#5280A4] flex items-center justify-center text-white hover:bg-[#3d6986] transition-colors border-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </button>
+              </div>
+            </form>
+          </div>
+          <div className="lg:hidden flex items-center">
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-[#214953] focus:outline-none">
+              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                {isMenuOpen ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />}
+              </svg>
+            </button>
           </div>
         </div>
       </header>
-
-      {/* 2. Hero Section */}
-      <section className="relative w-full h-[600px] flex items-center">
-        <div className="absolute inset-0 z-0">
-          <Image 
-            src="/images/hero.jpg" 
-            alt="Jerusalem Plaza" 
-            fill 
-            className="object-cover" 
-            priority
-          />
-          {/* Subtle overlay to ensure text readability if needed, though original had an asymmetric layout */}
-          <div className="absolute inset-0 bg-white/40 md:w-1/2"></div>
+      {/* 2. HERO VIDEO */}
+      <section className="relative w-full h-[650px] bg-gray-900 z-10">
+        <div className="absolute inset-0 w-full h-full overflow-hidden">
+          <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-[850px] object-cover" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+            <source src="https://cdn.pixabay.com/video/2021/10/12/91744-636709154_large.mp4" type="video/mp4" />
+          </video>
         </div>
-        
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="md:w-1/2 bg-white/90 p-8 shadow-lg border-t-4 border-legacy-blue">
-            <h3 className="font-copperplate text-legacy-blue text-sm tracking-widest font-bold mb-2">TU SUEÑO ES POSIBLE</h3>
-            <h2 className="font-copperplate text-legacy-blue text-2xl md:text-3xl font-bold mb-6 leading-snug">
-              ¿Querés invertir en los mejores proyectos inmobiliarios de Israel?
+        {/* White Triangle Pointing Down (Cutout) */}
+        <div className="absolute bottom-0 left-0 w-full leading-none z-20" style={{ transform: 'translateY(1px) rotate(180deg)' }}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none" className="w-full h-[60px] md:h-[98.9px] block" style={{ fill: '#ffffff' }}>
+            <path d="M500,98.9L0,6.1V0h1000v6.1L500,98.9z"></path>
+          </svg>
+        </div>
+      </section>
+
+      {/* 3. EDIFICIO MODERNO - QUIERES INVERTIR */}
+      <section className="relative w-full bg-white pt-24 pb-32 z-20">
+        <div className="max-w-[1140px] mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative">
+          
+          {/* Building Image (Left) */}
+          <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="relative h-[500px] w-full flex justify-center z-30">
+            <img 
+              src="/wp-uploads/edificio-moderno-gran-altura-sobre-fondo-transparente_1190923-3641.png" 
+              alt="Edificio Moderno" 
+              className="w-full h-full object-contain" 
+              onError={(e) => (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=800"} 
+            />
+          </motion.div>
+
+          {/* Text (Right) */}
+          <motion.div initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="text-[#214953] z-20">
+            <h2 className="text-[32px] md:text-[36px] font-bold mb-6 leading-tight">
+              ¿Quieres invertir en los mejores<br/>proyectos inmobiliarios de Israel?
             </h2>
-            <p className="text-legacy-gray text-base leading-relaxed text-justify">
-              En MiCassa vamos a asesorarte desde el primer momento a encontrar tu inversión ideal en Israel. Trabajamos con empresas constructoras de renombre internacional, solidez y extensa trayectoria. No te pierdas la oportunidad única y el mérito de tener tu propiedad en la Tierra prometida a Nuestros Padres con una santidad única y lugares llenos de mística e historia.
+            <div className="w-[80px] h-[3px] bg-[#5280A4] mb-6"></div>
+            <p className="text-gray-600 text-[18px] leading-relaxed">
+              En MiCassa te asesoraremos desde el primer momento para encontrar tu inversión ideal en Israel. Trabajamos con empresas constructoras de renombre internacional, sólidas y con amplia experiencia. No pierda la oportunidad única y el mérito de tener su propiedad en la Tierra prometida a Nuestros Padres con santidad única y lugares llenos de misticismo e historia.
             </p>
-          </div>
+          </motion.div>
+
+        </div>
+
+        {/* Asymmetrical Bottom Shape Divider (Bottom shape, negative = NO rotation) */}
+        <div className="absolute bottom-0 left-0 w-full leading-none z-10" style={{ transform: 'translateY(1px)' }}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none" className="w-full h-[60px] md:h-[94.7px] block" style={{ fill: '#f9fafb' }}>
+            <path d="M737.9,94.7L0,0v100h1000V0L737.9,94.7z"></path>
+          </svg>
         </div>
       </section>
 
-      {/* 3. About/Intro Sections */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div className="order-2 md:order-1">
-              <h2 className="font-copperplate text-legacy-blue text-3xl font-bold mb-4">
-                Cumplí tu sueño y un precepto único para toda la vida
-              </h2>
-              <div className="w-16 h-1 bg-legacy-blue mb-8"></div>
-              <p className="text-legacy-gray text-lg mb-6 leading-relaxed">
-                Hoy, es posible cumplir uno de los preceptos más importantes de vivir y comprar una propiedad en las mejores zonas de Israel junto a oportunidades de negocio y rentabilidad únicas. En nuestro equipo profesional vas a encontrar:
-              </p>
-              <ul className="space-y-4 text-legacy-gray font-bold">
-                <li className="flex items-center">
-                  <span className="text-legacy-blue mr-3 text-xl">✓</span> Atención personalizada
-                </li>
-                <li className="flex items-center">
-                  <span className="text-legacy-blue mr-3 text-xl">✓</span> Asesoramiento crediticio y jurídico
-                </li>
-                <li className="flex items-center">
-                  <span className="text-legacy-blue mr-3 text-xl">✓</span> Servicio post-entrega
-                </li>
-              </ul>
-            </div>
-            <div className="order-1 md:order-2 relative h-[450px] w-full shadow-xl">
-              <Image 
-                src="https://images.unsplash.com/photo-1541888086225-ee5b99ec16c8?auto=format&fit=crop&q=80&w=800" 
-                alt="Construction Cranes" 
-                fill 
-                className="object-cover" 
-              />
-            </div>
-          </div>
+      {/* 4. HAZ REALIDAD TU SUEÑO */}
+      <section className="relative w-full bg-gray-50 pt-24 pb-32 z-10">
+        <div className="max-w-[1140px] mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h2 className="text-[#214953] text-[36px] font-normal mb-6 leading-tight">Haz realidad tu sueño y un<br/>precepto único para la vida.</h2>
+            <div className="w-[80px] h-[3px] bg-[#5280A4] mb-6"></div>
+            <p className="text-gray-600 text-[18px] leading-relaxed mb-6">
+              Hoy es posible cumplir uno de los preceptos de vida más importantes y adquirir propiedades en las mejores regiones de Israel, con oportunidades de negocio y rentabilidad únicas. En nuestro equipo profesional encontrarás:
+            </p>
+            <ul className="text-gray-600 text-[18px] leading-relaxed list-disc pl-6 space-y-2">
+              <li>Atención personalizada</li>
+              <li>Asesoramiento crediticio y legal</li>
+              <li>Servicio post entrega</li>
+            </ul>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="relative h-[400px] w-full">
+            <img src="/wp-uploads/illustration-construction-site-1024x585.jpg" alt="Construction Site" className="w-full h-full object-cover rounded-lg shadow-lg" onError={(e) => (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&q=80&w=800"} />
+          </motion.div>
         </div>
       </section>
 
-      {/* "ESTAMOS AQUÍ PARA AYUDARTE..." Section */}
-      <section className="py-20 bg-gray-50 border-t border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="font-copperplate text-legacy-gray text-lg tracking-widest mb-2">MICASSA</h3>
-          <h2 className="font-copperplate text-legacy-blue text-4xl font-bold mb-12">ESTAMOS AQUÍ PARA AYUDARTE...</h2>
-          
-          <div className="flex flex-wrap justify-center gap-6 mb-12">
-            <div className="bg-white px-6 py-4 shadow text-legacy-blue font-bold font-copperplate border-b-2 border-transparent hover:border-legacy-blue transition cursor-default">INVESTIGACIÓN DE MERCADO</div>
-            <div className="bg-white px-6 py-4 shadow text-legacy-blue font-bold font-copperplate border-b-2 border-transparent hover:border-legacy-blue transition cursor-default">ANÁLISIS Y ASESORAMIENTO DE CADA PROYECTO</div>
-          </div>
-          
-          <button className="bg-white border-2 border-legacy-blue text-legacy-blue font-copperplate font-bold py-4 px-10 hover:bg-legacy-blue hover:text-white transition duration-300">
-            COMENCEMOS
-          </button>
+      {/* 5. ESTAMOS AQUI PARA AYUDARLE */}
+      <section className="relative w-full bg-[#214953] text-white pt-32 pb-24 z-10">
+        <div className="absolute top-0 left-0 w-full leading-none z-10" style={{ transform: 'translateY(-1px) rotate(180deg)' }}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none" className="w-full h-[60px] md:h-[94.7px] block" style={{ fill: '#f9fafb' }}>
+            <path d="M737.9,94.7L0,0v100h1000V0L737.9,94.7z"></path>
+          </svg>
+        </div>
+        <div className="max-w-[1140px] mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-start mt-8">
+          <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+            <h2 className="text-[36px] font-bold mb-6 leading-tight">Estamos aquí para ayudarle en cada paso del camino en este maravilloso proyecto.</h2>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+            <div className="w-[80px] h-[3px] bg-[#5280A4] mb-8"></div>
+            <ul className="text-[18px] leading-relaxed space-y-4">
+              <li><strong>• Investigación de mercado</strong></li>
+              <li><strong>• Análisis y asesoramiento para cada proyecto.</strong></li>
+              <li><strong>• Gestión global de préstamos hipotecarios (mashkanta)</strong></li>
+              <li><strong>• Asesoramiento legal y financiero</strong></li>
+              <li><strong>• Alquileres temporales y por periodos prolongados</strong></li>
+              <li><strong>• Diseño de decoración de interiores.</strong></li>
+            </ul>
+          </motion.div>
         </div>
       </section>
 
-      {/* Servicios Section */}
-      <section id="servicios" className="py-24 bg-legacy-blue text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="font-copperplate text-3xl font-bold mb-6">Invertí en el mejor lugar del mundo</h2>
-            <div className="w-16 h-1 bg-white mx-auto mb-6"></div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
+      {/* 6. INVIERTE EN EL MEJOR LUGAR */}
+      <section className="relative w-full bg-[#5280A4] text-white pt-24 pb-32 z-10">
+        <div className="max-w-[1140px] mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+          <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+            <h2 className="text-[36px] font-bold mb-6 leading-tight">Invierte en el mejor lugar del mundo</h2>
+            <div className="w-[80px] h-[3px] bg-white/50 mb-6"></div>
+            <p className="text-[18px] leading-relaxed text-white/90">
+              Es la tierra de nuestros Padres y en la que todos los judíos del mundo aspiran a vivir. Un lugar que irradia santidad y ofrece diversos proyectos para que puedas realizar tu sueño y obtener considerables ingresos. Estamos aquí para asesorarte y recorrer juntos este hermoso camino.
+            </p>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             <div>
-              <div className="text-4xl mb-6">🤝</div>
-              <h4 className="font-copperplate font-bold mb-4 text-lg">ATENCIÓN PERSONALIZADA</h4>
-              <p className="text-sm font-lato text-gray-300">Somos un equipo interdisciplinario en contacto con las principales empresas constructoras locales e internacionales.</p>
-            </div>
-            <div>
-              <div className="text-4xl mb-6">⚖️</div>
-              <h4 className="font-copperplate font-bold mb-4 text-lg">ASESORAMIENTO LEGAL Y FINANCIERO</h4>
-              <p className="text-sm font-lato text-gray-300">Gestionamos ante las entidades bancarias el otorgamiento de créditos hipotecarios (Mashkanta).</p>
+              <h3 className="text-[20px] font-bold mb-2">Atención personalizada</h3>
+              <p className="text-white/80 text-[15px]">Somos un equipo interdisciplinario en contacto con las principales constructoras locales e internacionales para asesorarte en tu inversión.</p>
             </div>
             <div>
-              <div className="text-4xl mb-6">📈</div>
-              <h4 className="font-copperplate font-bold mb-4 text-lg">RENTABILIDAD</h4>
-              <p className="text-sm font-lato text-gray-300">Contamos con una gran cartera de proyectos que te aseguran una renta anual.</p>
+              <h3 className="text-[20px] font-bold mb-2">Asesoramiento legal y financiero</h3>
+              <p className="text-white/80 text-[15px]">Gestionamos la concesión de préstamos hipotecarios a entidades bancarias. Contamos con abogados para escrituración y alquiler.</p>
             </div>
             <div>
-              <div className="text-4xl mb-6">🔑</div>
-              <h4 className="font-copperplate font-bold mb-4 text-lg">ALQUILER</h4>
-              <p className="text-sm font-lato text-gray-300">Contamos con asesoramiento legal y jurídico para que puedas alquilar tu propiedad.</p>
+              <h3 className="text-[20px] font-bold mb-2">Rentabilidad</h3>
+              <p className="text-white/80 text-[15px]">Disponemos de una gran cartera de proyectos que te garantizan unos ingresos anuales.</p>
             </div>
+            <div>
+              <h3 className="text-[20px] font-bold mb-2">Para alquilar</h3>
+              <p className="text-white/80 text-[15px]">Contamos con asesoría legal para que puedas alquilar tu propiedad por períodos temporales o prolongados.</p>
+            </div>
+          </motion.div>
+        </div>
+        <div className="absolute bottom-0 left-0 w-full leading-none z-10" style={{ transform: 'translateY(1px)' }}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none" className="w-full h-[60px] md:h-[94.7px] block" style={{ fill: '#111827' }}>
+            <path d="M737.9,94.7L0,0v100h1000V0L737.9,94.7z"></path>
+          </svg>
+        </div>
+      </section>
+
+      {/* 7. ALQUILERES TEMPORALES (VIDEO BACKGROUND) */}
+      <section className="relative w-full h-[500px] bg-gray-900 flex items-center justify-center">
+        <div className="absolute inset-0 w-full h-full overflow-hidden opacity-60">
+          <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
+            <source src="http://localhost/micassaisrael/wp-content/uploads/2024/11/7578552-uhd_3840_2160_30fps.mp4" type="video/mp4" />
+          </video>
+        </div>
+        <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} className="relative z-20 text-center">
+          <h2 className="text-white text-[48px] font-bold mb-6 drop-shadow-lg">Alquileres temporales</h2>
+          <div className="w-[100px] h-[3px] bg-[#5280A4] mx-auto mb-6"></div>
+        </motion.div>
+        <div className="absolute top-0 left-0 w-full leading-none z-10" style={{ transform: 'translateY(-1px)' }}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none" className="w-full h-[60px] md:h-[94.7px] block" style={{ fill: '#5280A4' }}>
+            <path d="M738,99l262-93V0H0v5.6L738,99z"></path>
+          </svg>
+        </div>
+      </section>
+
+      {/* 8. COUNTERS */}
+      <section className="w-full bg-white py-16">
+        <div className="max-w-[1140px] mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+          <div>
+            <div className="text-[50px] font-bold text-[#214953]">+50</div>
+            <div className="text-[18px] text-gray-500 uppercase tracking-wide">Proyectos completados</div>
+          </div>
+          <div>
+            <div className="text-[50px] font-bold text-[#214953]">+2,000</div>
+            <div className="text-[18px] text-gray-500 uppercase tracking-wide">Clientes satisfechos</div>
+          </div>
+          <div>
+            <div className="text-[50px] font-bold text-[#214953]">12</div>
+            <div className="text-[18px] text-gray-500 uppercase tracking-wide">Años de experiencia</div>
           </div>
         </div>
       </section>
 
-      {/* Statistics Section */}
-      <section className="py-16 bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center divide-y md:divide-y-0 md:divide-x divide-gray-200">
-            <div className="py-4">
-              <div className="font-copperplate text-5xl font-bold text-legacy-blue mb-2">+50</div>
-              <div className="text-legacy-gray font-bold uppercase tracking-wider text-sm">Proyectos finalizados</div>
-            </div>
-            <div className="py-4">
-              <div className="font-copperplate text-5xl font-bold text-legacy-blue mb-2">+2000</div>
-              <div className="text-legacy-gray font-bold uppercase tracking-wider text-sm">Clientes satisfechos</div>
-            </div>
-            <div className="py-4">
-              <div className="font-copperplate text-5xl font-bold text-legacy-blue mb-2">12</div>
-              <div className="text-legacy-gray font-bold uppercase tracking-wider text-sm">Años de experiencia</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-24 bg-[#f9f9f9]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="font-copperplate text-legacy-blue text-3xl font-bold mb-16 text-center">Testimonios</h2>
-          
+      {/* 9. TESTIMONIOS */}
+      <section className="w-full bg-gray-50 py-24">
+        <div className="max-w-[1140px] mx-auto px-4 text-center">
+          <h2 className="text-[#214953] text-[36px] font-bold mb-12">Lo que dicen nuestros clientes</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { name: "Meir Y.", text: "Excelente atención de parte de Ovadia, siempre dispuesto a resolver cada inquietud y acompañarnos en todo el proceso de compra." },
-              { name: "Brian S.", text: "Gracias a MiCassa pudimos concretar nuestra inversión en Israel desde el exterior con total confianza y seguridad." },
-              { name: "Alberto D.", text: "El servicio post-venta y la gestión del alquiler de nuestra propiedad ha sido impecable. Totalmente recomendados." }
-            ].map((testimonial, i) => (
-              <div key={i} className="bg-white p-8 pt-12 relative shadow-md border-t border-gray-100">
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-legacy-blue text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg font-serif">"</div>
-                <p className="text-legacy-gray italic mb-6 text-center leading-relaxed font-lato text-[15px]">{testimonial.text}</p>
-                <div className="w-12 h-0.5 bg-legacy-blue mx-auto mb-4"></div>
-                <h4 className="text-center font-copperplate text-legacy-blue font-bold">{testimonial.name}</h4>
+            {/* Review 1 */}
+            <div className="bg-white p-8 rounded-lg shadow-sm text-left">
+              <div className="flex items-center mb-6">
+                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold text-xl mr-4">A</div>
+                <div>
+                  <h4 className="font-bold text-[#214953]">Alberto D.</h4>
+                  <span className="text-sm text-gray-500">Buenos Aires, Argentina</span>
+                </div>
               </div>
-            ))}
+              <p className="text-gray-600 text-sm leading-relaxed">"No tengo más que palabras de agradecimiento para MiCassa. La calidez humana de sus empleados para asesorarme en todo, desde la elección de la inversión hasta el alquiler de mi inmueble. Pude combinar una excelente inversión con el valor de un precepto tan importante como es la adquisición de una propiedad en la Tierra de Israel."</p>
+            </div>
+            {/* Review 2 */}
+            <div className="bg-white p-8 rounded-lg shadow-sm text-left">
+              <div className="flex items-center mb-6">
+                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold text-xl mr-4">M</div>
+                <div>
+                  <h4 className="font-bold text-[#214953]">Meir Y.</h4>
+                  <span className="text-sm text-gray-500">Buenos Aires, Argentina</span>
+                </div>
+              </div>
+              <p className="text-gray-600 text-sm leading-relaxed">"Me gustaría destacar el nivel humano de todo el personal de MiCassa, que me asesoró desde el primer momento en la elección de mi inversión. Hoy puedo decir que he cumplido mi sueño de tener mi hogar en Israel."</p>
+            </div>
+            {/* Review 3 */}
+            <div className="bg-white p-8 rounded-lg shadow-sm text-left">
+              <div className="flex items-center mb-6">
+                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold text-xl mr-4">B</div>
+                <div>
+                  <h4 className="font-bold text-[#214953]">Brian S.</h4>
+                  <span className="text-sm text-gray-500">Ciudad de México, México</span>
+                </div>
+              </div>
+              <p className="text-gray-600 text-sm leading-relaxed">"Han pasado varios años desde mi inversión en un proyecto que fue un éxito y la empresa sigue en contacto conmigo y disponible para cualquier necesidad que pueda surgir. Altamente recomendado."</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 4. Properties/Projects Sections */}
-      <section id="proyectos" className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="font-copperplate text-legacy-blue text-3xl font-bold mb-16 text-center">Proyectos únicos</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-            {[
-              { title: "Legacy – Jerusalem", img: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=800" },
-              { title: "Savyon View – Jerusalem", img: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800" },
-              { title: "Jerusalem Spirit – Jerusalem", img: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&q=80&w=800" }
-            ].map((proj, i) => (
-              <div key={i} className="group cursor-pointer flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <div className="relative h-64 w-full bg-gray-200">
-                  <Image src={proj.img} alt={proj.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                </div>
-                <div className="bg-legacy-blue text-white p-6 text-center flex-grow flex flex-col justify-center">
-                  <h3 className="font-copperplate font-bold text-xl mb-3">{proj.title}</h3>
-                  <div className="w-12 h-0.5 bg-white mx-auto mb-3 opacity-50"></div>
-                  <p className="text-sm text-gray-200 font-lato">Haz clic para ver los detalles completos de este proyecto.</p>
-                </div>
-              </div>
-            ))}
+      {/* 10. PROYECTOS UNICOS */}
+      <section className="w-full bg-white py-24">
+        <div className="max-w-[1140px] mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-[#214953] text-[36px] font-bold mb-6">Proyectos unicos</h2>
+            <div className="w-[100px] h-[3px] bg-[#5280A4] mx-auto mb-6"></div>
           </div>
-          
-          <div className="text-center">
-            <Link href="/propiedades" className="inline-block bg-legacy-blue text-white font-copperplate font-bold py-3 px-8 hover:bg-blue-900 transition shadow-md">
-              VER TODOS LOS PROYECTOS
-            </Link>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Proyecto 1 */}
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+              <div className="h-[250px] w-full relative overflow-hidden bg-gray-100">
+                <img src="/wp-uploads/Captura-de-pantalla-2025-07-14.png" alt="Ein Kerem" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=800"} />
+              </div>
+              <div className="p-6">
+                <span className="text-xs font-semibold text-[#5280A4] uppercase tracking-wider mb-2 block">PROYECTOS</span>
+                <h3 className="text-xl font-bold text-[#214953] mb-3">Ein Kerem</h3>
+                <p className="text-gray-600 text-sm mb-6 line-clamp-3">En la entrada del complejo desde la calle Brasil descubrirás Pastoral Hillside, 7 pisos boutique con ascensores y entrada propia, ubicados entre las cuatro torres y que permiten una experiencia de vida de villa flotando frente a la vista,</p>
+                <Link href="#" className="inline-block px-6 py-2 bg-[#5280A4] text-white text-sm font-medium rounded hover:bg-[#3E77A4] transition-colors">Leer mas</Link>
+              </div>
+            </div>
+            {/* Proyecto 2 */}
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+              <div className="h-[250px] w-full relative overflow-hidden bg-gray-100">
+                <img src="/wp-uploads/18-3.jpg" alt="Apartamento Jaffa Shalem Tower" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800"} />
+              </div>
+              <div className="p-6">
+                <span className="text-xs font-semibold text-[#5280A4] uppercase tracking-wider mb-2 block">PROYECTOS</span>
+                <h3 className="text-xl font-bold text-[#214953] mb-3">Apartamento Jaffa Shalem Tower</h3>
+                <p className="text-gray-600 text-sm mb-6 line-clamp-3">• Edificio nuevo • 5.780.000 NIS ** Oportunidad para inversores por una oferta perfecta, ¡el apartamento ya está alquilado!</p>
+                <Link href="#" className="inline-block px-6 py-2 bg-[#5280A4] text-white text-sm font-medium rounded hover:bg-[#3E77A4] transition-colors">Leer mas</Link>
+              </div>
+            </div>
+            {/* Proyecto 3 */}
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+              <div className="h-[250px] w-full relative overflow-hidden bg-gray-100">
+                <img src="/wp-uploads/9-6.jpg" alt="En la zona de Mamilla" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=800"} />
+              </div>
+              <div className="p-6">
+                <span className="text-xs font-semibold text-[#5280A4] uppercase tracking-wider mb-2 block">PROYECTOS</span>
+                <h3 className="text-xl font-bold text-[#214953] mb-3">En la zona de Mamilla</h3>
+                <p className="text-gray-600 text-sm mb-6 line-clamp-3">3 habitaciones<br/>800 m²<br/>Balcón de 12 m²</p>
+                <Link href="#" className="inline-block px-6 py-2 bg-[#5280A4] text-white text-sm font-medium rounded hover:bg-[#3E77A4] transition-colors">Leer mas</Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 5. Footer Structure */}
-      <footer id="contacto" className="bg-legacy-footer text-legacy-gray py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-          <h2 className="font-copperplate text-white text-2xl tracking-widest mb-2">OVADIA TACHE</h2>
-          <p className="font-lato text-lg">
-            <a href="tel:+972587464528" className="hover:text-white transition">+972 587464528</a>
-          </p>
-          <p className="font-lato text-lg">
-            <a href="mailto:INFO@MICASSAIL.COM" className="hover:text-white transition">INFO@MICASSAIL.COM</a>
-          </p>
+      {/* 11. FOOTER CONTACTANOS */}
+      <footer className="w-full bg-[#111827] text-white py-24 relative overflow-hidden">
+        <div className="max-w-[1140px] mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative z-10">
           
-          <div className="flex justify-center space-x-6 pt-4">
-            <a href="#" className="w-10 h-10 border border-legacy-gray rounded-full flex items-center justify-center hover:text-white hover:border-white transition">
-              <span className="sr-only">Facebook</span>
-              <svg fill="currentColor" viewBox="0 0 24 24" className="w-5 h-5"><path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd"></path></svg>
-            </a>
-            <a href="#" className="w-10 h-10 border border-legacy-gray rounded-full flex items-center justify-center hover:text-white hover:border-white transition">
-              <span className="sr-only">Instagram</span>
-              <svg fill="currentColor" viewBox="0 0 24 24" className="w-5 h-5"><path fillRule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clipRule="evenodd"></path></svg>
-            </a>
+          {/* Columna Izquierda: Información de contacto e imagen */}
+          <div>
+            <div className="w-full h-[300px] mb-8 overflow-hidden rounded-lg opacity-80 mix-blend-luminosity">
+              <img src="/wp-uploads/PHOTO-2024-10-31-18-25-55-1024x738.jpg" alt="Oficina" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800"} />
+            </div>
+            <h2 className="text-[36px] font-bold mb-4">Contactanos</h2>
+            <div className="w-[80px] h-[3px] bg-[#5280A4] mb-8"></div>
+            
+            <div className="space-y-6">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 rounded-full border border-[#5280A4] flex items-center justify-center text-[#5280A4]">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 512 512"><path d="M497.39 361.8l-112-48a24 24 0 0 0-28 6.9l-49.6 60.6A370.66 370.66 0 0 1 130.6 204.11l60.6-49.6a23.94 23.94 0 0 0 6.9-28l-48-112A24.16 24.16 0 0 0 122.6.61l-104 24A24 24 0 0 0 0 48c0 256.5 207.9 464 464 464a24 24 0 0 0 23.4-18.6l24-104a24.29 24.29 0 0 0-14.01-27.6z"/></svg>
+                </div>
+                <p className="text-xl">972 58-713-7208</p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 rounded-full border border-[#5280A4] flex items-center justify-center text-[#5280A4]">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 512 512"><path d="M502.3 190.8c3.9-3.1 9.7-.2 9.7 4.7V400c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V195.6c0-5 5.7-7.8 9.7-4.7 22.4 17.4 52.1 39.5 154.1 113.6 21.1 15.4 56.7 47.8 92.2 47.6 35.7.3 72-32.8 92.3-47.6 102-74.1 131.6-96.3 154-113.7zM256 320c23.2.4 56.6-29.2 73.4-41.4 132.7-96.3 142.8-104.7 173.4-128.7 5.8-4.5 9.2-11.5 9.2-18.9v-19c0-26.5-21.5-48-48-48H48C21.5 64 0 85.5 0 112v19c0 7.4 3.4 14.3 9.2 18.9 30.6 23.9 40.7 32.4 173.4 128.7 16.8 12.2 50.2 41.8 73.4 41.4z"/></svg>
+                </div>
+                <p className="text-xl">micassaisrael@gmail.com</p>
+              </div>
+            </div>
           </div>
-          
-          <div className="pt-8 border-t border-gray-700 text-sm mt-8">
-            © {new Date().getFullYear()} MiCassail | Diseño y desarrollo BÚA Marketing Digital (Replicado en Next.js)
+
+          {/* Columna Derecha: Formulario */}
+          <div className="bg-white text-gray-800 p-8 rounded-lg shadow-xl">
+            <form className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                <input type="text" placeholder="John Doe" className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-[#5280A4] focus:border-[#5280A4] outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" placeholder="john@doe.com" className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-[#5280A4] focus:border-[#5280A4] outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Celular</label>
+                <input type="tel" placeholder="+1 300 400 5000" className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-[#5280A4] focus:border-[#5280A4] outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Pais *</label>
+                <select className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-[#5280A4] focus:border-[#5280A4] outline-none bg-white">
+                  <option value="">Seleccionar país</option>
+                  <option value="IL">Israel</option>
+                  <option value="MX">México</option>
+                  <option value="AR">Argentina</option>
+                  <option value="US">Estados Unidos</option>
+                  <option value="ES">España</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mensaje</label>
+                <textarea rows={4} className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-[#5280A4] focus:border-[#5280A4] outline-none resize-none"></textarea>
+              </div>
+              <button type="button" className="w-full py-4 bg-[#5280A4] text-white font-bold rounded-md hover:bg-[#3E77A4] transition-colors shadow-md">
+                Send Message
+              </button>
+            </form>
           </div>
         </div>
       </footer>
 
-      {/* Floating WhatsApp Button */}
-      <a 
-        href="https://wa.me/972587464528" 
-        target="_blank" 
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white p-4 rounded-full shadow-lg hover:bg-[#1ebe5d] hover:scale-110 transition-transform flex items-center justify-center"
-        aria-label="Contactar por WhatsApp"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
-        </svg>
-      </a>
+      {/* Floating WhatsApp Widget (Exact Replica) */}
+      <div className="fixed bottom-[30px] right-[30px] z-[9999] flex flex-col items-end">
+        {/* Chat Box (Hover Reveal) */}
+        <div className="hidden hover:flex bg-white rounded-lg shadow-xl mb-4 w-[300px] flex-col overflow-hidden transform transition-all">
+          <div className="bg-[#2DB742] p-4 text-white">
+            <h4 className="font-bold text-lg">Micassa</h4>
+            <p className="text-xs text-[#d9ebc6]">comunicate con nosotros</p>
+          </div>
+          <div className="p-4 bg-gray-50 flex items-center space-x-3 cursor-pointer hover:bg-gray-100 transition-colors">
+            <div className="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0">
+               <svg viewBox="0 0 512 512" fill="currentColor" className="w-full h-full text-white bg-[#55CD6C] rounded-full p-2"><path d="M137.71 430.786l7.945 4.414c32.662 20.303 70.621 32.662 110.345 32.662 c115.641 0 211.862-96.221 211.862-213.628S371.641 44.138 255.117 44.138S44.138 137.71 44.138 254.234 c0 40.607 11.476 80.331 32.662 113.876l5.297 7.945l-20.303 74.152L137.71 430.786z" fill="#55CD6C"/></svg>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-800">Micassa</p>
+              <p className="text-xs text-gray-500">En línea</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Floating Button */}
+        <a href="https://api.whatsapp.com/send?phone=972587137208" target="_blank" rel="noopener noreferrer" className="w-[60px] h-[60px] bg-[#2DB742] text-white rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.15)] hover:scale-110 transition-transform flex items-center justify-center relative">
+          <svg viewBox="0 0 32 32" className="w-8 h-8 fill-current" xmlns="http://www.w3.org/2000/svg"><path d="M16 0c-8.837 0-16 7.163-16 16 0 2.822.733 5.467 2.031 7.781l-2.031 8.219 8.375-2.219c2.256 1.156 4.825 1.813 7.563 1.813 8.837 0 16-7.163 16-16s-7.163-16-16-16zm8.125 22.844c-.344.969-2 1.844-2.75 1.938-.75.125-1.75.25-5.188-1.188-4.156-1.719-6.844-6.031-7.063-6.313-.219-.313-1.688-2.25-1.688-4.281 0-2.063 1.063-3.094 1.469-3.531.375-.406.844-.5 1.125-.5.281 0 .563 0 .781.031.25.031.563-.094.875.688.344.813 1.156 2.844 1.281 3.094.125.25.188.531.031.844-.125.281-.188.469-.406.719-.188.25-.406.531-.563.719-.188.219-.406.469-.156.906.219.406 1.031 1.719 2.188 2.75 1.5 1.344 2.781 1.781 3.25 1.969.469.219.75.188 1.031-.125.281-.313 1.25-1.469 1.594-1.969.313-.5.656-.406 1.094-.25.438.156 2.75 1.313 3.219 1.531.469.219.781.344.906.531.125.188.125 1.063-.219 2.031z"/></svg>
+        </a>
+      </div>
     </div>
   );
 }

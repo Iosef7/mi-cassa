@@ -3,6 +3,8 @@ import AdminLayoutWrapper from "@/components/AdminLayoutWrapper";
 import { getSectionSettings, getSiteLogo } from "@/actions/settings";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { PresenceProvider } from "@/components/presence/PresenceProvider";
+import { DailyMotivationModal } from "@/components/presence/DailyMotivationModal";
 
 import { headers } from "next/headers";
 
@@ -30,9 +32,24 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // We rely entirely on the middleware.ts to enforce the redirect.
   // We no longer call redirect("/login") here, avoiding the Server Action / RSC cache bug.
 
+  if (session?.user?.id) {
+    const { prisma } = await import("@/lib/prisma");
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { phone: true, bio: true }
+    });
+
+    if (dbUser && (!dbUser.phone || !dbUser.bio)) {
+      redirect("/onboarding");
+    }
+  }
+
   return (
-    <AdminLayoutWrapper settings={settings} userRole={userRole} siteLogo={siteLogo}>
-      {children}
-    </AdminLayoutWrapper>
+    <PresenceProvider>
+      <DailyMotivationModal />
+      <AdminLayoutWrapper settings={settings} userRole={userRole} siteLogo={siteLogo}>
+        {children}
+      </AdminLayoutWrapper>
+    </PresenceProvider>
   );
 }

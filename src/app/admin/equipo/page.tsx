@@ -33,6 +33,9 @@ export default function EquipoPage() {
   const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   
+  // Pending invitations state
+  const [pendingInvitations, setPendingInvitations] = useState<any[]>([]);
+  const [isInviteEmailSent, setIsInviteEmailSent] = useState(true);
   const recognitionRef = React.useRef<any>(null);
   const silenceTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -109,9 +112,10 @@ export default function EquipoPage() {
 
   const fetchData = async () => {
     try {
-      const [usersRes, tasksRes] = await Promise.all([
+      const [usersRes, tasksRes, invRes] = await Promise.all([
         fetch('/api/users'),
-        fetch('/api/tasks')
+        fetch('/api/tasks'),
+        fetch('/api/invitations')
       ]);
       
       if(usersRes.ok) {
@@ -124,6 +128,9 @@ export default function EquipoPage() {
           .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
           .slice(0, 5); // top 5 recent
         setRecentCompletedTasks(completed);
+      }
+      if (invRes?.ok) {
+        setPendingInvitations(await invRes.json());
       }
     } catch (error) {
       console.error(error);
@@ -192,6 +199,20 @@ export default function EquipoPage() {
     }
   };
 
+  const revokeInvite = async (id: string) => {
+    try {
+      const res = await fetch(`/api/invitations?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success("Invitación revocada");
+        fetchData();
+      } else {
+        toast.error("Error al revocar");
+      }
+    } catch (e) {
+      toast.error("Error de conexión");
+    }
+  };
+
   const generateInvite = async () => {
     if (!inviteEmail) {
       toast.error("Ingresa un correo electrónico");
@@ -213,7 +234,13 @@ export default function EquipoPage() {
       if (res.ok) {
         const url = `${window.location.origin}/register?token=${data.token}`;
         setInviteLink(url);
-        toast.success("Invitación enviada exitosamente al correo.");
+        setIsInviteEmailSent(data.emailSent);
+        if (data.emailSent) {
+          toast.success(data.message || "Invitación enviada exitosamente al correo.");
+        } else {
+          toast.warning(data.message || "Enlace generado, pero el correo no se pudo enviar.");
+        }
+        fetchData();
       } else {
         toast.error(data.error || "Error al generar invitación");
       }
@@ -259,11 +286,40 @@ export default function EquipoPage() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {users.map(user => (
-                <div key={user.id} className="bg-card border border-border rounded-2xl p-5 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow">
+              {users.map(user => {
+                const now = new Date();
+                const lastSeen = user.lastSeenAt ? new Date(user.lastSeenAt) : new Date(0);
+                const diffMinutes = (now.getTime() - lastSeen.getTime()) / 60000;
+                
+                let statusColor = "bg-neutral-500";
+                let statusText = "Desconectado";
+                let pulseClass = "";
+                
+                if (user.status === 'INVISIBLE') {
+                  statusColor = "bg-neutral-500"; statusText = "Invisible";
+                } else if (diffMinutes > 10) {
+                  statusColor = "bg-neutral-500"; statusText = "Desconectado";
+                } else if (user.status === 'FOCUS') {
+                  statusColor = "bg-blue-500"; statusText = "Enfocado"; pulseClass = "animate-pulse";
+                } else if (user.status === 'DND') {
+                  statusColor = "bg-red-500"; statusText = "No Molestar";
+                } else if (user.status === 'BREAK') {
+                  statusColor = "bg-yellow-500"; statusText = "Descanso";
+                } else if (user.status === 'AWAY') {
+                  statusColor = "bg-yellow-500"; statusText = "Ausente";
+                } else {
+                  statusColor = "bg-green-500"; statusText = "Conectado"; pulseClass = "animate-pulse";
+                }
+
+                return (
+                <div key={user.id} className="bg-card border border-border rounded-2xl p-5 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                  <div className={`absolute top-0 left-0 w-1 h-full ${statusColor}`}></div>
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-black text-lg ring-2 ring-background shadow-sm">
-                      {user.name.charAt(0)}
+                    <div className="relative">
+                      <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-black text-lg ring-2 ring-background shadow-sm">
+                        {user.name.charAt(0)}
+                      </div>
+                      <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-card ${statusColor} ${pulseClass}`}></div>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start">
@@ -279,9 +335,17 @@ export default function EquipoPage() {
                           )}
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                         <Briefcase className="w-3 h-3" /> {user.role === 'ADMIN' ? 'Administrador' : user.role === 'AGENT' ? 'Asesor' : user.role}
                       </p>
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <span className="text-xs font-medium text-foreground">{statusText}</span>
+                        {user.currentFocus && (
+                          <span className="text-xs text-muted-foreground italic line-clamp-1 truncate max-w-[120px]">
+                            &quot;{user.currentFocus}&quot;
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -322,8 +386,54 @@ export default function EquipoPage() {
                     </div>
                   )}
                 </div>
-              ))}
+              )})}
             </div>
+            
+            {/* Pending Invitations Table */}
+            {pendingInvitations.length > 0 && (
+              <div className="mt-8 space-y-4">
+                <h3 className="text-md font-bold text-foreground flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-muted-foreground" /> Invitaciones Pendientes
+                </h3>
+                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-muted/50 border-b border-border">
+                        <tr>
+                          <th className="px-4 py-3 font-semibold text-muted-foreground">Correo</th>
+                          <th className="px-4 py-3 font-semibold text-muted-foreground">Rol</th>
+                          <th className="px-4 py-3 font-semibold text-muted-foreground">Expira</th>
+                          <th className="px-4 py-3 font-semibold text-muted-foreground text-right">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {pendingInvitations.map(inv => (
+                          <tr key={inv.id} className="hover:bg-muted/30 transition-colors">
+                            <td className="px-4 py-3 font-medium">{inv.email}</td>
+                            <td className="px-4 py-3 text-muted-foreground text-xs">{inv.role === 'ADMIN' ? 'Administrador' : 'Asesor'}</td>
+                            <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(inv.expiresAt) > new Date() ? 'En ' + Math.ceil((new Date(inv.expiresAt).getTime() - new Date().getTime()) / (1000 * 3600)) + ' hrs' : 'Expirada'}</td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex justify-end gap-2">
+                                <button onClick={() => {
+                                  const url = `${window.location.origin}/register?token=${inv.token}`;
+                                  navigator.clipboard.writeText(url);
+                                  toast.success("Enlace de invitación copiado");
+                                }} className="text-muted-foreground hover:text-primary transition-colors p-1" title="Copiar enlace">
+                                  <Copy className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => revokeInvite(inv.id)} className="text-muted-foreground hover:text-red-500 transition-colors p-1" title="Revocar invitación">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Side Panel: AI Chat & Recent Activity */}
@@ -505,11 +615,19 @@ export default function EquipoPage() {
               </div>
             ) : (
               <div className="pt-4 border-t border-border space-y-4 animate-in slide-in-from-bottom-2">
-                <div className="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 p-3 rounded-lg text-sm text-center font-medium border border-green-200 dark:border-green-900/50 flex flex-col items-center gap-2">
-                  <CheckCircle2 className="w-8 h-8 text-green-500" />
-                  <span>¡Invitación enviada automáticamente a <strong>{inviteEmail}</strong>!</span>
-                  <span className="text-xs opacity-80">El enlace es válido por 24 horas.</span>
-                </div>
+                {isInviteEmailSent ? (
+                  <div className="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 p-3 rounded-lg text-sm text-center font-medium border border-green-200 dark:border-green-900/50 flex flex-col items-center gap-2">
+                    <CheckCircle2 className="w-8 h-8 text-green-500" />
+                    <span>¡Invitación enviada automáticamente a <strong>{inviteEmail}</strong>!</span>
+                    <span className="text-xs opacity-80">El enlace es válido por 24 horas.</span>
+                  </div>
+                ) : (
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 p-3 rounded-lg text-sm text-center font-medium border border-yellow-200 dark:border-yellow-900/50 flex flex-col items-center gap-2">
+                    <Shield className="w-8 h-8 text-yellow-500" />
+                    <span>¡Enlace generado exitosamente!</span>
+                    <span className="text-xs opacity-80">No se pudo enviar el correo a {inviteEmail}. Cópialo manualmente abajo.</span>
+                  </div>
+                )}
                 <div className="mt-4">
                   <label className="text-xs font-semibold text-muted-foreground mb-1 block">O copia el enlace manualmente:</label>
                   <div className="flex items-center gap-2 bg-muted p-2 rounded-xl border border-border">

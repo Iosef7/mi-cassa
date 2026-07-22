@@ -5,6 +5,7 @@ import { Plus, Trash2, Smartphone, Loader2, QrCode, X, CheckCircle2, AlertCircle
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { motion, AnimatePresence } from "framer-motion";
+import LinkDeviceModal from "./LinkDeviceModal";
 
 interface Session {
   id: string; // db id
@@ -21,13 +22,6 @@ export default function ConnectionsTab() {
 
   // New Phone Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newPhoneName, setNewPhoneName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [usePairingCode, setUsePairingCode] = useState(true);
-  const [isLinking, setIsLinking] = useState(false);
-  const [qrCode, setQrCode] = useState<string | null>(null);
-  const [pairingCode, setPairingCode] = useState<string | null>(null);
-  const [pollingActive, setPollingActive] = useState(false);
 
   useEffect(() => {
     fetchSessions();
@@ -84,86 +78,6 @@ export default function ConnectionsTab() {
     }
   };
 
-  // --- QR & Linking Logic ---
-  const handleLinkPhone = async () => {
-    if (!newPhoneName.trim()) {
-      toast.error("Por favor ingresa un nombre para el dispositivo");
-      return;
-    }
-    if (usePairingCode && !phoneNumber.trim()) {
-      toast.error("Por favor ingresa tu número de teléfono (ej. 56912345678)");
-      return;
-    }
-
-    const safeName = newPhoneName.trim().replace(/[^a-zA-Z0-9_-]/g, "");
-    setIsLinking(true);
-    setQrCode(null);
-    setPairingCode(null);
-
-    try {
-      if (usePairingCode) {
-        await fetch(`/api/whatsapp/sessions/${safeName}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber: phoneNumber.trim() })
-        });
-      } else {
-        await fetch(`/api/whatsapp/sessions/${safeName}`);
-      }
-      setPollingActive(true);
-    } catch (error) {
-      toast.error("Error contactando al bot.");
-      setIsLinking(false);
-    }
-  };
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (pollingActive && newPhoneName) {
-      const safeName = newPhoneName.trim().replace(/[^a-zA-Z0-9_-]/g, "");
-      
-      const poll = async () => {
-        try {
-          const res = await fetch(`/api/whatsapp/sessions/${safeName}/qr`);
-          const data = await res.json();
-
-          if (data.isConnected) {
-            toast.success("¡Teléfono vinculado exitosamente!");
-            setPollingActive(false);
-            setIsLinking(false);
-            setIsModalOpen(false);
-            setNewPhoneName("");
-            setPhoneNumber("");
-            fetchSessions();
-            return;
-          }
-
-          if (data.qr) {
-            setQrCode(data.qr);
-          }
-          if (data.pairingCode) {
-            setPairingCode(data.pairingCode);
-          }
-        } catch (error) {
-          console.error("Error polling QR:", error);
-        }
-      };
-
-      interval = setInterval(poll, 3000);
-    }
-    return () => clearInterval(interval);
-  }, [pollingActive, newPhoneName]);
-
-  const closeModal = () => {
-    setPollingActive(false);
-    setIsModalOpen(false);
-    setIsLinking(false);
-    setQrCode(null);
-    setPairingCode(null);
-    setNewPhoneName("");
-    setPhoneNumber("");
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -183,8 +97,21 @@ export default function ConnectionsTab() {
 
       {/* List */}
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="p-5 rounded-xl border bg-card/50 shadow-sm flex flex-col h-[140px] animate-pulse">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-muted flex-shrink-0" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 bg-muted rounded w-3/4" />
+                  <div className="h-3 bg-muted rounded w-1/2" />
+                </div>
+              </div>
+              <div className="mt-auto border-t pt-4">
+                <div className="h-8 bg-muted rounded w-1/3" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : sessions.length === 0 ? (
         <div className="text-center py-16 border border-dashed rounded-xl bg-card/50">
@@ -253,111 +180,11 @@ export default function ConnectionsTab() {
         </div>
       )}
 
-      {/* Modal */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-card w-full max-w-md rounded-2xl shadow-xl border overflow-hidden"
-            >
-              <div className="flex items-center justify-between p-4 border-b bg-muted/30">
-                <h3 className="font-semibold flex items-center gap-2">
-                  <QrCode className="w-5 h-5 text-primary" />
-                  Vincular Dispositivo
-                </h3>
-                <button onClick={closeModal} className="p-1 rounded-md hover:bg-muted">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="p-6">
-                {!isLinking ? (
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      Asigna un nombre a este teléfono para identificarlo (Ej. "Ventas Central", "Soporte").
-                    </p>
-                    <input
-                      type="text"
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                      placeholder="Nombre del dispositivo"
-                      value={newPhoneName}
-                      onChange={(e) => setNewPhoneName(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleLinkPhone()}
-                    />
-
-                    <div className="flex items-center gap-2 pt-2">
-                      <input 
-                        type="checkbox" 
-                        id="usePairing" 
-                        checked={usePairingCode} 
-                        onChange={(e) => setUsePairingCode(e.target.checked)} 
-                        className="rounded border-gray-300 w-4 h-4 text-primary" 
-                      />
-                      <label htmlFor="usePairing" className="text-sm font-medium cursor-pointer">
-                        Vincular con Código de 8 Dígitos (Recomendado)
-                      </label>
-                    </div>
-
-                    {usePairingCode && (
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                        placeholder="Ej: 56912345678 (Sin el +)"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleLinkPhone()}
-                      />
-                    )}
-
-                    <button
-                      onClick={handleLinkPhone}
-                      className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
-                    >
-                      Generar {usePairingCode ? "Código" : "QR"}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-4 space-y-6">
-                    <div className="text-center space-y-2">
-                      <h4 className="font-medium text-lg">{usePairingCode ? "Ingresa este Código" : "Escanea el Código QR"}</h4>
-                      <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                        {usePairingCode 
-                          ? "Abre WhatsApp, ve a Dispositivos Vinculados -> Vincular con el número de teléfono, e ingresa este código." 
-                          : "Abre WhatsApp en tu celular, ve a Dispositivos Vinculados y escanea este código."}
-                      </p>
-                    </div>
-
-                    <div className="bg-white p-4 rounded-xl shadow-inner border min-h-[250px] min-w-[250px] flex items-center justify-center">
-                      {usePairingCode ? (
-                        pairingCode ? (
-                          <div className="text-4xl font-mono font-bold tracking-widest text-primary">{pairingCode}</div>
-                        ) : (
-                          <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                            <Loader2 className="w-8 h-8 animate-spin text-primary/50" />
-                            <span className="text-sm animate-pulse">Generando código...</span>
-                          </div>
-                        )
-                      ) : (
-                        qrCode ? (
-                          <QRCodeSVG value={qrCode} size={220} />
-                        ) : (
-                          <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                            <Loader2 className="w-8 h-8 animate-spin text-primary/50" />
-                            <span className="text-sm animate-pulse">Generando código QR...</span>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <LinkDeviceModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={fetchSessions} 
+      />
     </div>
   );
 }

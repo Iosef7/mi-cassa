@@ -27,8 +27,8 @@ const lato = Lato({
 });
 
 export const metadata: Metadata = {
-  title: "Mi Cassa - CRM Inmobiliario",
-  description: "Sistema integral de gestión inmobiliaria",
+  title: "Mi Cassa - Inversiones Inmobiliarias en Israel",
+  description: "Asesoramiento para inversiones inmobiliarias en Israel.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

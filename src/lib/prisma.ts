@@ -5,9 +5,9 @@ const prismaClientSingleton = () => {
   // Ensure connection limit is safe to prevent pool exhaustion both locally and on Render
   if (url) {
     if (url.includes('connection_limit=')) {
-      url = url.replace(/connection_limit=\d+/, 'connection_limit=3');
+      url = url.replace(/connection_limit=\d+/, 'connection_limit=15');
     } else {
-      url += (url.includes('?') ? '&' : '?') + 'connection_limit=3';
+      url += (url.includes('?') ? '&' : '?') + 'connection_limit=15';
     }
     
     if (!url.includes('pgbouncer=true')) {
@@ -15,7 +15,7 @@ const prismaClientSingleton = () => {
     }
     
     if (!url.includes('pool_timeout=')) {
-      url += '&pool_timeout=15';
+      url += '&pool_timeout=30';
     }
   }
 
