@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
-import { Home, Building, Users, Calendar, Phone, TrendingUp, Sparkles, Moon, Sun, CheckSquare, Shield, X, Calculator, LogOut, ChevronLeft, ChevronRight, Lock, Settings, Key, ChevronDown, ChevronUp } from 'lucide-react';
+import { Home, Building, Users, Calendar, Phone, TrendingUp, Sparkles, Moon, Sun, CheckSquare, Shield, X, Calculator, LogOut, ChevronLeft, ChevronRight, Lock, Settings, Key, ChevronDown, ChevronUp, Video } from 'lucide-react';
 import { SectionSettingsMap, updateSiteLogo } from '@/actions/settings';
 import { useSession, signOut } from 'next-auth/react';
 import { toast } from 'sonner';
@@ -157,6 +157,7 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
         </NavGroup>
 
         <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/prospectos" icon={<Users />} label={dict.sidebar.prospects} active={pathname?.startsWith("/admin/prospectos")} status={getStatus("/admin/prospectos")} isLocked={isLocked("/admin/prospectos")} userRole={getRole()} />
+        <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/reuniones" icon={<Video />} label="Reuniones" active={pathname?.startsWith("/admin/reuniones")} />
         <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/tareas" icon={<CheckSquare />} label={dict.sidebar.tasks} active={pathname?.startsWith("/admin/tareas")} status={getStatus("/admin/tareas")} isLocked={isLocked("/admin/tareas")} userRole={getRole()} />
         <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/ai-match" icon={<Sparkles />} label={dict.sidebar.aiMatch} active={pathname === "/admin/ai-match"} status={getStatus("/admin/ai-match")} isLocked={isLocked("/admin/ai-match")} userRole={getRole()} />
         <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/tabulador" icon={<Calculator />} label={dict.sidebar.tabulator} active={pathname?.startsWith("/admin/tabulador")} status={getStatus("/admin/tabulador")} isLocked={isLocked("/admin/tabulador")} userRole={getRole()} />

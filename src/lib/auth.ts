@@ -1,8 +1,20 @@
+import { auth } from '@/auth';
 import { prisma } from './prisma';
 
 export async function verifyAuth(token?: string) {
-  // Mock authentication for development. 
-  // Retorna el primer usuario administrador que exista en la base de datos
+  try {
+    const session = await auth();
+    if (session?.user?.id) {
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id }
+      });
+      if (user) return user;
+    }
+  } catch (error) {
+    // Ignore session errors and proceed to fallback
+  }
+
+  // Fallback para desarrollo / mock
   const admin = await prisma.user.findFirst({
     where: { role: 'ADMIN' }
   });
@@ -11,7 +23,7 @@ export async function verifyAuth(token?: string) {
     return admin;
   }
 
-  // Fallback si no hay administradores
   const anyUser = await prisma.user.findFirst();
   return anyUser || { id: 'mock-user-id', name: 'Mock User', role: 'ADMIN' };
 }
+

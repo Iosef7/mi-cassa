@@ -3,17 +3,21 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, CheckCircle2, Circle, Star, Calendar, Search, Plus, 
-  Sparkles, Shield, UserCircle2, Loader2, Target, Briefcase, ChevronRight, Edit, X, Save, Trash2, Mail, Copy, Check
+  Sparkles, Shield, UserCircle2, Loader2, Target, Briefcase, ChevronRight, Edit, X, Save, Trash2, Mail, Copy, Check,
+  Clock, LogIn, LogOut
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import AiTaskChat from '@/components/AiTaskChat';
+import TeamAttendanceModal from '@/components/team/TeamAttendanceModal';
 
 export default function EquipoPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [allTasks, setAllTasks] = useState<any[]>([]);
   const [recentCompletedTasks, setRecentCompletedTasks] = useState<any[]>([]);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [attendanceUserId, setAttendanceUserId] = useState<string | null>(null);
   const [isProcessingAI, setIsProcessingAI] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiResult, setAiResult] = useState<{text: string, type: 'success' | 'error'} | null>(null);
@@ -24,6 +28,17 @@ export default function EquipoPage() {
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState('auto');
+
+  const openAttendanceModal = (userId?: string | null) => {
+    setAttendanceUserId(userId || null);
+    setShowAttendanceModal(true);
+  };
+
+  const formatTime = (dateStr?: string | Date | null) => {
+    if (!dateStr) return '--:--';
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
+  };
   
   // Invitation states
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -280,9 +295,17 @@ export default function EquipoPage() {
               <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
                 <Users className="w-5 h-5 text-muted-foreground" /> Miembros del Equipo
               </h2>
-              <button onClick={() => setShowInviteModal(true)} className="flex items-center gap-2 bg-foreground text-background hover:bg-foreground/90 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
-                <Plus className="w-4 h-4" /> Invitar Miembro
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button 
+                  onClick={() => openAttendanceModal(null)} 
+                  className="flex items-center gap-2 bg-card text-foreground hover:bg-muted border border-border px-3 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm"
+                >
+                  <Clock className="w-4 h-4 text-primary" /> Horarios de Entrada/Salida
+                </button>
+                <button onClick={() => setShowInviteModal(true)} className="flex items-center gap-2 bg-foreground text-background hover:bg-foreground/90 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm">
+                  <Plus className="w-4 h-4" /> Invitar Miembro
+                </button>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -345,6 +368,47 @@ export default function EquipoPage() {
                             &quot;{user.currentFocus}&quot;
                           </span>
                         )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Entrance & Exit Hours Box */}
+                  <div className="bg-muted/40 rounded-xl p-3 border border-border/60 text-xs space-y-2">
+                    <div className="flex items-center justify-between font-semibold text-muted-foreground text-[10px] uppercase tracking-wider">
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-primary" /> Horarios de hoy</span>
+                      <button 
+                        onClick={() => openAttendanceModal(user.id)}
+                        className="text-primary hover:underline flex items-center gap-1 font-bold capitalize text-[11px]"
+                      >
+                        ver historial &rarr;
+                      </button>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/40">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md bg-green-500/10 text-green-600 dark:text-green-400 flex items-center justify-center shrink-0">
+                          <LogIn className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground font-semibold uppercase">Entrada</p>
+                          <p className="font-bold text-foreground">{formatTime(user.todayAttendance?.firstSeenAt || user.lastSeenAt)}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+                          <LogOut className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground font-semibold uppercase">Salida / Última</p>
+                          <p className="font-bold text-foreground">
+                            {statusText === 'Conectado' ? (
+                              <span className="text-green-600 dark:text-green-400 font-bold flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> En línea
+                              </span>
+                            ) : formatTime(user.todayAttendance?.lastSeenAt || user.lastSeenAt)}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -648,6 +712,14 @@ export default function EquipoPage() {
           </div>
         </div>
       )}
+
+      {/* Team Attendance & Access Hours Modal */}
+      <TeamAttendanceModal 
+        isOpen={showAttendanceModal}
+        onClose={() => setShowAttendanceModal(false)}
+        users={users}
+        initialUserId={attendanceUserId}
+      />
 
     </div>
   );

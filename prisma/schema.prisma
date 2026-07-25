@@ -32,6 +32,8 @@ model User {
   taskAuditLogs TaskAuditLog[]
   taskComments  TaskComment[]
   brokerageContracts BrokerageContract[]
+  createdMeetings Meeting[]      @relation("CreatedMeetings")
+  meetingParticipations MeetingParticipant[]
   
   lastSeenAt    DateTime?
   status        String         @default("ONLINE")
@@ -121,6 +123,7 @@ model Lead {
   contactDate      DateTime?
   brokerageContracts BrokerageContract[]
   whatsAppMessages   WhatsAppMessage[]
+  meetings         Meeting[]
 
   @@index([status])
   @@index([type])
@@ -191,12 +194,15 @@ model Task {
   propertyId     String?
   developmentProjectId String?
   recurrenceRule String?
+  meetingId      String?
+  meetingExcerpt String?          @db.Text
   subtasks       Subtask[]
   agent          User?            @relation(fields: [assignedTo], references: [id])
   lead           Lead?            @relation(fields: [leadId], references: [id])
   list           TaskList?        @relation(fields: [listId], references: [id])
   property       Property?        @relation(fields: [propertyId], references: [id])
   developmentProject DevelopmentProject? @relation(fields: [developmentProjectId], references: [id])
+  meeting        Meeting?         @relation(fields: [meetingId], references: [id], onDelete: SetNull)
   attachments    TaskAttachment[]
   auditLogs      TaskAuditLog[]
   comments       TaskComment[]
@@ -475,3 +481,54 @@ model DailyProductivityLog {
 
   @@unique([userId, date])
 }
+
+model Meeting {
+  id                String               @id @default(cuid())
+  title             String
+  description       String?              @db.Text
+  scheduledAt       DateTime
+  durationMinutes   Int                  @default(30)
+  timezone          String               @default("UTC")
+  meetUrl           String?
+  googleEventId     String?
+  status            String               @default("PROGRAMADA") // PROGRAMADA, EN_CURSO, FINALIZADA, CANCELADA
+  isPrivate         Boolean              @default(false)
+  category          String               @default("VENTA") // VENTA, LEGAL, CAPACITACION, SEGUIMIENTO, INTERNA
+  
+  // Media & Transcripción
+  audioUrl          String?              @db.Text
+  videoUrl          String?              @db.Text
+  driveFolderId     String?
+  transcription     String?              @db.Text
+  summary           String?              @db.Text
+  keyPoints         String?              @db.Text
+  customGlossary    String?              @db.Text
+  sentimentTimeline String?              @db.Text
+  crmSuggestions    String?              @db.Text
+  
+  // Relaciones
+  createdById       String
+  createdBy         User                 @relation("CreatedMeetings", fields: [createdById], references: [id])
+  leadId            String?
+  lead              Lead?                @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  participants      MeetingParticipant[]
+  tasks             Task[]
+  
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([scheduledAt])
+  @@index([status])
+  @@index([createdById])
+}
+
+model MeetingParticipant {
+  id        String   @id @default(cuid())
+  meetingId String
+  userId    String
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, userId])
+}
+

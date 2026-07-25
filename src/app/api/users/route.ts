@@ -14,17 +14,36 @@ export async function GET() {
         tasks: {
           where: { status: 'PENDIENTE' },
           select: { id: true }
+        },
+        productivityLogs: {
+          orderBy: { date: 'desc' },
+          take: 30
         }
       },
       orderBy: { name: 'asc' }
     });
 
-    const formattedUsers = users.map(user => ({
-      ...user,
-      pendingTasksCount: user.tasks.length,
-      totalLeadsCount: user._count.leads,
-      totalTasksCount: user._count.tasks
-    }));
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const formattedUsers = users.map(user => {
+      const todayLog = user.productivityLogs.find(log => {
+        const logDateStr = new Date(log.date).toISOString().split('T')[0];
+        return logDateStr === todayStr;
+      });
+
+      return {
+        ...user,
+        pendingTasksCount: user.tasks.length,
+        totalLeadsCount: user._count.leads,
+        totalTasksCount: user._count.tasks,
+        todayAttendance: todayLog ? {
+          firstSeenAt: todayLog.firstSeenAt,
+          lastSeenAt: todayLog.lastSeenAt,
+          dailyGoal: todayLog.dailyGoal
+        } : null,
+        productivityLogs: user.productivityLogs
+      };
+    });
 
     return NextResponse.json(formattedUsers);
   } catch (error) {

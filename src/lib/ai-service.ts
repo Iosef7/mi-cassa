@@ -3,9 +3,12 @@ import { prisma } from '@/lib/prisma';
 
 // Precios por 1 Millón de tokens (USD)
 const MODEL_PRICES: Record<string, { prompt: number; completion: number }> = {
+  'gemini-3.6-flash': { prompt: 0.075, completion: 0.30 },
+  'gemini-3.6-pro': { prompt: 1.25, completion: 5.00 },
+  'gemini-3.5-flash': { prompt: 0.075, completion: 0.30 },
+  'gemini-3.5-pro': { prompt: 1.25, completion: 5.00 },
   'gemini-2.5-flash': { prompt: 0.075, completion: 0.30 },
   'gemini-2.5-pro': { prompt: 1.25, completion: 5.00 },
-  // Por si eligen otros
   'gemini-1.5-flash': { prompt: 0.075, completion: 0.30 },
   'gemini-1.5-pro': { prompt: 1.25, completion: 5.00 },
 };
