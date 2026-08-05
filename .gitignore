@@ -48,3 +48,5 @@ google-credentials.json
 xampp*
 *.zip
 public/wp-uploads/
+*.mp4
+*.mov
