@@ -1,0 +1,22 @@
+{
+  "theme": {
+    "primaryColor": "#c6a76e",
+    "secondaryColor": "#1a1a1a",
+    "logoUrl": "/logo.png",
+    "faviconUrl": "/favicon.ico"
+  },
+  "hero": {
+    "title": "Encuentra la casa de tus sueños",
+    "subtitle": "Mi Cassa te ofrece las mejores propiedades exclusivas del mercado.",
+    "backgroundImage": "/hero-bg.jpg",
+    "ctaText": "Ver Propiedades"
+  },
+  "contact": {
+    "email": "contacto@micassa.com",
+    "phone": "+972 50-000-0000",
+    "address": "Jerusalén, Israel"
+  },
+  "footer": {
+    "text": "© 2026 Mi Cassa. Todos los derechos reservados."
+  }
+}
