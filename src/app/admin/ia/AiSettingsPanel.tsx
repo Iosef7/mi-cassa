@@ -1,19 +1,20 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Settings2, Save, Loader2, Bot, LayoutTemplate } from "lucide-react";
+import { Settings2, Save, Loader2, LayoutTemplate } from "lucide-react";
+import { GeminiIcon } from '@/components/icons/GeminiIcon';
 import { updateAiSettings } from "./actions";
 
 const OPERATIONS = [
   { id: "PropertyDescriptionGeneration", name: "Generador de Descripciones", icon: LayoutTemplate },
-  { id: "DelegationChat", name: "Asistente Conversacional", icon: Bot },
-  { id: "TaskDelegation", name: "Delegación Automática", icon: Bot },
-  { id: "PropertyMatch", name: "Matching de Propiedades", icon: Bot },
-  { id: "TaskExtraction", name: "Extracción de Tareas", icon: Bot },
-  { id: "PropertyDataExtraction", name: "Lector Inteligente de Documentos", icon: Bot },
-  { id: "TwilioCallBot", name: "Bot Telefónico (Twilio)", icon: Bot },
-  { id: "WhatsAppBot", name: "Bot de WhatsApp", icon: Bot },
-  { id: "CallSummaryAndExtraction", name: "Transcripción de Llamadas (Plaud)", icon: Bot },
+  { id: "DelegationChat", name: "Asistente Conversacional", icon: GeminiIcon },
+  { id: "TaskDelegation", name: "Delegación Automática", icon: GeminiIcon },
+  { id: "PropertyMatch", name: "Matching de Propiedades", icon: GeminiIcon },
+  { id: "TaskExtraction", name: "Extracción de Tareas", icon: GeminiIcon },
+  { id: "PropertyDataExtraction", name: "Lector Inteligente de Documentos", icon: GeminiIcon },
+  { id: "TwilioCallBot", name: "Bot Telefónico (Twilio)", icon: GeminiIcon },
+  { id: "WhatsAppBot", name: "Bot de WhatsApp", icon: GeminiIcon },
+  { id: "CallSummaryAndExtraction", name: "Transcripción de Llamadas (Plaud)", icon: GeminiIcon },
 ];
 
 const MODELS = [

@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Save, X, Edit, Upload, Sparkles, FolderLock, CheckCircle2, FileText, GripVertical, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Save, X, Edit, Upload,  FolderLock, CheckCircle2, FileText, GripVertical, Trash2 } from "lucide-react";
+import { GeminiIcon } from '@/components/icons/GeminiIcon';
 import Link from "next/link";
 import { toast } from "sonner";
 import Image from "next/image";
@@ -27,8 +28,7 @@ export default function NewProjectPage() {
     estimatedCost: "",
     expectedRevenue: "",
     notes: "",
-    driveFolderId: "",
-  });
+    driveFolderId: "" });
 
   const [activeTab, setActiveTab] = useState<'resumen' | 'multimedia'>('resumen');
   
@@ -174,13 +174,11 @@ export default function NewProjectPage() {
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-        },
+          "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
           attachments: attachmentsJSON
-        }),
-      });
+        }) });
 
       if (!res.ok) throw new Error("Error al crear el proyecto");
 
@@ -242,12 +240,12 @@ export default function NewProjectPage() {
         {/* AI Assistant Section */}
         <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border-2 border-indigo-200 dark:border-indigo-800 rounded-3xl p-6 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 p-6 opacity-10">
-            <Sparkles className="w-32 h-32 text-indigo-600" />
+            <GeminiIcon className="w-32 h-32" colorful />
           </div>
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-md">
-                <Sparkles className="w-6 h-6" />
+                <GeminiIcon className="w-6 h-6" />
               </div>
               <div>
                 <h3 className="text-2xl font-black text-indigo-950 dark:text-indigo-200">Asistente IA para Proyectos</h3>
@@ -332,7 +330,7 @@ export default function NewProjectPage() {
                 disabled={isAiLoading || (!aiText && aiFiles.length === 0 && aiDriveUrls.length === 0)}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 disabled:opacity-50"
               >
-                {isAiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                {isAiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <GeminiIcon className="w-5 h-5" />}
                 {isAiLoading ? aiStatusText : 'Extraer Datos y Autocompletar'}
               </button>
             </div>

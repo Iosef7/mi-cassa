@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Smartphone, Image as ImageIcon, Bot, FileText } from "lucide-react";
+import { Smartphone, Image as ImageIcon,  FileText } from "lucide-react";
+import { GeminiIcon } from '@/components/icons/GeminiIcon';
 import { cn } from "@/lib/utils";
 import StatusTab from "./components/StatusTab";
 import ConnectionsTab from "./components/ConnectionsTab";
@@ -10,7 +11,7 @@ import ConnectionsTab from "./components/ConnectionsTab";
 const tabs = [
   { id: "conexiones", label: "Dispositivos", icon: Smartphone },
   { id: "estados", label: "Estados Automáticos", icon: ImageIcon },
-  { id: "chatbot", label: "Chatbot (Próximamente)", icon: Bot },
+  { id: "chatbot", label: "Chatbot (Próximamente)", icon: GeminiIcon },
   { id: "plantillas", label: "Plantillas (Próximamente)", icon: FileText },
 ];
 
@@ -73,7 +74,7 @@ export default function WhatsAppHub() {
             {activeTab === "estados" && <StatusTab />}
             {activeTab === "chatbot" && (
               <div className="p-12 text-center border border-dashed rounded-xl bg-card">
-                <Bot className="w-12 h-12 mx-auto text-muted-foreground mb-4 opacity-50" />
+                <GeminiIcon className="w-12 h-12 mx-auto text-muted-foreground mb-4 opacity-50" />
                 <h3 className="text-lg font-semibold">Motor de Inteligencia Artificial en Construcción</h3>
                 <p className="text-muted-foreground mt-2">
                   Pronto podrás configurar embudos de respuesta automática y conectar Gemini a tus números de WhatsApp.

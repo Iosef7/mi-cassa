@@ -43,11 +43,20 @@ export const viewport = {
   themeColor: "#000000",
 };
 
+import { auth } from "@/auth";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let session = null;
+  try {
+    session = await auth();
+    console.log("[RootLayout] session returned from auth():", session);
+  } catch (error) {
+    console.error("[RootLayout] EXACT ERROR CAUGHT IN RootLayout:", error);
+  }
   const cookieStore = await cookies();
   const localeCookie = cookieStore.get("NEXT_LOCALE")?.value as Locale | undefined;
   const initialLocale = localeCookie || defaultLocale;
@@ -61,7 +70,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body suppressHydrationWarning className="min-h-full flex flex-col m-0 p-0 bg-background text-foreground">
-        <AuthProvider>
+        <AuthProvider session={session}>
           <LanguageProvider initialLocale={initialLocale}>
             <ThemeProvider
               attribute="class"

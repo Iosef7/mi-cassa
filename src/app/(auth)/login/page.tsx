@@ -40,7 +40,8 @@ export default function LoginPage() {
       }
 
       toast.success("Inicio de sesión exitoso")
-      window.location.href = "/admin"
+      router.push("/admin")
+      router.refresh()
     } catch (error) {
       toast.error("Ocurrió un error inesperado")
       setIsLoading(false)

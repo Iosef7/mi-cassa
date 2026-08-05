@@ -4,7 +4,6 @@ import { getSectionSettings, getSiteLogo } from "@/actions/settings";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { PresenceProvider } from "@/components/presence/PresenceProvider";
-import { DailyMotivationModal } from "@/components/presence/DailyMotivationModal";
 
 import { headers } from "next/headers";
 
@@ -24,7 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     console.log("[DEBUG-LAYOUT] session inside AdminLayout:", session);
     userRole = session?.user?.role || undefined;
   } catch (error) {
-    console.error("[DEBUG-LAYOUT] Error authenticating session. Corrupt JWT token detected:", error);
+    console.error("[DEBUG-LAYOUT] EXACT ERROR CAUGHT IN AdminLayout:", error);
     // If the token is corrupt or decryption fails, we must clear the client cookies
     return <ClearCookiesAndRedirect />;
   }
@@ -33,20 +32,23 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // We no longer call redirect("/login") here, avoiding the Server Action / RSC cache bug.
 
   if (session?.user?.id) {
-    const { prisma } = await import("@/lib/prisma");
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { phone: true, bio: true }
-    });
+    try {
+      const { prisma } = await import("@/lib/prisma");
+      const dbUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { phone: true, bio: true, id: true, role: true, name: true, email: true, image: true, createdAt: true }
+      });
 
-    if (dbUser && (!dbUser.phone || !dbUser.bio)) {
-      redirect("/onboarding");
+      if (dbUser && (!dbUser.phone || !dbUser.bio)) {
+        redirect("/onboarding");
+      }
+    } catch (dbError) {
+      console.error("[DEBUG-LAYOUT] Database error fetching user in AdminLayout:", dbError);
     }
   }
 
   return (
     <PresenceProvider>
-      <DailyMotivationModal />
       <AdminLayoutWrapper settings={settings} userRole={userRole} siteLogo={siteLogo}>
         {children}
       </AdminLayoutWrapper>

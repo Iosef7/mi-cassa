@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Bot, Send, Search, MapPin, Building, Sparkles } from 'lucide-react';
+import { Send, Search, MapPin, Building } from 'lucide-react';
+import { GeminiIcon } from '@/components/icons/GeminiIcon';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -67,7 +68,7 @@ export default function AIMatchPage() {
       {/* Header */}
       <div className="bg-card/80 backdrop-blur-md border-b border-border px-8 py-6 shrink-0 shadow-sm relative z-10 animate-in">
         <h1 className="text-3xl font-black tracking-tight text-gradient flex items-center gap-3">
-          <Sparkles className="w-8 h-8 text-primary" />
+          <GeminiIcon className="w-8 h-8" colorful />
           IA Matchmaker
         </h1>
         <p className="text-muted-foreground mt-2 font-medium">
@@ -84,7 +85,7 @@ export default function AIMatchPage() {
           <div className="bg-card rounded-2xl shadow-lg border border-border p-6 flex-1 flex flex-col relative overflow-hidden glass">
             <div className="flex items-center gap-3 mb-6">
               <div className="bg-primary/20 p-3 rounded-full glow-effect">
-                <Bot className="w-6 h-6 text-primary" />
+                <GeminiIcon className="w-6 h-6" colorful />
               </div>
               <h2 className="text-lg font-bold text-foreground">Asistente IA</h2>
             </div>
@@ -126,13 +127,13 @@ export default function AIMatchPage() {
         <div className="w-full md:w-2/3 animate-in" style={{animationDelay: '200ms'}}>
           {loading ? (
             <div className="h-full flex items-center justify-center text-muted-foreground flex-col gap-4">
-              <Sparkles className="w-12 h-12 animate-pulse text-primary/50 glow-effect rounded-full" />
+              <GeminiIcon className="w-12 h-12 animate-pulse glow-effect rounded-full" colorful />
               <p className="font-medium animate-pulse">La IA está evaluando cientos de opciones...</p>
             </div>
           ) : result ? (
             <div className="space-y-6">
               <div className="bg-primary/10 border border-primary/20 rounded-2xl p-5 text-foreground shadow-sm glass">
-                <p className="font-medium flex gap-3"><Sparkles className="text-primary w-5 h-5 shrink-0"/> <span><strong>Análisis de IA:</strong> {result.generalAdvice}</span></p>
+                <p className="font-medium flex gap-3"><GeminiIcon className="text-primary w-5 h-5 shrink-0"/> <span><strong>Análisis de IA:</strong> {result.generalAdvice}</span></p>
               </div>
 
               <h3 className="text-2xl font-bold text-foreground flex items-center gap-2">Top Resultados <span className="bg-primary text-primary-foreground text-sm px-2 py-0.5 rounded-md">{result.matches?.length || 0}</span></h3>
@@ -177,7 +178,7 @@ export default function AIMatchPage() {
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-center p-8 border-2 border-dashed border-border rounded-3xl bg-card/50 glass">
               <div className="bg-primary/10 p-5 rounded-full mb-6">
-                <Bot className="w-16 h-16 text-primary" />
+                <GeminiIcon className="w-16 h-16" colorful />
               </div>
               <h3 className="text-2xl font-bold text-foreground mb-2">IA Lista para Operar</h3>
               <p className="max-w-md font-medium">Ingresa las preferencias de tu cliente en el chat y el algoritmo buscará el match perfecto en el catálogo.</p>

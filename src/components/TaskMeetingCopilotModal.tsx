@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, Send, Bot, User as UserIcon, Building, Phone, Mail, FileText, Loader2 } from 'lucide-react';
+import {  X, Send,  User as UserIcon, Building, Phone, Mail, FileText, Loader2 } from 'lucide-react';
+import { GeminiIcon } from '@/components/icons/GeminiIcon';
 import { askMeetingCopilotAction } from '@/actions/meetings';
 import { toast } from 'sonner';
 
@@ -56,7 +57,7 @@ export default function TaskMeetingCopilotModal({ task, onClose }: TaskMeetingCo
         <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-              <Sparkles size={20} />
+              <GeminiIcon size={20} colorful />
             </div>
             <div>
               <h3 className="font-bold text-foreground text-base">Copiloto de IA de la Reunión</h3>
@@ -126,7 +127,7 @@ export default function TaskMeetingCopilotModal({ task, onClose }: TaskMeetingCo
                   m.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
                 }`}
               >
-                {m.sender === 'user' ? <UserIcon size={16} /> : <Bot size={16} />}
+                {m.sender === 'user' ? <UserIcon size={16} /> : <GeminiIcon size={16} colorful />}
               </div>
               <div
                 className={`max-w-[80%] p-3.5 rounded-2xl text-sm leading-relaxed ${

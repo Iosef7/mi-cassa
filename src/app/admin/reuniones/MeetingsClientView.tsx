@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Video, Plus, Search, Calendar, Clock, User, Sparkles, Filter, ExternalLink, ArrowRight, Settings, Globe } from 'lucide-react';
+import { Video, Plus, Search, Calendar, Clock, User,  Filter, ExternalLink, ArrowRight, Settings, Globe } from 'lucide-react';
+import { GeminiIcon } from '@/components/icons/GeminiIcon';
 import Link from 'next/link';
 import CreateMeetingModal from '@/components/CreateMeetingModal';
 import EditMeetingModal from '@/components/EditMeetingModal';
@@ -81,7 +82,7 @@ export default function MeetingsClientView({ initialMeetings, users, leads, curr
         <form onSubmit={handleAiSearch} className="flex flex-col sm:flex-row items-center gap-3">
           <div className="relative flex-1 w-full">
             <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-primary">
-              <Sparkles size={18} />
+              <GeminiIcon size={18} />
             </div>
             <input
               type="text"
@@ -109,7 +110,7 @@ export default function MeetingsClientView({ initialMeetings, users, leads, curr
             className="p-4 bg-card border border-border rounded-2xl text-xs text-foreground leading-relaxed shadow-sm"
           >
             <div className="font-bold text-primary mb-1 flex items-center gap-1.5">
-              <Sparkles size={14} /> Respuesta de la IA:
+              <GeminiIcon size={14} /> Respuesta de la IA:
             </div>
             <p className="whitespace-pre-line">{aiSearchResult}</p>
           </motion.div>

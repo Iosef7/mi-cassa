@@ -15,11 +15,16 @@ const AVAILABLE_AMENITIES = [
 ];
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Edit, Save, Trash2, MapPin, Building, Image as ImageIcon, FileText, Plus, X, BedDouble, Bath, Maximize, Car, Calendar, Users, Phone, Mail, Briefcase, FolderLock, MessageCircle, ChevronDown, ChevronUp, ListTodo, Activity, CheckCircle2, Clock, Banknote, MessageSquare, BarChart3, Globe, Shield, Dumbbell, Waves, Trees, Link as LinkIcon, Copy, TrendingUp, BadgePercent, BadgeCheck , Info, Upload, Paperclip, GripVertical, Loader2, Cloud, Sparkles, Send, Lock, Unlock, Sun, Compass, PawPrint, Coins, Layers, Home, Share2, QrCode } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import dynamic from 'next/dynamic';
+import { QRCodeSVG } from 'qrcode.react'; // Keep qrcode.react as regular import if dynamic causes issues, or we can make it dynamic
+const DynamicGoogleDrivePicker = dynamic(() => import('@/components/GoogleDrivePicker').then(mod => mod.GoogleDrivePicker), { ssr: false });
+const DynamicPresentationRenderer = dynamic(() => import('@/components/presentations/PresentationRenderer').then(mod => mod.PresentationRenderer), { ssr: false, loading: () => <div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" /></div> });
+const DynamicPropertyCommissions = dynamic(() => import('./PropertyCommissions').then(mod => mod.PropertyCommissions), { ssr: false, loading: () => <div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" /></div> });
 import Link from 'next/link';
-import { GoogleDrivePicker } from '@/components/GoogleDrivePicker';
-import { PresentationRenderer } from '@/components/presentations/PresentationRenderer';
-import { PropertyCommissions } from './PropertyCommissions';
+import PropertyActionButtons from './PropertyActionButtons';
+import PropertyAiButton from './PropertyAiButton';
+import { GeminiIcon } from '@/components/icons/GeminiIcon';
+import { approveAiDraft } from '../actions';
 import Image from 'next/image';
 import { toast } from 'sonner';
 
@@ -49,6 +54,9 @@ interface Property {
   ownerEmail?: string | null;
   ownerNotes?: string | null;
   driveFolderId?: string | null;
+  aiProcessed?: boolean;
+  aiCategorization?: any;
+  aiDraft?: any;
   leads?: {
     id: string;
     name: string;
@@ -255,6 +263,7 @@ export default function PropertyDetailsPage() {
   const [expandedVideos, setExpandedVideos] = useState<number[]>([]);
   const [expandedLegalDocs, setExpandedLegalDocs] = useState<number[]>([]);
   const [activeTab, setActiveTab] = useState<'resumen' | 'multimedia' | 'comercial' | 'presentacion' | 'comisiones'>('resumen');
+  const [isAiPanelExpanded, setIsAiPanelExpanded] = useState(false);
   
   // Presentation Chat State
   const [chatMessages, setChatMessages] = useState<{ role: string, parts: any[] }[]>([]);
@@ -309,6 +318,7 @@ export default function PropertyDetailsPage() {
   const [plansList, setPlansList] = useState<string[]>([]);
   const [videosList, setVideosList] = useState<string[]>([]);
   const [postersList, setPostersList] = useState<string[]>([]);
+  const [mapsList, setMapsList] = useState<string[]>([]);
   const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
   const [driveThumbnails, setDriveThumbnails] = useState<Record<string, string>>({});
 
@@ -382,6 +392,7 @@ export default function PropertyDetailsPage() {
       let parsedVideos = [];
       let parsedLegalDocs = [];
       let parsedPosters = [];
+      let parsedMaps = [];
       let parsedNearby = [];
       let parsedDynamic = {};
       try { parsedImages = JSON.parse(data.images || "[]"); } catch (e) {}
@@ -397,6 +408,7 @@ export default function PropertyDetailsPage() {
           parsedVideos = p.videos || [];
           parsedLegalDocs = p.legalDocs || [];
           parsedPosters = p.posters || [];
+          parsedMaps = p.maps || [];
         }
       } catch (e) {}
 
@@ -406,6 +418,7 @@ export default function PropertyDetailsPage() {
       setVideosList(Array.isArray(parsedVideos) ? parsedVideos : []);
       setLegalDocsList(Array.isArray(parsedLegalDocs) ? parsedLegalDocs : []);
       setPostersList(Array.isArray(parsedPosters) ? parsedPosters : []);
+      setMapsList(Array.isArray(parsedMaps) ? parsedMaps : []);
       setNearbyPlacesList(Array.isArray(parsedNearby) ? parsedNearby : []);
       setDynamicFeatures(parsedDynamic && typeof parsedDynamic === 'object' ? parsedDynamic : {});
 
@@ -549,7 +562,8 @@ export default function PropertyDetailsPage() {
         plans: plansList.filter(url => url.trim() !== ''),
         videos: videosList.filter(url => url.trim() !== ''),
         legalDocs: legalDocsList.filter(url => url.trim() !== ''),
-        posters: postersList.filter(url => url.trim() !== '')
+        posters: postersList.filter(url => url.trim() !== ''),
+        maps: mapsList.filter(url => url.trim() !== '')
       };
 
       await fetch(`/api/properties/${id}`, {
@@ -664,6 +678,7 @@ export default function PropertyDetailsPage() {
       if (sectionFields.includes('videosList')) payload.videos = videosList.filter(url => url.trim() !== '');
       if (sectionFields.includes('legalDocsList')) payload.legalDocs = legalDocsList.filter(url => url.trim() !== '');
       if (sectionFields.includes('postersList')) payload.posters = postersList.filter(url => url.trim() !== '');
+      if (sectionFields.includes('mapsList')) payload.maps = mapsList.filter(url => url.trim() !== '');
       if (sectionFields.includes('nearbyPlacesList')) payload.nearbyPlaces = nearbyPlacesList;
       if (sectionFields.includes('dynamicFeatures')) payload.dynamicFeatures = dynamicFeatures;
 
@@ -811,8 +826,88 @@ export default function PropertyDetailsPage() {
   return (
     <div id="main-scroll-container" className="flex-1 flex flex-col h-full bg-background overflow-auto">
       
+      {/* Shadow Mode Banner */}
+      {property.aiDraft && (
+        <div className="bg-blue-50 border-b border-blue-200 p-4 sticky top-0 z-50 flex items-center justify-between">
+           <div className="flex items-center gap-3">
+              <Sparkles className="w-5 h-5 text-blue-600" />
+              <div>
+                 <h4 className="font-bold text-blue-900">La Inteligencia Artificial ha sugerido cambios para esta propiedad</h4>
+                 <p className="text-sm text-blue-700">
+                   {property.aiDraft.summary ? property.aiDraft.summary : 'Por favor revisa el borrador. Los datos públicos no cambiarán hasta que los apruebes.'}
+                 </p>
+                 {property.aiDraft.recommendations && property.aiDraft.recommendations.length > 0 && (
+                   <div className="mt-3">
+                     <p className="text-xs font-bold text-blue-900 uppercase tracking-wider mb-1">Recomendaciones del Experto</p>
+                     <ul className="list-disc pl-4 text-sm text-blue-800 space-y-0.5">
+                       {property.aiDraft.recommendations.map((rec: string, idx: number) => (
+                         <li key={idx}>{rec}</li>
+                       ))}
+                     </ul>
+                   </div>
+                 )}
+              </div>
+           </div>
+           <div className="flex items-center gap-2">
+              <button className="px-4 py-2 bg-white text-blue-700 font-bold border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors text-sm">
+                 Ver Diferencias (Diff)
+              </button>
+              <button 
+                 onClick={async () => {
+                    const result = await approveAiDraft(property.id);
+                    if (result.success) {
+                       toast.success("Borrador Aprobado. Los cambios ahora son públicos.");
+                    } else {
+                       toast.error("Error al aprobar: " + result.error);
+                    }
+                 }}
+                 className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-sm transition-colors flex items-center gap-2 text-sm"
+              >
+                 <CheckCircle2 className="w-4 h-4" /> Aprobar Cambios
+              </button>
+           </div>
+        </div>
+      )}
+
       {/* Floating Buttons */}
-      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
+      <div className="fixed bottom-6 right-6 flex flex-col items-end gap-3 z-50">
+        
+        {/* Gemini Recommendations Popup */}
+        {!property.aiDraft && property.aiCategorization?.recommendations && property.aiCategorization.recommendations.length > 0 && (
+          <div className="relative flex flex-col items-end">
+            <div className={`transition-all duration-300 origin-bottom-right ${isAiPanelExpanded ? 'scale-100 opacity-100 mb-4' : 'scale-90 opacity-0 pointer-events-none absolute bottom-full mb-0'}`}>
+               <div className="w-80 sm:w-96 bg-white/90 backdrop-blur-xl border border-border shadow-2xl rounded-2xl overflow-hidden flex flex-col">
+                 <div className="p-4 bg-gradient-to-r from-blue-600 via-purple-600 to-amber-500 text-white flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <GeminiIcon className="w-5 h-5 text-white" />
+                      <h4 className="font-bold text-sm">IA Experto</h4>
+                    </div>
+                    <button onClick={() => setIsAiPanelExpanded(false)} className="p-1 hover:bg-white/20 rounded-full transition-colors">
+                       <X className="w-4 h-4" />
+                    </button>
+                 </div>
+                 <div className="p-5 overflow-y-auto max-h-[50vh] space-y-4">
+                     {property.aiCategorization.recommendations.map((rec: string, idx: number) => (
+                       <div key={idx} className="flex gap-3 text-sm text-foreground/80 items-start">
+                          <span className="w-2 h-2 mt-1.5 rounded-full bg-purple-500 shrink-0"></span>
+                          <p className="leading-relaxed">{rec}</p>
+                       </div>
+                     ))}
+                 </div>
+               </div>
+            </div>
+            
+            {/* Gemini Floating Button */}
+            <button 
+               onClick={() => setIsAiPanelExpanded(!isAiPanelExpanded)} 
+               className="relative p-3.5 bg-background border border-border shadow-lg hover:shadow-xl rounded-full transition-all hover:scale-105 active:scale-95 flex items-center justify-center group overflow-hidden"
+            >
+               <div className="absolute inset-0 bg-gradient-to-tr from-blue-600 via-purple-500 to-amber-400 opacity-5 group-hover:opacity-10 transition-opacity"></div>
+               <GeminiIcon colorful className={`w-8 h-8 transition-transform duration-500 ${isAiPanelExpanded ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+        )}
+
         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="p-3 bg-background border border-border text-muted-foreground shadow-lg hover:shadow-xl rounded-full transition-all hover:-translate-y-1">
           <ArrowLeft className="w-5 h-5 rotate-90" />
         </button>
@@ -854,7 +949,7 @@ export default function PropertyDetailsPage() {
             {isHeaderCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
           </button>
         </div>
-        {!isHeaderCollapsed && (
+        {!isHeaderCollapsed ? (
         <>
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 px-8 mt-2">
           <div className="flex items-start gap-4">
@@ -939,7 +1034,7 @@ export default function PropertyDetailsPage() {
                       <Edit className="w-3 h-3" />
                     </button>
                     {property.driveFolderId && (
-                      <GoogleDrivePicker 
+                      <DynamicGoogleDrivePicker 
                         mimeTypes="application/vnd.google-apps.folder"
                         onFileSelect={(_, __, fileId) => {
                           if (fileId) {
@@ -961,7 +1056,7 @@ export default function PropertyDetailsPage() {
                         <span className="text-[10px] uppercase font-bold tracking-wider" title="Mover esta carpeta a otro lugar en Drive">
                           {isMovingFolder ? 'Moviendo...' : 'Mover'}
                         </span>
-                      </GoogleDrivePicker>
+                      </DynamicGoogleDrivePicker>
                     )}
                   </div>
                 )}
@@ -970,23 +1065,7 @@ export default function PropertyDetailsPage() {
           </div>
           
           {/* Share Buttons */}
-          <div className="flex flex-col items-end gap-2 shrink-0">
-             <button 
-                onClick={() => {
-                   navigator.clipboard.writeText(`${window.location.origin}/p/${property.id}`);
-                   toast.success("Enlace público copiado al portapapeles");
-                }}
-                className="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary px-4 py-2 rounded-xl font-bold transition-colors"
-             >
-                <Share2 className="w-4 h-4" /> Copiar Link
-             </button>
-             <button 
-                onClick={() => setShowShareModal(true)}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-             >
-                <QrCode className="w-4 h-4" /> Mostrar Código QR
-             </button>
-          </div>
+          <PropertyActionButtons property={property as any} setShowShareModal={setShowShareModal} />
         </div>
 
         {/* Tabs Row */}
@@ -1000,6 +1079,22 @@ export default function PropertyDetailsPage() {
           </div>
         </div>
         </>
+        ) : (
+          <div className="flex items-center gap-4 px-8 mt-1 mb-2 pb-2">
+            <Link href="/admin/propiedades" className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors shrink-0">
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <h1 className="text-lg font-bold text-foreground truncate max-w-[200px] sm:max-w-xs">{property.title}</h1>
+            <span className="text-md font-bold text-primary">{formatPrice(property.price.toString())}</span>
+            {property.area && (
+              <span className="text-sm font-semibold text-muted-foreground bg-muted px-2 py-1 rounded-md border border-border">
+                {property.area} m²
+              </span>
+            )}
+            <div className="ml-auto mr-8">
+               <PropertyActionButtons property={property as any} setShowShareModal={setShowShareModal} />
+            </div>
+          </div>
         )}
       </div>
 
@@ -1068,7 +1163,7 @@ export default function PropertyDetailsPage() {
                       )})}
                       <div className="flex gap-4">
                         <button onClick={() => setImagesList([...imagesList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir Imagen</button>
-                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                        <DynamicGoogleDrivePicker onFileSelect={(url, thumb) => {
                           setImagesList(prev => [...prev, url]);
                           if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
                         }} mimeTypes="image/png,image/jpeg,image/jpg" />
@@ -1835,6 +1930,70 @@ export default function PropertyDetailsPage() {
                           </div>
                         </a>
                       )}
+
+                      {/* Mapas de Ubicación (Imagenes) */}
+                      <div className="mt-4 pt-4 border-t border-border">
+                        <div className="flex justify-between items-center mb-4 group">
+                          <h4 className="font-bold text-lg mb-1 flex items-center gap-2">Mapas Adicionales</h4>
+                          {editingSection !== 'maps' && (
+                            <button onClick={() => setEditingSection('maps')} className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-muted rounded-full transition-opacity"><Edit className="w-4 h-4 text-muted-foreground"/></button>
+                          )}
+                        </div>
+                        {editingSection === 'maps' ? (
+                          <div className="space-y-4">
+                            {mapsList.map((url, i) => (
+                              <div key={i} className="flex gap-2 items-center">
+                                {url && (
+                                  <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center relative">
+                                    <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Preview ${i}`} className="w-full h-full object-cover pointer-events-none" />
+                                  </div>
+                                )}
+                                <input value={url} onChange={(e) => {
+                                  const newList = [...mapsList]; newList[i] = e.target.value; setMapsList(newList);
+                                }} placeholder="https://..." className="flex-1 p-3 rounded-xl border border-border outline-none" />
+                                <button onClick={() => setMapsList(mapsList.filter((_, idx) => idx !== i))} className="p-3 bg-destructive/10 text-destructive rounded-xl"><Trash2 className="w-5 h-5"/></button>
+                              </div>
+                            ))}
+                            <div className="flex gap-4">
+                              <button onClick={() => setMapsList([...mapsList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
+                              <DynamicGoogleDrivePicker onFileSelect={(url, thumb) => {
+                                setMapsList(prev => [...prev, url]);
+                                if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
+                              }} />
+                              <label className={`text-sm font-semibold flex items-center gap-1 cursor-pointer ${isUploading ? 'text-gray-400' : 'text-primary hover:underline'}`}>
+                                {isUploading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Upload className="w-4 h-4"/>} 
+                                {isUploading ? 'Subiendo...' : 'Subir Archivo'}
+                                <input 
+                                  type="file" 
+                                  accept="image/*,application/pdf" 
+                                  multiple
+                                  className="hidden" 
+                                  onChange={(e) => { handleFileUpload(e.target.files, setMapsList); e.target.value = ''; }} 
+                                />
+                              </label>
+                            </div>
+                            <div className="flex justify-end gap-2 pt-4">
+                              <button onClick={() => setEditingSection(null)} className="px-3 py-1.5 text-xs font-semibold hover:bg-muted rounded-lg">Cancelar</button>
+                              <button onClick={() => handleSaveSection(['mapsList'])} disabled={isSaving} className="px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground rounded-lg">Guardar</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {mapsList.length > 0 ? (
+                              <div className="grid grid-cols-2 gap-3 mt-2">
+                                {mapsList.map((url, i) => (
+                                  <div key={i} onClick={() => window.open(url, '_blank')} className="w-full h-32 rounded-xl overflow-hidden border border-border shadow-sm block group relative cursor-pointer">
+                                    <DriveImagePreview url={url} thumbnails={driveThumbnails} alt={`Mapa ${i+1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <span className="text-white font-bold text-xs px-2 py-1 bg-black/50 rounded-lg backdrop-blur-sm">Ampliar</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null}
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1900,7 +2059,7 @@ export default function PropertyDetailsPage() {
                       )})}
                       <div className="flex gap-4">
                         <button onClick={() => setVideosList([...videosList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                        <DynamicGoogleDrivePicker onFileSelect={(url, thumb) => {
                           setVideosList(prev => [...prev, url]);
                           if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
                         }} />
@@ -2004,7 +2163,7 @@ export default function PropertyDetailsPage() {
                       ))}
                       <div className="flex gap-4">
                         <button onClick={() => setPostersList([...postersList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                        <DynamicGoogleDrivePicker onFileSelect={(url, thumb) => {
                           setPostersList(prev => [...prev, url]);
                           if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
                         }} />
@@ -2047,6 +2206,7 @@ export default function PropertyDetailsPage() {
                   )}
                   </div>
                 </div>
+
                 </div>
                 {/* Planos Arquitectónicos */}
                 <div className={`bg-card border border-border rounded-3xl shadow-sm h-fit max-h-min overflow-hidden ${plansList.length > 0 || editingSection === 'plans' ? 'p-8' : 'px-8 pt-8 pb-6'}`}>
@@ -2075,7 +2235,7 @@ export default function PropertyDetailsPage() {
                       ))}
                       <div className="flex gap-4">
                         <button onClick={() => setPlansList([...plansList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                        <DynamicGoogleDrivePicker onFileSelect={(url, thumb) => {
                           setPlansList(prev => [...prev, url]);
                           if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
                         }} />
@@ -2167,7 +2327,7 @@ export default function PropertyDetailsPage() {
                       ))}
                       <div className="flex gap-4">
                         <button onClick={() => setPresentationsList([...presentationsList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                        <DynamicGoogleDrivePicker onFileSelect={(url, thumb) => {
                           setPresentationsList(prev => [...prev, url]);
                           if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
                         }} />
@@ -2947,7 +3107,7 @@ export default function PropertyDetailsPage() {
                       ))}
                       <div className="flex gap-4">
                         <button onClick={() => setLegalDocsList([...legalDocsList, ''])} className="text-sm font-semibold text-primary flex items-center gap-1 hover:underline"><Plus className="w-4 h-4"/> Añadir URL</button>
-                        <GoogleDrivePicker onFileSelect={(url, thumb) => {
+                        <DynamicGoogleDrivePicker onFileSelect={(url, thumb) => {
                           setLegalDocsList(prev => [...prev, url]);
                           if (thumb) setDriveThumbnails(prev => ({...prev, [url]: thumb}));
                         }} />
@@ -3206,7 +3366,7 @@ export default function PropertyDetailsPage() {
                 <div className="w-2/3 bg-gray-100 overflow-y-auto relative hidden md:block">
                   {presentationDataPreview ? (
                     <div className="origin-top scale-[0.65] md:scale-[0.8] transition-transform w-[150%] xl:w-full xl:scale-100 p-8 flex flex-col gap-8">
-                       <PresentationRenderer data={presentationDataPreview} />
+                       <DynamicPresentationRenderer data={presentationDataPreview} />
                     </div>
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground p-8 text-center bg-[#faf9f6]">
@@ -3220,7 +3380,7 @@ export default function PropertyDetailsPage() {
             )}
 
             {activeTab === 'comisiones' && (
-              <PropertyCommissions property={property} onSave={fetchProperty} />
+              <DynamicPropertyCommissions property={property} onSave={fetchProperty} />
             )}
       </div>
       {/* Lightbox */}

@@ -14,7 +14,8 @@ const AVAILABLE_AMENITIES = [
   { name: 'Juegos Infantiles', icon: Activity, color: 'text-pink-500' },
 ];
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Edit, Save, Trash2, MapPin, Building, Image as ImageIcon, FileText, Plus, X, BedDouble, Bath, Maximize, Car, Calendar, Users, Phone, Mail, Briefcase, FolderLock, MessageCircle, ChevronDown, ChevronUp, ListTodo, Activity, CheckCircle2, Clock, Banknote, MessageSquare, BarChart3, Globe, Shield, Dumbbell, Waves, Trees, Link as LinkIcon, Copy, TrendingUp, BadgePercent, BadgeCheck , Info, Upload, Paperclip, GripVertical, Loader2, Cloud, Sparkles, Send, Lock, Unlock, Sun, Compass, PawPrint, Coins, Layers, Home } from 'lucide-react';
+import { ArrowLeft, Edit, Save, Trash2, MapPin, Building, Image as ImageIcon, FileText, Plus, X, BedDouble, Bath, Maximize, Car, Calendar, Users, Phone, Mail, Briefcase, FolderLock, MessageCircle, ChevronDown, ChevronUp, ListTodo, Activity, CheckCircle2, Clock, Banknote, MessageSquare, BarChart3, Globe, Shield, Dumbbell, Waves, Trees, Link as LinkIcon, Copy, TrendingUp, BadgePercent, BadgeCheck , Info, Upload, Paperclip, GripVertical, Loader2, Cloud,  Send, Lock, Unlock, Sun, Compass, PawPrint, Coins, Layers, Home } from 'lucide-react';
+import { GeminiIcon } from '@/components/icons/GeminiIcon';
 import Link from 'next/link';
 import { GoogleDrivePicker } from '@/components/GoogleDrivePicker';
 import { PresentationRenderer } from '@/components/presentations/PresentationRenderer';
@@ -552,8 +553,7 @@ export default function PropertyDetailsPage() {
 
       await fetch(`/api/properties/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-      });
+        headers: { 'Content-Type': 'application/json' } });
       fetchProperty();
     } catch (e) {
       console.error(e);
@@ -1392,7 +1392,7 @@ export default function PropertyDetailsPage() {
                         {parsedDf.condition && (
                           <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-fuchsia-200/60 bg-fuchsia-50/50">
                             <div className="w-10 h-10 md:w-12 md:h-12 bg-fuchsia-100 rounded-xl flex items-center justify-center shrink-0">
-                              <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-fuchsia-600" />
+                              <GeminiIcon className="w-5 h-5 md:w-6 md:h-6" colorful />
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-xs md:text-sm text-fuchsia-900/60 font-medium truncate" title="Estado">Estado</p>
@@ -2451,8 +2451,7 @@ export default function PropertyDetailsPage() {
                                           budget: lead.budget || '',
                                           notes: lead.notes || '',
                                           source: lead.source || '',
-                                          requiresMortgage: lead.requiresMortgage || false,
-                                        });
+                                          requiresMortgage: lead.requiresMortgage || false });
                                         setExpandedLeadId(lead.id);
                                       }}
                                       className="ml-1 text-muted-foreground hover:text-primary transition-colors"
@@ -2625,7 +2624,7 @@ export default function PropertyDetailsPage() {
                                               </>
                                             ) : (
                                               <p className="text-foreground leading-tight text-xs">
-                                                {interaction.fromBot && <span className="font-bold text-primary mr-1">[Bot]</span>}
+                                                {interaction.fromBot && <span className="font-bold text-primary mr-1">[]</span>}
                                                 {interaction.content}
                                               </p>
                                             )}
@@ -2973,7 +2972,7 @@ export default function PropertyDetailsPage() {
                 <div className="w-1/3 border-r border-border bg-muted/10 flex flex-col h-full relative z-10">
                   <div className="p-4 border-b border-border bg-background flex justify-between items-center shrink-0">
                     <div>
-                      <h3 className="font-bold flex items-center gap-2"><Sparkles className="w-5 h-5 text-primary"/> Asistente de Diseño</h3>
+                      <h3 className="font-bold flex items-center gap-2"><GeminiIcon className="w-5 h-5 text-primary"/> Asistente de Diseño</h3>
                       <p className="text-xs text-muted-foreground">Desarrollado con Gemini</p>
                     </div>
                     <select 
@@ -2991,7 +2990,7 @@ export default function PropertyDetailsPage() {
                   <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     {chatMessages.length === 0 && (
                       <div className="text-center p-6 bg-muted/50 rounded-2xl">
-                        <Sparkles className="w-8 h-8 text-primary mx-auto mb-3" />
+                        <GeminiIcon className="w-8 h-8 mx-auto mb-3" colorful />
                         <h4 className="font-bold text-sm mb-2">¡Hola! Soy tu Asistente de Diseño.</h4>
                         <p className="text-xs text-muted-foreground">Puedo crear una presentación espectacular basada en las características de esta propiedad. ¿Qué enfoque quieres darle? (Ej: &quot;Enfocado en inversionistas&quot;, &quot;Hazlo ideal para familias&quot;).</p>
                       </div>

@@ -169,7 +169,7 @@ export default function TeamAttendanceModal({
                 const now = new Date();
                 const logDate = new Date(log.date);
                 const isToday = logDate.toDateString() === now.toDateString();
-                const isOnlineNow = isToday && log.userStatus !== 'INVISIBLE' && (now.getTime() - new Date(log.lastSeenAt).getTime()) < 10 * 60 * 1000;
+                const isOnlineNow = isToday && log.userStatus !== 'INVISIBLE' && (now.getTime() - new Date(log.lastSeenAt).getTime()) < 3 * 60 * 1000;
 
                 return (
                   <div 

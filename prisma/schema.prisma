@@ -10,71 +10,86 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  email         String?        @unique
-  name          String?
-  role          String         @default("AGENT")
-  isActive      Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  bio           String?
-  phone         String?
-  socialLinks   String?
-  accounts      Account[]
-  appointments  Appointment[]
-  leads         Lead[]
-  notifications Notification[]
-  sessions      Session[]
-  tasks         Task[]
-  taskAuditLogs TaskAuditLog[]
-  taskComments  TaskComment[]
-  brokerageContracts BrokerageContract[]
-  createdMeetings Meeting[]      @relation("CreatedMeetings")
+  id                    String               @id @default(cuid())
+  email                 String?              @unique
+  name                  String?
+  role                  String               @default("AGENT")
+  isActive              Boolean              @default(true)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  emailVerified         DateTime?
+  image                 String?
+  password              String?
+  bio                   String?
+  phone                 String?
+  socialLinks           String?
+  accounts              Account[]
+  appointments          Appointment[]
+  leads                 Lead[]
+  notifications         Notification[]
+  sessions              Session[]
+  tasks                 Task[]
+  taskAuditLogs         TaskAuditLog[]
+  taskComments          TaskComment[]
+  brokerageContracts    BrokerageContract[]
+  createdMeetings       Meeting[]            @relation("CreatedMeetings")
   meetingParticipations MeetingParticipant[]
-  
-  lastSeenAt    DateTime?
-  status        String         @default("ONLINE")
-  currentFocus  String?
+
+  lastSeenAt       DateTime?
+  status           String                 @default("ONLINE")
+  currentFocus     String?
   productivityLogs DailyProductivityLog[]
+
+  branchId     String?
+  branch       Branch?           @relation(fields: [branchId], references: [id])
+  schedules    StaffSchedule[]
+  attendances  StaffAttendance[]
+  salesTargets SalesTarget[]
+  commissions  CommissionLog[]
 }
 
 model Property {
-  id              String   @id @default(cuid())
-  title           String
-  description     String?
-  price           Decimal
-  type            String
-  status          String   @default("DISPONIBLE")
-  location        String
-  bedrooms        Int?
-  bathrooms       Int?
-  area            Float?
-  images          String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  operationType   String   @default("VENTA")
-  availableUnits  Int?
-  deliveryDate    String?
-  maxPrice        Decimal?
-  minPrice        Decimal?
-  presentations   String?
-  ownerEmail      String?
-  ownerName       String?
-  ownerPhone      String?
-  ownerNotes      String?
-  dynamicFeatures String?
-  nearbyPlaces    String?
-  independentUnit String?
-  driveFolderId   String?
-  commissions     String?
+  id                   String              @id @default(cuid())
+  title                String
+  description          String?
+  price                Decimal
+  type                 String
+  status               String              @default("DISPONIBLE")
+  location             String
+  bedrooms             Int?
+  bathrooms            Int?
+  area                 Float?
+  images               String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  operationType        String              @default("VENTA")
+  availableUnits       Int?
+  deliveryDate         String?
+  maxPrice             Decimal?
+  minPrice             Decimal?
+  presentations        String?
+  ownerEmail           String?
+  ownerName            String?
+  ownerPhone           String?
+  ownerNotes           String?
+  dynamicFeatures      String?
+  nearbyPlaces         String?
+  independentUnit      String?
+  driveFolderId        String?
+  commissions          String?
   developmentProjectId String?
   developmentProject   DevelopmentProject? @relation(fields: [developmentProjectId], references: [id])
-  leads           Lead[]
-  tasks           Task[]
-  brokerageContracts BrokerageContract[]
+  leads                Lead[]
+  tasks                Task[]
+  brokerageContracts   BrokerageContract[]
+
+  aiProcessed      Boolean @default(false)
+  floorPlans       String?
+  aiCategorization Json?
+  aiDraft          Json?
+  translations     Json?
+
+  commissionLogs CommissionLog[]
 
   @@index([operationType])
   @@index([status])
@@ -82,48 +97,50 @@ model Property {
 }
 
 model Lead {
-  id               String        @id @default(cuid())
-  name             String
-  email            String?
-  phone            String
-  status           String        @default("NUEVO")
-  budget           Decimal?
-  currency         String        @default("ILS") // Moneda (ILS, USD, etc)
-  notes            String?
-  source           String?
-  agentId          String?
-  propertyId       String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  preferences      String?
-  requiresMortgage Boolean       @default(false)
-  type             String        @default("CLIENTE") // CLIENTE o PROPIETARIO
-  urgency          String?       // Alta, Media, Baja
+  id                     String              @id @default(cuid())
+  name                   String
+  email                  String?
+  phone                  String
+  status                 String              @default("NUEVO")
+  budget                 Decimal?
+  currency               String              @default("ILS") // Moneda (ILS, USD, etc)
+  notes                  String?
+  source                 String?
+  agentId                String?
+  propertyId             String?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  preferences            String?
+  requiresMortgage       Boolean             @default(false)
+  type                   String              @default("CLIENTE") // CLIENTE o PROPIETARIO
+  urgency                String? // Alta, Media, Baja
   propertyTypeOfInterest String? // Casa, Departamento, Terreno, etc.
-  hasPropertyToSell Boolean      @default(false)
-  reasonForSelling String?       // Inversión, Mudanza, Herencia, etc.
-  acceptsTrade     Boolean       @default(false)
-  viewingAvailability String?    // Fines de semana, Mañanas, etc.
-  targetLocations  String?       // Norte, Centro, Sur, etc.
-  targetArea       Float?        // Area esperada (m2)
-  minArea          Float?        // Area minima (m2)
-  maxArea          Float?        // Area maxima (m2)
-  moveInDate       DateTime?     // Fecha de llegada o inicio contrato
-  numberOfPeople   Int?          // Número de personas
-  petFriendly      Boolean       @default(false) // Mascotas permitidas
-  isLegalClear     Boolean       @default(true)  // ¿Documentos al día?
-  hasMortgage      Boolean       @default(false) // ¿Libre de gravamen?
-  mandateType      String?       // Exclusiva, Abierta, Ninguna
-  appointments     Appointment[]
-  calls            Call[]
-  agent            User?         @relation(fields: [agentId], references: [id])
-  property         Property?     @relation(fields: [propertyId], references: [id])
-  messages         Message[]
-  tasks            Task[]
-  contactDate      DateTime?
-  brokerageContracts BrokerageContract[]
-  whatsAppMessages   WhatsAppMessage[]
-  meetings         Meeting[]
+  hasPropertyToSell      Boolean             @default(false)
+  reasonForSelling       String? // Inversión, Mudanza, Herencia, etc.
+  acceptsTrade           Boolean             @default(false)
+  viewingAvailability    String? // Fines de semana, Mañanas, etc.
+  targetLocations        String? // Norte, Centro, Sur, etc.
+  targetArea             Float? // Area esperada (m2)
+  minArea                Float? // Area minima (m2)
+  maxArea                Float? // Area maxima (m2)
+  moveInDate             DateTime? // Fecha de llegada o inicio contrato
+  numberOfPeople         Int? // Número de personas
+  petFriendly            Boolean             @default(false) // Mascotas permitidas
+  isLegalClear           Boolean             @default(true) // ¿Documentos al día?
+  hasMortgage            Boolean             @default(false) // ¿Libre de gravamen?
+  mandateType            String? // Exclusiva, Abierta, Ninguna
+  appointments           Appointment[]
+  calls                  Call[]
+  agent                  User?               @relation(fields: [agentId], references: [id])
+  property               Property?           @relation(fields: [propertyId], references: [id])
+  messages               Message[]
+  tasks                  Task[]
+  contactDate            DateTime?
+  brokerageContracts     BrokerageContract[]
+  whatsAppMessages       WhatsAppMessage[]
+  meetings               Meeting[]
+
+  commissionLogs CommissionLog[]
 
   @@index([status])
   @@index([type])
@@ -179,33 +196,33 @@ model TaskList {
 }
 
 model Task {
-  id             String           @id @default(cuid())
-  title          String
-  description    String?
-  dueDate        DateTime?
-  assignedTo     String?
-  leadId         String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  status         String           @default("PENDIENTE")
-  isImportant    Boolean          @default(false)
-  listId         String?
-  order          Int?
-  propertyId     String?
+  id                   String              @id @default(cuid())
+  title                String
+  description          String?
+  dueDate              DateTime?
+  assignedTo           String?
+  leadId               String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  status               String              @default("PENDIENTE")
+  isImportant          Boolean             @default(false)
+  listId               String?
+  order                Int?
+  propertyId           String?
   developmentProjectId String?
-  recurrenceRule String?
-  meetingId      String?
-  meetingExcerpt String?          @db.Text
-  subtasks       Subtask[]
-  agent          User?            @relation(fields: [assignedTo], references: [id])
-  lead           Lead?            @relation(fields: [leadId], references: [id])
-  list           TaskList?        @relation(fields: [listId], references: [id])
-  property       Property?        @relation(fields: [propertyId], references: [id])
-  developmentProject DevelopmentProject? @relation(fields: [developmentProjectId], references: [id])
-  meeting        Meeting?         @relation(fields: [meetingId], references: [id], onDelete: SetNull)
-  attachments    TaskAttachment[]
-  auditLogs      TaskAuditLog[]
-  comments       TaskComment[]
+  recurrenceRule       String?
+  meetingId            String?
+  meetingExcerpt       String?             @db.Text
+  subtasks             Subtask[]
+  agent                User?               @relation(fields: [assignedTo], references: [id])
+  lead                 Lead?               @relation(fields: [leadId], references: [id])
+  list                 TaskList?           @relation(fields: [listId], references: [id])
+  property             Property?           @relation(fields: [propertyId], references: [id])
+  developmentProject   DevelopmentProject? @relation(fields: [developmentProjectId], references: [id])
+  meeting              Meeting?            @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+  attachments          TaskAttachment[]
+  auditLogs            TaskAuditLog[]
+  comments             TaskComment[]
 }
 
 model Notification {
@@ -364,24 +381,24 @@ model DevelopmentProject {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   financialData   Json?
-  
-  properties      Property[]
-  tasks           Task[]
+
+  properties Property[]
+  tasks      Task[]
 }
 
 model WhatsappStatus {
-  id          String   @id @default(cuid())
-  mediaUrls   String   @default("[]") // JSON stringified array of URLs
-  caption     String?  // Text for the status
-  status      String   @default("SCHEDULED") // SCHEDULED, PUBLISHED, FAILED
-  publishAt   DateTime? // When it should be uploaded (null means immediate)
-  publishedAt DateTime? // When it was actually uploaded
-  errorMessage String?
+  id                String    @id @default(cuid())
+  mediaUrls         String    @default("[]") // JSON stringified array of URLs
+  caption           String? // Text for the status
+  status            String    @default("SCHEDULED") // SCHEDULED, PUBLISHED, FAILED
+  publishAt         DateTime? // When it should be uploaded (null means immediate)
+  publishedAt       DateTime? // When it was actually uploaded
+  errorMessage      String?
   recurringInterval String? // "DAILY", "WEEKLY", etc
-  sessionIds  String?  // JSON array of session IDs
-  expiresAt   DateTime? // Limit date for recurring schedules
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  sessionIds        String? // JSON array of session IDs
+  expiresAt         DateTime? // Limit date for recurring schedules
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
 
 model BrokerageContract {
@@ -403,9 +420,9 @@ model BrokerageContract {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  lead           Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  property       Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  agent          User      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  agent    User     @relation(fields: [agentId], references: [id], onDelete: Cascade)
 }
 
 model ContractTemplate {
@@ -418,24 +435,24 @@ model ContractTemplate {
 }
 
 model WhatsAppSession {
-  id               String   @id @default(cuid())
-  name             String
-  sessionId        String   @unique
-  isConnected      Boolean  @default(false)
-  isDefaultSender  Boolean  @default(false)
-  currentQr        String?  @db.Text
-  pairingCode      String?  @db.Text
-  contacts         String?  @db.Text // JSON string
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  
-  messages         WhatsAppMessage[]
+  id              String   @id @default(cuid())
+  name            String
+  sessionId       String   @unique
+  isConnected     Boolean  @default(false)
+  isDefaultSender Boolean  @default(false)
+  currentQr       String?  @db.Text
+  pairingCode     String?  @db.Text
+  contacts        String?  @db.Text // JSON string
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  messages WhatsAppMessage[]
 }
 
 model WhatsAppAuth {
   id        String   @id @default(cuid())
   sessionId String
-  keyId     String   // The key used by Baileys
+  keyId     String // The key used by Baileys
   keyData   String   @db.Text // JSON stringified state
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -446,16 +463,16 @@ model WhatsAppAuth {
 model WhatsAppMessage {
   id        String   @id @default(cuid())
   sessionId String
-  remoteJid String   
+  remoteJid String
   fromMe    Boolean  @default(false)
-  messageId String   
+  messageId String
   content   String   @db.Text
-  status    String   @default("PENDING") 
+  status    String   @default("PENDING")
   timestamp DateTime @default(now())
 
-  session   WhatsAppSession @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
-  leadId    String?
-  lead      Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  session WhatsAppSession @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
+  leadId  String?
+  lead    Lead?           @relation(fields: [leadId], references: [id], onDelete: SetNull)
 
   @@index([sessionId, remoteJid])
 }
@@ -477,45 +494,45 @@ model DailyProductivityLog {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
 }
 
 model Meeting {
-  id                String               @id @default(cuid())
-  title             String
-  description       String?              @db.Text
-  scheduledAt       DateTime
-  durationMinutes   Int                  @default(30)
-  timezone          String               @default("UTC")
-  meetUrl           String?
-  googleEventId     String?
-  status            String               @default("PROGRAMADA") // PROGRAMADA, EN_CURSO, FINALIZADA, CANCELADA
-  isPrivate         Boolean              @default(false)
-  category          String               @default("VENTA") // VENTA, LEGAL, CAPACITACION, SEGUIMIENTO, INTERNA
-  
+  id              String   @id @default(cuid())
+  title           String
+  description     String?  @db.Text
+  scheduledAt     DateTime
+  durationMinutes Int      @default(30)
+  timezone        String   @default("UTC")
+  meetUrl         String?
+  googleEventId   String?
+  status          String   @default("PROGRAMADA") // PROGRAMADA, EN_CURSO, FINALIZADA, CANCELADA
+  isPrivate       Boolean  @default(false)
+  category        String   @default("VENTA") // VENTA, LEGAL, CAPACITACION, SEGUIMIENTO, INTERNA
+
   // Media & Transcripción
-  audioUrl          String?              @db.Text
-  videoUrl          String?              @db.Text
+  audioUrl          String? @db.Text
+  videoUrl          String? @db.Text
   driveFolderId     String?
-  transcription     String?              @db.Text
-  summary           String?              @db.Text
-  keyPoints         String?              @db.Text
-  customGlossary    String?              @db.Text
-  sentimentTimeline String?              @db.Text
-  crmSuggestions    String?              @db.Text
-  
+  transcription     String? @db.Text
+  summary           String? @db.Text
+  keyPoints         String? @db.Text
+  customGlossary    String? @db.Text
+  sentimentTimeline String? @db.Text
+  crmSuggestions    String? @db.Text
+
   // Relaciones
-  createdById       String
-  createdBy         User                 @relation("CreatedMeetings", fields: [createdById], references: [id])
-  leadId            String?
-  lead              Lead?                @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  participants      MeetingParticipant[]
-  tasks             Task[]
-  
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
+  createdById  String
+  createdBy    User                 @relation("CreatedMeetings", fields: [createdById], references: [id])
+  leadId       String?
+  lead         Lead?                @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  participants MeetingParticipant[]
+  tasks        Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([scheduledAt])
   @@index([status])
@@ -523,12 +540,89 @@ model Meeting {
 }
 
 model MeetingParticipant {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   meetingId String
   userId    String
-  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meeting   Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([meetingId, userId])
 }
 
+model Branch {
+  id           String            @id @default(cuid())
+  name         String
+  address      String?
+  city         String?
+  phone        String?
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  users        User[]
+  salesTargets SalesTarget[]
+  attendances  StaffAttendance[]
+  schedules    StaffSchedule[]
+}
+
+model StaffSchedule {
+  id        String   @id @default(cuid())
+  userId    String
+  branchId  String?
+  dayOfWeek Int
+  startTime String
+  endTime   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([branchId])
+}
+
+model StaffAttendance {
+  id       String    @id @default(cuid())
+  userId   String
+  branchId String?
+  clockIn  DateTime  @default(now())
+  clockOut DateTime?
+  branch   Branch?   @relation(fields: [branchId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([branchId])
+}
+
+model SalesTarget {
+  id           String   @id @default(cuid())
+  branchId     String?
+  userId       String?
+  month        Int
+  year         Int
+  targetAmount Float
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  branch       Branch?  @relation(fields: [branchId], references: [id])
+  user         User?    @relation(fields: [userId], references: [id])
+
+  @@unique([branchId, month, year])
+  @@unique([userId, month, year])
+}
+
+model CommissionLog {
+  id          String    @id @default(cuid())
+  userId      String
+  propertyId  String?
+  leadId      String?
+  amount      Float
+  description String?
+  date        DateTime  @default(now())
+  status      String    @default("PENDIENTE") // PENDIENTE, PAGADA
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id])
+  property    Property? @relation(fields: [propertyId], references: [id])
+  lead        Lead?     @relation(fields: [leadId], references: [id])
+
+  @@index([userId])
+}

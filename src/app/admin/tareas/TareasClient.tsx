@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { 
   CheckCircle2, Circle, Star, Calendar as CalendarIcon, User, Search, Plus, 
-  Sparkles, Folder, ListTodo, Sun, CalendarDays, Inbox,
+   Folder, ListTodo, Sun, CalendarDays, Inbox,
   MoreVertical, ChevronRight, Check, Loader2, UserCircle2, Mic,
   Phone, MapPin, FileText, Send, CheckSquare, Clock, LayoutList, X, Kanban, Building
 } from 'lucide-react';
@@ -17,6 +17,7 @@ import TaskNotificationCenter from '@/components/TaskNotificationCenter';
 import CreateTaskModal from '@/components/CreateTaskModal';
 import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { MessageSquare, Paperclip, SlidersHorizontal } from 'lucide-react';
+import { GeminiIcon } from '@/components/icons/GeminiIcon';
 import { showAlert } from '@/lib/alerts';
 
 export default function TareasClient({ 
@@ -273,8 +274,7 @@ export default function TareasClient({
     ASSIGNED_TO_ME: allTasks.filter(t => t.assignedTo === currentUserId && t.status !== 'COMPLETADO').length,
     DELEGATED: allTasks.filter(t => t.assignedTo && t.assignedTo !== currentUserId && t.status !== 'COMPLETADO').length,
     COMPLETED: allTasks.filter(t => t.status === 'COMPLETADO').length,
-    OVERDUE: allTasks.filter(t => isOverdue(t.dueDate) && t.status !== 'COMPLETADO').length,
-  };
+    OVERDUE: allTasks.filter(t => isOverdue(t.dueDate) && t.status !== 'COMPLETADO').length };
 
   // Active View Filter
   let filteredTasks = allTasks;
@@ -698,7 +698,7 @@ export default function TareasClient({
           <div ref={chatInnerRef} className="w-full h-full flex flex-col">
           {isChatMini ? (
             <div onClick={() => chatRef.current?.resize(300)} className="w-full h-full flex flex-col items-center pt-6 text-muted-foreground hover:text-primary transition-colors cursor-pointer hover:bg-muted/50">
-              <Sparkles className="w-6 h-6 mb-4" />
+              <GeminiIcon className="w-6 h-6 mb-4" />
             </div>
           ) : (
             <div className="flex-1 h-full pt-10 p-6 flex flex-col">

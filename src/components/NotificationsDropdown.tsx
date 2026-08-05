@@ -24,7 +24,11 @@ export default function NotificationsDropdown({
         const data = await res.json();
         setNotifications(data);
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error.name === 'AbortError' || error.message === 'Failed to fetch' || error instanceof TypeError) {
+        // Ignore background polling network errors
+        return;
+      }
       console.error("Failed to fetch notifications", error);
     }
   };

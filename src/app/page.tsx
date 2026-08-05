@@ -2,7 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
+import PublicHeader from "@/components/ui/PublicHeader";
+
+const MortgageCalculator = dynamic(() => import('@/components/MortgageCalculator').then(mod => mod.MortgageCalculator), {
+  ssr: false,
+  loading: () => <div className="animate-pulse h-[400px] w-full bg-gray-100 rounded-2xl flex items-center justify-center"><p className="text-gray-400">Cargando calculadora...</p></div>
+});
 
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -10,47 +18,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white text-gray-800 font-sans overflow-x-hidden">
       
-      {/* 1. HEADER (Pixel-Perfect) */}
-      <header className="w-full bg-white relative z-50 shadow-sm">
-        <div className="mx-auto w-full max-w-[1400px] flex justify-between items-center py-4 px-4">
-          <div className="flex-shrink-0">
-            <Link href="/" className="flex items-center">
-              <span className="text-[#214953] font-bold text-2xl tracking-tight">Mi</span>
-              <span className="text-[#5280A4] font-bold text-2xl tracking-tight">CASSA</span>
-            </Link>
-          </div>
-          <div className="hidden lg:flex flex-row items-center space-x-6">
-            <nav className="flex items-center space-x-1">
-              {["Inicio", "Proyectos", "Venta", "Renta", "Asesoria legal", "Hipoteca", "Decoración"].map((item, idx) => (
-                <Link key={idx} href="#" className={`whitespace-nowrap text-[14px] xl:text-[16px] font-normal px-2 xl:px-4 py-2 transition-colors ${idx === 0 ? "text-[#5280A4] border-b-[3px] border-[#5280A4]" : "text-[#5280A4] hover:text-[#214953]"}`}>
-                  {item}
-                </Link>
-              ))}
-            </nav>
-            <div className="flex items-center space-x-2 border-l border-gray-200 pl-4">
-              <img src="https://flagcdn.com/w40/es.png" alt="ES" className="w-6 h-4 cursor-pointer shadow-sm hover:opacity-80" />
-              <img src="https://flagcdn.com/w40/us.png" alt="EN" className="w-6 h-4 cursor-pointer shadow-sm hover:opacity-80 opacity-60" />
-              <img src="https://flagcdn.com/w40/fr.png" alt="FR" className="w-6 h-4 cursor-pointer shadow-sm hover:opacity-80 opacity-60" />
-              <img src="https://flagcdn.com/w40/il.png" alt="HE" className="w-6 h-4 cursor-pointer shadow-sm hover:opacity-80 opacity-60" />
-            </div>
-            <form className="flex">
-              <div className="flex">
-                <input type="search" placeholder="Buscar..." className="w-[180px] xl:w-[260px] h-[36px] bg-[#214953] text-white px-3 text-[14px] border-none outline-none placeholder-gray-300" />
-                <button type="submit" className="h-[36px] w-[36px] bg-[#5280A4] flex items-center justify-center text-white hover:bg-[#3d6986] transition-colors border-none">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                </button>
-              </div>
-            </form>
-          </div>
-          <div className="lg:hidden flex items-center">
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-[#214953] focus:outline-none">
-              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {isMenuOpen ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />}
-              </svg>
-            </button>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
       {/* 2. HERO VIDEO */}
       <section className="relative w-full h-[650px] bg-gray-900 z-10">
         <div className="absolute inset-0 w-full h-full overflow-hidden">
@@ -72,11 +40,12 @@ export default function Home() {
           
           {/* Building Image (Left) */}
           <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="relative h-[500px] w-full flex justify-center z-30">
-            <img 
+            <Image 
               src="/wp-uploads/edificio-moderno-gran-altura-sobre-fondo-transparente_1190923-3641.png" 
               alt="Edificio Moderno" 
-              className="w-full h-full object-contain" 
-              onError={(e) => (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=800"} 
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-contain" 
             />
           </motion.div>
 
@@ -116,8 +85,14 @@ export default function Home() {
               <li>Servicio post entrega</li>
             </ul>
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="relative h-[400px] w-full">
-            <img src="/wp-uploads/illustration-construction-site-1024x585.jpg" alt="Construction Site" className="w-full h-full object-cover rounded-lg shadow-lg" onError={(e) => (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&q=80&w=800"} />
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="relative h-[400px] w-full rounded-lg shadow-lg overflow-hidden">
+            <Image 
+              src="/wp-uploads/illustration-construction-site-1024x585.jpg" 
+              alt="Construction Site" 
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover" 
+            />
           </motion.div>
         </div>
       </section>
@@ -272,7 +247,7 @@ export default function Home() {
             {/* Proyecto 1 */}
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               <div className="h-[250px] w-full relative overflow-hidden bg-gray-100">
-                <img src="/wp-uploads/Captura-de-pantalla-2025-07-14.png" alt="Ein Kerem" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=800"} />
+                <Image src="/wp-uploads/Captura-de-pantalla-2025-07-14.png" alt="Ein Kerem" fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
               </div>
               <div className="p-6">
                 <span className="text-xs font-semibold text-[#5280A4] uppercase tracking-wider mb-2 block">PROYECTOS</span>
@@ -284,7 +259,7 @@ export default function Home() {
             {/* Proyecto 2 */}
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               <div className="h-[250px] w-full relative overflow-hidden bg-gray-100">
-                <img src="/wp-uploads/18-3.jpg" alt="Apartamento Jaffa Shalem Tower" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800"} />
+                <Image src="/wp-uploads/18-3.jpg" alt="Apartamento Jaffa Shalem Tower" fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
               </div>
               <div className="p-6">
                 <span className="text-xs font-semibold text-[#5280A4] uppercase tracking-wider mb-2 block">PROYECTOS</span>
@@ -296,7 +271,7 @@ export default function Home() {
             {/* Proyecto 3 */}
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               <div className="h-[250px] w-full relative overflow-hidden bg-gray-100">
-                <img src="/wp-uploads/9-6.jpg" alt="En la zona de Mamilla" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=800"} />
+                <Image src="/wp-uploads/9-6.jpg" alt="En la zona de Mamilla" fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
               </div>
               <div className="p-6">
                 <span className="text-xs font-semibold text-[#5280A4] uppercase tracking-wider mb-2 block">PROYECTOS</span>
@@ -309,14 +284,26 @@ export default function Home() {
         </div>
       </section>
 
+      {/* COTIZADOR HIPOTECARIO (De SICOBEN) */}
+      <section className="w-full bg-gray-50 py-24 border-t border-gray-200">
+        <div className="max-w-[1140px] mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-[#214953] text-[36px] font-bold mb-6">Calcula tu Inversión</h2>
+            <div className="w-[100px] h-[3px] bg-[#5280A4] mx-auto mb-6"></div>
+            <p className="text-gray-600">Simula tu crédito hipotecario, enganche y gastos notariales en tiempo real.</p>
+          </div>
+          <MortgageCalculator />
+        </div>
+      </section>
+
       {/* 11. FOOTER CONTACTANOS */}
       <footer className="w-full bg-[#111827] text-white py-24 relative overflow-hidden">
         <div className="max-w-[1140px] mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative z-10">
           
           {/* Columna Izquierda: Información de contacto e imagen */}
           <div>
-            <div className="w-full h-[300px] mb-8 overflow-hidden rounded-lg opacity-80 mix-blend-luminosity">
-              <img src="/wp-uploads/PHOTO-2024-10-31-18-25-55-1024x738.jpg" alt="Oficina" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800"} />
+            <div className="w-full h-[300px] mb-8 overflow-hidden rounded-lg opacity-80 mix-blend-luminosity relative">
+              <Image src="/wp-uploads/PHOTO-2024-10-31-18-25-55-1024x738.jpg" alt="Oficina" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
             </div>
             <h2 className="text-[36px] font-bold mb-4">Contactanos</h2>
             <div className="w-[80px] h-[3px] bg-[#5280A4] mb-8"></div>

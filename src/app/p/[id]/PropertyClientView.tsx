@@ -3,7 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { Playfair_Display, Inter } from 'next/font/google';
 import { Bed, Bath, Maximize, MapPin, Calculator, Video, Info, Map as MapIcon } from 'lucide-react';
-import ImageGallery from '@/components/public-property/ImageGallery';
+import Image from 'next/image';
+import dynamic from 'next/dynamic';
+
+const ImageGallery = dynamic(() => import('@/components/public-property/ImageGallery'), {
+  ssr: false,
+  loading: () => <div className="w-full aspect-[4/3] md:aspect-[21/9] bg-gray-100 dark:bg-gray-800 animate-pulse flex items-center justify-center"><p className="text-gray-400">Cargando galería...</p></div>
+});
 
 const playfair = Playfair_Display({ subsets: ['latin'] });
 const inter = Inter({ subsets: ['latin'] });
@@ -11,6 +17,7 @@ const inter = Inter({ subsets: ['latin'] });
 export default function PropertyClientView({ property }: { property: any }) {
   const [showFloatingBar, setShowFloatingBar] = useState(false);
   const [downPaymentPct, setDownPaymentPct] = useState(20);
+  const [lang, setLang] = useState<'es' | 'en' | 'he'>('es');
   
   // Format price
   const priceNum = typeof property.price === 'string' ? parseFloat(property.price) : property.price;
@@ -33,22 +40,46 @@ export default function PropertyClientView({ property }: { property: any }) {
     }
   } catch (e) {}
 
-  // Parse Features
+  // Parse Features & Dynamic Settings
   let features: any[] = [];
+  let dynamicSettings: any = {};
   try {
     if (property.dynamicFeatures) {
       const parsed = JSON.parse(property.dynamicFeatures);
-      features = Array.isArray(parsed) ? parsed : [];
+      if (Array.isArray(parsed)) {
+        features = parsed;
+      } else if (parsed && typeof parsed === 'object') {
+        dynamicSettings = parsed;
+        features = Array.isArray(parsed.amenities) ? parsed.amenities : [];
+      }
+    }
+  } catch (e) {}
+  // Parse Translations
+  let translations: any = {};
+  try {
+    if (property.translations) {
+      translations = typeof property.translations === 'string' ? JSON.parse(property.translations) : property.translations;
     }
   } catch (e) {}
 
-  // Scroll listener for floating bar
+  const currentTitle = lang === 'es' ? property.title : (translations?.[lang]?.title || property.title);
+  const currentDescription = lang === 'es' ? property.description : (translations?.[lang]?.description || property.description);
+  
+  const isRTL = lang === 'he';
+
+  // Scroll listener for floating bar (Optimized with throttling)
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      // Show bar after scrolling past 400px
-      setShowFloatingBar(window.scrollY > 400);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setShowFloatingBar(window.scrollY > 400);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -93,15 +124,25 @@ export default function PropertyClientView({ property }: { property: any }) {
           <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{property.operationType}</p>
           <p className="text-lg font-bold text-gray-900 dark:text-white">₪{formattedPrice}</p>
         </div>
-        <div className="flex gap-4 text-gray-600 dark:text-gray-300 text-sm">
-          {property.bedrooms && <span className="flex items-center gap-1"><Bed size={16} /> {property.bedrooms}</span>}
-          {property.bathrooms && <span className="flex items-center gap-1"><Bath size={16} /> {property.bathrooms}</span>}
+        <div className="flex gap-2">
+          <select 
+            value={lang} 
+            onChange={(e) => setLang(e.target.value as any)}
+            className="px-2 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm font-semibold border-none cursor-pointer"
+          >
+            <option value="es">🇪🇸 ES</option>
+            <option value="en">🇺🇸 EN</option>
+            <option value="he">🇮🇱 HE</option>
+          </select>
+          <a href="#contact" className="bg-[#bda871] hover:bg-[#a5915f] text-white px-6 py-2 rounded-xl font-bold transition-colors">
+            {lang === 'en' ? 'Contact' : lang === 'he' ? 'צור קשר' : 'Contactar'}
+          </a>
         </div>
       </div>
 
-      <ImageGallery images={images} title={property.title} />
+      <ImageGallery images={images} title={currentTitle} />
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-10" dir={isRTL ? 'rtl' : 'ltr'}>
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-6 border-b border-gray-200 dark:border-gray-800 pb-8 mb-8">
           <div className="flex-1">
@@ -158,10 +199,11 @@ export default function PropertyClientView({ property }: { property: any }) {
             {/* Description */}
             <section>
               <h2 className={`${playfair.className} text-2xl font-bold mb-6 flex items-center gap-2 dark:text-white`}>
-                <Info className="text-[#bda871]" /> Acerca de la Propiedad
+                <Info className="text-[#bda871]" /> 
+                {lang === 'en' ? 'About this Property' : lang === 'he' ? 'אודות הנכס' : 'Acerca de la Propiedad'}
               </h2>
               <div className="prose prose-lg dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
-                {property.description || 'No hay descripción disponible para esta propiedad.'}
+                {currentDescription || 'No hay descripción disponible para esta propiedad.'}
               </div>
             </section>
 
@@ -185,18 +227,42 @@ export default function PropertyClientView({ property }: { property: any }) {
               </section>
             )}
 
-            {/* Location (Fuzzy) */}
+            {/* Location */}
             <section>
               <h2 className={`${playfair.className} text-2xl font-bold mb-6 flex items-center gap-2 dark:text-white`}>
-                <MapIcon className="text-[#bda871]" /> Zona Aproximada
+                <MapIcon className="text-[#bda871]" /> Ubicación
               </h2>
-              <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl h-64 flex items-center justify-center p-6 text-center border border-gray-200 dark:border-gray-700">
-                <div>
-                  <MapPin size={48} className="text-[#bda871] mx-auto mb-4 opacity-50" />
-                  <p className="text-gray-600 dark:text-gray-300 font-medium">Ubicación protegida por privacidad.</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">La propiedad se encuentra en la zona de: <br/><strong className="text-gray-900 dark:text-white">{property.location}</strong></p>
+              <div className="flex flex-col gap-6">
+                {dynamicSettings.mapImage && (
+                  <a 
+                    href={`https://maps.google.com/?q=${encodeURIComponent(property.location)}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block relative rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 group h-64 shadow-sm"
+                  >
+                    <Image 
+                      src={dynamicSettings.mapImage} 
+                      alt="Mapa de la propiedad" 
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-4 left-4 z-10">
+                      <span className="bg-white text-blue-600 px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2">
+                        Maps <MapIcon className="w-4 h-4" />
+                      </span>
+                    </div>
+                  </a>
+                )}
+                
+                <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl h-64 flex items-center justify-center p-6 text-center border border-gray-200 dark:border-gray-700">
+                  <div>
+                    <MapPin size={48} className="text-[#bda871] mx-auto mb-4 opacity-50" />
+                    <p className="text-gray-600 dark:text-gray-300 font-medium">Ubicación protegida por privacidad.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">La propiedad se encuentra en la zona de: <br/><strong className="text-gray-900 dark:text-white">{property.location}</strong></p>
+                  </div>
                 </div>
               </div>
+              
               {property.nearbyPlaces && (
                 <div className="mt-4 p-4 bg-[#faf9f6] dark:bg-[#1a1a1a] rounded-xl border border-gray-100 dark:border-gray-800">
                   <p className="font-medium mb-2 dark:text-white">Lugares de Interés:</p>

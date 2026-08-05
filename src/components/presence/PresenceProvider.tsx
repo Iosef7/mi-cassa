@@ -19,7 +19,11 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: statusOverride })
         });
-      } catch (error) {
+      } catch (error: any) {
+        if (error.name === 'AbortError' || error.message === 'Failed to fetch' || error instanceof TypeError) {
+          // Ignore background polling network errors
+          return;
+        }
         console.error("Presence ping failed", error);
       }
     };
@@ -55,13 +59,33 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
 
     // Eventos que indican actividad
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    events.forEach(e => document.addEventListener(e, resetIdleTimer));
+    events.forEach(e => document.addEventListener(e, resetIdleTimer, { passive: true }));
     resetIdleTimer(); // Inicializar timer
+
+    // Detectar cuando el usuario cierra la pestaña o sale de la página
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        // Usar sendBeacon para asegurar que la petición se envíe incluso si la página se está cerrando
+        navigator.sendBeacon('/api/team/presence/beacon', JSON.stringify({ status: 'OFFLINE' }));
+      } else {
+        // Volver a reportar online cuando regresa a la pestaña
+        pingPresence('ONLINE');
+      }
+    };
+    
+    const handlePageHide = () => {
+      navigator.sendBeacon('/api/team/presence/beacon', JSON.stringify({ status: 'OFFLINE' }));
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handlePageHide);
 
     return () => {
       clearInterval(intervalId);
       if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
       events.forEach(e => document.removeEventListener(e, resetIdleTimer));
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
     };
   }, [pathname, isIdle]);
 

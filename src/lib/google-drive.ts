@@ -210,3 +210,18 @@ export async function moveFolderWithUserToken(folderId: string, newParentId: str
 
   return res.data;
 }
+
+/**
+ * Descarga el contenido de un archivo de Google Drive y lo devuelve como Base64.
+ */
+export async function downloadFileAsBase64(fileId: string): Promise<string> {
+  const driveClient = await getDriveClient();
+  
+  const res = await driveClient.files.get(
+    { fileId: fileId, alt: 'media' },
+    { responseType: 'arraybuffer' }
+  );
+  
+  const buffer = Buffer.from(res.data as ArrayBuffer);
+  return buffer.toString('base64');
+}

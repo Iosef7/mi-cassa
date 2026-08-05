@@ -137,3 +137,127 @@ export async function togglePropertyTabVisibility(tabId: string, disabled: boole
     return { success: false, error: "Failed to toggle tab visibility" };
   }
 }
+
+export async function approveAiDraft(id: string) {
+  try {
+    const property = await prisma.property.findUnique({ where: { id } });
+    if (!property || !property.aiDraft) {
+      return { success: false, error: 'No se encontró borrador pendiente' };
+    }
+
+    let aiDraft: any = {};
+    if (typeof property.aiDraft === 'string') {
+      aiDraft = JSON.parse(property.aiDraft);
+    } else {
+      aiDraft = property.aiDraft;
+    }
+
+    const translations = {
+      en: {
+        title: aiDraft.suggestedTitle?.en || property.title,
+        description: aiDraft.suggestedDescription?.en || property.description,
+      },
+      he: {
+        title: aiDraft.suggestedTitle?.he || property.title,
+        description: aiDraft.suggestedDescription?.he || property.description,
+      },
+      es: {
+        title: aiDraft.suggestedTitle?.es || property.title,
+        description: aiDraft.suggestedDescription?.es || property.description,
+      }
+    };
+
+    let existingPresentations: any = { docs: [], plans: [], videos: [], legalDocs: [], posters: [] };
+    if (property.presentations) {
+      try {
+        const parsed = JSON.parse(property.presentations);
+        if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+          existingPresentations = { ...existingPresentations, ...parsed };
+        }
+      } catch(e) {}
+    }
+
+    let images: string[] = [];
+    try {
+      if (property.images) {
+        images = JSON.parse(property.images);
+        if (!Array.isArray(images)) images = [property.images];
+      }
+    } catch(e) {
+      if (property.images) images = [property.images];
+    }
+
+    let newPlans: string[] = [];
+    let newPosters: string[] = [];
+    let newMaps: string[] = [];
+    let indexesToRemove = new Set<number>();
+
+    if (Array.isArray(aiDraft.imageCategories)) {
+      aiDraft.imageCategories.forEach((cat: any) => {
+        if (cat.index !== undefined && cat.index < images.length) {
+          if (cat.category === 'PLANO') {
+            newPlans.push(images[cat.index]);
+            indexesToRemove.add(cat.index);
+          } else if (cat.category === 'MAPA') {
+            newMaps.push(images[cat.index]);
+            indexesToRemove.add(cat.index);
+          } else if (cat.category === 'TEXTO_PROMO') {
+            newPosters.push(images[cat.index]);
+            indexesToRemove.add(cat.index);
+          }
+        }
+      });
+    }
+
+    const newImages = images.filter((_, idx) => !indexesToRemove.has(idx));
+
+    const updateData: any = {
+      title: aiDraft.suggestedTitle?.es || property.title,
+      description: aiDraft.suggestedDescription?.es || property.description,
+      type: aiDraft.suggestedType || property.type,
+      images: JSON.stringify(newImages),
+      presentations: JSON.stringify({
+        ...existingPresentations,
+        plans: [...(existingPresentations.plans || []), ...newPlans],
+        posters: [...(existingPresentations.posters || []), ...newPosters],
+        maps: [...(existingPresentations.maps || []), ...newMaps]
+      }),
+      translations: translations,
+      aiDraft: null, // Clear draft after approval
+      aiProcessed: true
+    };
+
+    // Keep the categorization (like image tags) in the main JSON
+    if (aiDraft.imageCategories) {
+      updateData.aiCategorization = aiDraft;
+    }
+
+    if (aiDraft.deducedBedrooms) updateData.bedrooms = aiDraft.deducedBedrooms;
+    if (aiDraft.deducedBathrooms) updateData.bathrooms = aiDraft.deducedBathrooms;
+
+    await prisma.property.update({
+      where: { id },
+      data: updateData
+    });
+
+    revalidatePath(`/admin/propiedades/${id}`);
+    revalidatePath(`/p/${id}`);
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error approving AI draft:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getAiProgress(propertyId: string) {
+  try {
+    const setting = await prisma.siteSettings.findUnique({
+      where: { key: `ai_progress_${propertyId}` }
+    });
+    if (setting?.value) {
+      return JSON.parse(setting.value);
+    }
+  } catch(e) {}
+  return null;
+}

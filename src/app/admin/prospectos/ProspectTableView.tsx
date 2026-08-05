@@ -3,7 +3,8 @@
 import React, { useState, memo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Phone, CheckCircle, Users, Plus, Trash2, Calendar, Building, Bot, ArrowRight, Clock, AlertCircle, Home, Globe, MessageCircle } from 'lucide-react';
+import { Phone, CheckCircle, Users, Plus, Trash2, Calendar, Building,  ArrowRight, Clock, AlertCircle, Home, Globe, MessageCircle } from 'lucide-react';
+import { GeminiIcon } from '@/components/icons/GeminiIcon';
 import ProspectActionMenu from './ProspectActionMenu';
 import ProspectPagination from './ProspectPagination';
 import dynamic from 'next/dynamic';
@@ -112,7 +113,7 @@ const ProspectTableRow = memo(({
           <div className="absolute left-10 top-14 z-50 w-80 opacity-0 invisible group-hover/lead:opacity-100 group-hover/lead:visible transition-all duration-300 transform translate-y-2 group-hover/lead:translate-y-0">
             <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-xl rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2 text-blue-600 dark:text-blue-400">
-                <Bot size={16} />
+                <GeminiIcon size={16} />
                 <span className="text-xs font-semibold uppercase tracking-wider">Resumen de IA</span>
               </div>
               {lead.calls[0].summary && (

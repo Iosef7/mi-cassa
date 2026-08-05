@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Send, Sparkles, Loader2, StopCircle, User, Bot, CheckCircle2, AudioLines, X } from 'lucide-react';
+import { Mic, Send, Loader2, StopCircle, User, CheckCircle2, AudioLines, X } from 'lucide-react';
+import { GeminiIcon } from '@/components/icons/GeminiIcon';
 import { toast } from 'sonner';
 
 type Message = {
@@ -254,7 +255,7 @@ export default function AiTaskChat({ users, currentUserId, onTaskCreated }: { us
     <div className="flex flex-col bg-card border border-border rounded-2xl shadow-sm h-[500px] overflow-hidden">
       <div className="bg-primary/5 p-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-primary" />
+          <GeminiIcon className="w-5 h-5" colorful />
           <h3 className="font-bold text-foreground">Asistente de Delegación</h3>
         </div>
         <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full font-semibold">Gemini AI</span>
@@ -270,7 +271,7 @@ export default function AiTaskChat({ users, currentUserId, onTaskCreated }: { us
                   ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 font-medium' 
                   : 'bg-muted text-foreground rounded-tl-none'
             }`}>
-              {m.role === 'model' && !m.isSystem && <Bot className="w-4 h-4 mb-1 text-primary inline-block mr-1" />}
+              {m.role === 'model' && !m.isSystem && <GeminiIcon className="w-4 h-4 mb-1 inline-block mr-1" colorful />}
               {m.text}
               {m.audioUrl && (
                 <div className="mt-2 rounded-xl overflow-hidden">

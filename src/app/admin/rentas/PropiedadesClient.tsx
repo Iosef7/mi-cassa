@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { showConfirm, showToast } from '@/lib/alerts';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { DriveImagePreview } from '@/components/DriveImagePreview';
 
 interface Property {
   id: string;
@@ -24,40 +25,6 @@ interface Property {
   availableUnits?: number | null;
   deliveryDate?: string | null;
 }
-
-const getDisplayUrl = (url: string) => {
-  if (url && typeof url === 'string' && url.includes('drive.google.com') && url.includes('/preview')) {
-    const fileId = url.match(/\/file\/d\/(.+?)\/preview/)?.[1];
-    if (fileId) {
-      return `/api/drive/image/${fileId}`;
-    }
-  }
-  return url;
-};
-
-const DriveImagePreview = ({ url, alt, className, priority }: { url: string, alt: string, className?: string, priority?: boolean }) => {
-  const displayUrl = getDisplayUrl(url);
-  const [imgError, setImgError] = useState(false);
-
-  if (imgError) {
-    return (
-      <div className={`flex flex-col items-center justify-center bg-muted/20 text-muted-foreground border-border border-dashed border ${className}`}>
-         <div className="text-xs mb-1 font-medium">Permiso requerido</div>
-         <a href={url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 hover:underline z-10 pointer-events-auto">
-            Abrir en Drive
-         </a>
-      </div>
-    );
-  }
-
-  const isAllowedDomain = displayUrl?.includes('lh3.googleusercontent.com') || displayUrl?.includes('images.unsplash.com');
-
-  if (isAllowedDomain) {
-    return <Image src={displayUrl} alt={alt} fill className={className} sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" onError={() => setImgError(true)} priority={priority} />;
-  }
-
-  return <Image src={displayUrl} alt={alt} fill={className?.includes('absolute') || className?.includes('h-full') ? true : undefined} width={!className?.includes('absolute') && !className?.includes('h-full') ? 800 : undefined} height={!className?.includes('absolute') && !className?.includes('h-full') ? 600 : undefined} unoptimized={true} className={className} loading={priority ? "eager" : "lazy"} onError={() => setImgError(true)} />;
-};
 
 export default function PropiedadesClient({ initialProperties }: { initialProperties: Property[] }) {
   const { dict } = useLanguage();

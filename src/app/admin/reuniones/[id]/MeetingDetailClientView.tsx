@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { Video, Calendar, Clock, User, Sparkles, FileText, CheckCircle2, ArrowLeft, UploadCloud, Loader2, Building, MessageSquare, ShieldCheck, Check, Play, Settings, Globe, Tag, Users } from 'lucide-react';
+import { Video, Calendar, Clock, User,  FileText, CheckCircle2, ArrowLeft, UploadCloud, Loader2, Building, MessageSquare, ShieldCheck, Check, Play, Settings, Globe, Tag, Users } from 'lucide-react';
+import { GeminiIcon } from '@/components/icons/GeminiIcon';
 import Link from 'next/link';
 import MeetingMediaPlayer from '@/components/MeetingMediaPlayer';
 import TaskMeetingCopilotModal from '@/components/TaskMeetingCopilotModal';
@@ -255,7 +256,7 @@ export default function MeetingDetailClientView({ initialMeeting, users, leads, 
                 </>
               ) : (
                 <>
-                  <Sparkles size={18} />
+                  <GeminiIcon size={18} />
                   <span>Procesar Transcripción con IA</span>
                 </>
               )}
@@ -269,7 +270,7 @@ export default function MeetingDetailClientView({ initialMeeting, users, leads, 
           {meeting.summary && (
             <div className="bg-card border border-border p-6 rounded-3xl shadow-sm glass space-y-3">
               <h3 className="font-bold text-base text-foreground flex items-center gap-2">
-                <Sparkles size={18} className="text-indigo-500" /> Minuta Ejecutiva y Acuerdos
+                <GeminiIcon size={18} className="text-indigo-500" /> Minuta Ejecutiva y Acuerdos
               </h3>
               <p className="text-xs text-foreground leading-relaxed whitespace-pre-line bg-muted/30 p-4 rounded-2xl border border-border">
                 {meeting.summary}
@@ -389,7 +390,7 @@ export default function MeetingDetailClientView({ initialMeeting, users, leads, 
                       onClick={() => setSelectedTaskForCopilot(task)}
                       className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors shrink-0"
                     >
-                      <Sparkles size={14} />
+                      <GeminiIcon size={14} />
                       <span>Asistente Copiloto IA</span>
                     </button>
                   </div>

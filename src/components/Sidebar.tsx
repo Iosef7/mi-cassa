@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
-import { Home, Building, Users, Calendar, Phone, TrendingUp, Sparkles, Moon, Sun, CheckSquare, Shield, X, Calculator, LogOut, ChevronLeft, ChevronRight, Lock, Settings, Key, ChevronDown, ChevronUp, Video } from 'lucide-react';
+import { Home, Building, Users, Calendar, Phone, TrendingUp, Moon, Sun, CheckSquare, Shield, X, Calculator, LogOut, ChevronLeft, ChevronRight, Lock, Settings, Key, ChevronDown, ChevronUp, Video, Globe, Mic } from 'lucide-react';
+import { GeminiIcon } from '@/components/icons/GeminiIcon';
 import { SectionSettingsMap, updateSiteLogo } from '@/actions/settings';
 import { useSession, signOut } from 'next-auth/react';
 import { toast } from 'sonner';
@@ -158,10 +159,12 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
 
         <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/prospectos" icon={<Users />} label={dict.sidebar.prospects} active={pathname?.startsWith("/admin/prospectos")} status={getStatus("/admin/prospectos")} isLocked={isLocked("/admin/prospectos")} userRole={getRole()} />
         <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/reuniones" icon={<Video />} label="Reuniones" active={pathname?.startsWith("/admin/reuniones")} />
+        <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/plaud" icon={<Mic />} label="Plaud Pro AI" active={pathname?.startsWith("/admin/plaud")} />
         <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/tareas" icon={<CheckSquare />} label={dict.sidebar.tasks} active={pathname?.startsWith("/admin/tareas")} status={getStatus("/admin/tareas")} isLocked={isLocked("/admin/tareas")} userRole={getRole()} />
-        <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/ai-match" icon={<Sparkles />} label={dict.sidebar.aiMatch} active={pathname === "/admin/ai-match"} status={getStatus("/admin/ai-match")} isLocked={isLocked("/admin/ai-match")} userRole={getRole()} />
+        <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/ai-match" icon={<GeminiIcon />} label={dict.sidebar.aiMatch} active={pathname === "/admin/ai-match"} status={getStatus("/admin/ai-match")} isLocked={isLocked("/admin/ai-match")} userRole={getRole()} />
         <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/tabulador" icon={<Calculator />} label={dict.sidebar.tabulator} active={pathname?.startsWith("/admin/tabulador")} status={getStatus("/admin/tabulador")} isLocked={isLocked("/admin/tabulador")} userRole={getRole()} />
         <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/whatsapp" icon={<Phone />} label="WhatsApp" active={pathname?.startsWith("/admin/whatsapp")} />
+        <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/cms" icon={<Globe />} label="Editor Web (CMS)" active={pathname?.startsWith("/admin/cms")} />
         
         {getRole() === 'ADMIN' && (
           <div className="pt-4 pb-2">
@@ -170,7 +173,7 @@ export default function Sidebar({ className = "", isMobile = false, onClose, set
             ) : (
               <div className="h-px bg-border w-10 mx-auto my-3" />
             )}
-            <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/ia" icon={<Sparkles />} label={dict.sidebar.ai} active={pathname?.startsWith("/admin/ia")} status={getStatus("/admin/ia")} isLocked={isLocked("/admin/ia")} userRole={getRole()} />
+            <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/ia" icon={<GeminiIcon />} label={dict.sidebar.ai} active={pathname?.startsWith("/admin/ia")} status={getStatus("/admin/ia")} isLocked={isLocked("/admin/ia")} userRole={getRole()} />
             <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/equipo" icon={<Shield />} label={dict.sidebar.team} active={pathname?.startsWith("/admin/equipo")} />
             <NavItem onClick={onClose} isCollapsed={isCollapsed} href="/admin/configuracion" icon={<Settings />} label={dict.sidebar.settings} active={pathname?.startsWith("/admin/configuracion")} />
           </div>

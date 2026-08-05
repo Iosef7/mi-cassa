@@ -6,8 +6,11 @@ import { prisma } from "@/lib/prisma"
 import bcrypt from "bcrypt"
 import { authConfig } from "./auth.config"
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+console.log("[DEBUG-AUTH] process.env.AUTH_SECRET:", process.env.AUTH_SECRET);
+
+export const { handlers, auth: nextAuthAuth, signIn, signOut } = NextAuth({
   ...authConfig,
+  session: { strategy: "jwt" },
   adapter: PrismaAdapter(prisma as any),
   providers: [
     GoogleProvider({
@@ -103,3 +106,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }
   }
 })
+
+import { headers, cookies } from "next/headers"
+
+export const auth = async (...args: any[]) => {
+  if (args.length === 0) {
+    try {
+      await headers()
+      await cookies()
+    } catch (e) {}
+  }
+  return nextAuthAuth(...args)
+}

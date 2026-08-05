@@ -320,7 +320,7 @@ export default function EquipoPage() {
                 
                 if (user.status === 'INVISIBLE') {
                   statusColor = "bg-neutral-500"; statusText = "Invisible";
-                } else if (diffMinutes > 10) {
+                } else if (diffMinutes > 3) {
                   statusColor = "bg-neutral-500"; statusText = "Desconectado";
                 } else if (user.status === 'FOCUS') {
                   statusColor = "bg-blue-500"; statusText = "Enfocado"; pulseClass = "animate-pulse";
@@ -330,6 +330,8 @@ export default function EquipoPage() {
                   statusColor = "bg-yellow-500"; statusText = "Descanso";
                 } else if (user.status === 'AWAY') {
                   statusColor = "bg-yellow-500"; statusText = "Ausente";
+                } else if (user.status === 'OFFLINE') {
+                  statusColor = "bg-neutral-500"; statusText = "Desconectado";
                 } else {
                   statusColor = "bg-green-500"; statusText = "Conectado"; pulseClass = "animate-pulse";
                 }
